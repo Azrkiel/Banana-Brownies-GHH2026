@@ -1,0 +1,24 @@
+# Fly.io deploy for the SignLine API: `cd server && fly deploy`.
+# Keys are Fly secrets (`fly secrets set ...`), including CORS_ORIGINS for the GitHub Pages site.
+app = "signline-api"
+primary_region = "iad"
+
+[build]
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [[http_service.checks]]
+    grace_period = "15s"
+    interval = "30s"
+    timeout = "5s"
+    method = "GET"
+    path = "/api/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
