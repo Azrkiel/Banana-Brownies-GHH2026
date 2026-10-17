@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { API_BASE } from '../lib/api';
 import './Stats.css';
 
 type Summary = { utterances: number; e2e_p50: number | null; e2e_p95: number | null; gloss_p50: number | null; tts_p50: number | null; fallback_rate: number | null };
@@ -11,7 +12,7 @@ export default function Stats() {
   const [s, setS] = useState<StatsT | null>(null);
   const [err, setErr] = useState('');
   useEffect(() => {
-    const load = () => fetch('/api/stats').then((r) => r.json()).then((d: StatsT) => { setS(d); setErr(''); }).catch(() => setErr('Stats unavailable'));
+    const load = () => fetch(`${API_BASE}/api/stats`).then((r) => r.json()).then((d: StatsT) => { setS(d); setErr(''); }).catch(() => setErr('Stats unavailable'));
     load();
     const id = setInterval(load, 5000);
     return () => clearInterval(id);

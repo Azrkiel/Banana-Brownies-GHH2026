@@ -8,21 +8,21 @@ const toPt = (p: { x: number; y: number; z: number }): Pt => ({ x: r4(p.x), y: r
 
 /** Hand (2 hands!) + Pose lite, optional Face blendshapes every 3rd frame. All files served locally. */
 export async function createTracker(opts: { withFace: boolean }): Promise<Tracker> {
-  const fileset = await FilesetResolver.forVisionTasks('/mediapipe/wasm');
+  const fileset = await FilesetResolver.forVisionTasks(`${import.meta.env.BASE_URL}mediapipe/wasm`);
   const hand = await HandLandmarker.createFromOptions(fileset, {
-    baseOptions: { modelAssetPath: '/models/hand_landmarker.task', delegate: 'GPU' },
+    baseOptions: { modelAssetPath: `${import.meta.env.BASE_URL}models/hand_landmarker.task`, delegate: 'GPU' },
     runningMode: 'VIDEO', numHands: 2, // default is 1 — two-handed signs would silently lose a hand
   });
   let pose: PoseLandmarker | undefined;
   let face: FaceLandmarker | null;
   try {
     pose = await PoseLandmarker.createFromOptions(fileset, {
-    baseOptions: { modelAssetPath: '/models/pose_landmarker_lite.task', delegate: 'GPU' },
+    baseOptions: { modelAssetPath: `${import.meta.env.BASE_URL}models/pose_landmarker_lite.task`, delegate: 'GPU' },
     runningMode: 'VIDEO', numPoses: 1,
   });
     face = opts.withFace
     ? await FaceLandmarker.createFromOptions(fileset, {
-        baseOptions: { modelAssetPath: '/models/face_landmarker.task', delegate: 'GPU' },
+        baseOptions: { modelAssetPath: `${import.meta.env.BASE_URL}models/face_landmarker.task`, delegate: 'GPU' },
         runningMode: 'VIDEO', numFaces: 1, outputFaceBlendshapes: true,
       })
     : null;
