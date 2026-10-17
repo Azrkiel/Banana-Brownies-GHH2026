@@ -7,8 +7,9 @@ for the implementation roadmap, consent requirements, and limitations.
 ## Current status
 
 Phase 0's frontend and Python server scaffolds are implemented. The frontend
-shows the planned vocabulary; calling, camera tracking, recognition, and API routes
-are not implemented yet. No recognition accuracy has been measured.
+shows the planned vocabulary. Phase 1's shared types and landmark feature extraction
+are implemented and unit-tested; calling, camera tracking, recognition, and API
+routes are not implemented yet. No recognition accuracy has been measured.
 
 ## Development setup
 
@@ -64,8 +65,8 @@ npm --prefix web run lint
 server/.venv/bin/python -m pip check
 ```
 
-`npm --prefix web test` is configured for `src/**/*.test.ts`. No test cases exist
-at Phase 0; Vitest will fail on an empty suite rather than report a false pass.
+`npm --prefix web test` runs the landmark feature extraction tests, including
+normalization, mirroring, tracking loss, and temporal resampling.
 The dataset script is not registered until its implementation arrives in Phase 2.
 
 ## Credentials and team tasks
