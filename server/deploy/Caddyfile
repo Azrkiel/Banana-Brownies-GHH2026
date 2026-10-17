@@ -1,0 +1,13 @@
+149-28-1-2.sslip.io {
+	encode zstd gzip
+	handle /api/* {
+		reverse_proxy 127.0.0.1:8000 {
+			flush_interval -1
+		}
+	}
+	handle {
+		root * /srv/signline/web
+		try_files {path} /index.html
+		file_server
+	}
+}

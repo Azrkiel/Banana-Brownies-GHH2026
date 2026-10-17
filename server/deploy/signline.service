@@ -1,0 +1,11 @@
+[Unit]
+Description=SignLine API
+After=network.target
+
+[Service]
+WorkingDirectory=/srv/signline/repo/server
+ExecStart=/srv/signline/repo/server/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
