@@ -30,6 +30,19 @@ Audit evidence: `preflight` passed; `ledger` rechecked all nine DONE/NEEDS-HUMAN
 `ledger consistent`. Checks for 0.4, 1.0, 1.B2, 1.B4, 2.A1, and 2.B4 still fail at their documented gaps.
 No task status was changed by this audit, and no live provider, camera, GPU, database, or VM check was repeated.
 
+### Deployment — live since October 17, 2026 (`86df6f7`)
+
+The Vultr VM was never created. Hosting is now **GitHub Pages + Fly.io**, replacing the VM plan in 1.C4/4.1:
+
+- **Web:** https://azrkiel.github.io/Banana-Brownies-GHH2026/ — `.github/workflows/pages.yml` builds `web/` on every
+  push to `main` (Pages source: GitHub Actions). Repo variable `VITE_API_BASE` points the build at the API.
+- **API:** https://signline-api.fly.dev — Fly app `signline-api` (`server/Dockerfile`, `server/fly.toml`). Keys are
+  Fly secrets, not files; `CORS_ORIGINS=https://azrkiel.github.io` lets the Pages site call it. The machine sleeps
+  when idle, so the first request takes a few seconds. Redeploy: `cd server && fly deploy --remote-only`
+  (add `--depot=false` behind TLS-intercepting antivirus). After changing a key in `server/.env`, also run
+  `fly secrets set NAME=value -a signline-api`.
+- **Local fallback** still works: `server` on port 8000 plus `npm --prefix web run dev`.
+
 ### Current to-do list — coding
 
 **Start now:** recog **0.4**, call **2.A1**, and ml **2.B4** are independently eligible. The global runner selects
@@ -85,14 +98,18 @@ Code-complete rows still awaiting acceptance:
 
 - [ ] **1.B1:** check Bench FPS on both laptops (face on: at least 20 FPS on signer laptop) and one/two-hand tracking.
 - [ ] **1.A1:** join `demo-room` on two laptops; verify video and typed captions in both directions.
-- [ ] **1.C1:** verify configured API providers live, including LiveKit token issuance.
+- [ ] **1.C1:** verify configured API providers live, including LiveKit token issuance. *Oct 17: on
+  signline-api.fly.dev, health showed all five keys `true`, `/api/token` returned a LiveKit JWT (`eyJ…`), and
+  `/api/voices` returned 200. Awaiting a person to mark VERIFIED.*
 - [ ] **1.C2:** run the 12-case Gemini eval; inspect confidence for nonsense and record measured p50 in README.
-- [ ] **1.C5:** correct database access, apply `server/sql/schema.sql`, and verify configured stats.
-- [ ] **1.C4:** deploy the systemd/Caddy templates on the VM, replace the placeholder hostname, and check HTTPS health.
-- [ ] **4.2:** after event logging works, run the golden path twice and check dashboard counts, latency, and trend;
-  complete browser visual QA. The last live attempt on October 17 failed with database `InvalidPasswordError`
-  before SQL ran. Schema application and dashboard data remain unverified; an env variable being present is not
-  proof that its credentials work.
+- [ ] **1.C5:** correct database access, apply `server/sql/schema.sql`, and verify configured stats. *Oct 17: the
+  `InvalidPasswordError` is gone; live `/api/stats` returns `{"configured":true,...}` with 0 utterances, so the
+  credentials work and the schema's tables exist. Awaiting a person to mark VERIFIED.*
+- [ ] **1.C4:** ~~deploy the systemd/Caddy templates on the VM~~ superseded: the API is deployed on Fly.io instead
+  (see Deployment above) and HTTPS health passes. `server/deploy/` stays as an unused alternative.
+- [ ] **4.2:** run the golden path twice and check dashboard counts, latency, and trend; complete browser visual QA.
+  *Oct 17: database access fixed; the deployed `#/stats` page loads live (empty) data. Event logging and
+  dashboard numbers still need a real golden-path run.*
 
 Human-owned tasks, in useful working order:
 
@@ -102,7 +119,8 @@ Human-owned tasks, in useful working order:
 - [ ] **2.B4 human check:** run real training/evaluation on the MSI, publish model artifacts, and record held-out accuracy.
 - [ ] **3.3:** rehearse the full golden path on two laptops; retain a recoverable `golden-path` tag when proven.
 - [ ] **4.1 / 4.6 / 4.7 / 5:** deploy the web app or rehearse the local fallback, prepare pitch/slides and a backup
-  video, run failure drills, then freeze, rehearse, and submit by the deadline.
+  video, run failure drills, then freeze, rehearse, and submit by the deadline. *4.1: the app is deployed (GitHub
+  Pages + Fly.io, see Deployment above); its "Done when" still needs one golden-path run on the deployed URL.*
 - [ ] **4.8:** add more Kaggle signs only if time permits (stretch). **6:** post-event work stays deferred.
 
 ### Status rules
@@ -292,11 +310,11 @@ Owns: `server/` (except `scripts/cache_tts.py`), `web/src/pages/Stats.{tsx,css}`
 | ID | Task | Owner | Depends on | Status | Evidence |
 |---|---|---|---|---|---|
 | [0.5](plan/tasks/0.5.md) | Server scaffold (Windows-installable requirements) | AGENT | — | DONE | verify PASS 2026-10-17 on b16cf44+ |
-| [1.C1](plan/tasks/1.C1.md) | API routes | AGENT then HUMAN-CHECK | 0.5 | NEEDS-HUMAN | code matches plan on 9dced31; live curl pending |
+| [1.C1](plan/tasks/1.C1.md) | API routes | AGENT then HUMAN-CHECK | 0.5 | NEEDS-HUMAN | code matches plan on 9dced31; live curl 2026-10-17 on signline-api.fly.dev: health all true, token eyJ… |
 | [1.C2](plan/tasks/1.C2.md) | Gemini prompt test + eval script | AGENT then HUMAN-CHECK | 1.C1 | NEEDS-HUMAN | verify PASS 2026-10-17 on 8d6cd13+ |
-| [1.C5](plan/tasks/1.C5.md) | Tiger Data schema | AGENT then HUMAN-CHECK | 1.C1 | NEEDS-HUMAN | verify PASS 2026-10-17 on f944542+ |
-| [1.C4](plan/tasks/1.C4.md) | Deploy files (+ human VM deploy) | AGENT then HUMAN-CHECK | 1.C1 | NEEDS-HUMAN | verify PASS 2026-10-17 on 10a4f30+ |
-| [4.2](plan/tasks/4.2.md) | Live stats page (Tiger Data) | AGENT then HUMAN-CHECK | 1.C5 | NEEDS-HUMAN | verify PASS 2026-10-17 on de011a8+; live /api/stats fails with database InvalidPasswordError; correct DB credentials, apply 1.C5 schema, then check dashboard; browser visual QA pending |
+| [1.C5](plan/tasks/1.C5.md) | Tiger Data schema | AGENT then HUMAN-CHECK | 1.C1 | NEEDS-HUMAN | verify PASS 2026-10-17 on f944542+; live /api/stats 2026-10-17 → configured:true (DB auth + schema OK) |
+| [1.C4](plan/tasks/1.C4.md) | Deploy files (+ human VM deploy) | AGENT then HUMAN-CHECK | 1.C1 | NEEDS-HUMAN | verify PASS 2026-10-17 on 10a4f30+; VM never created — API deployed to Fly.io instead (86df6f7), HTTPS health OK |
+| [4.2](plan/tasks/4.2.md) | Live stats page (Tiger Data) | AGENT then HUMAN-CHECK | 1.C5 | NEEDS-HUMAN | verify PASS 2026-10-17 on de011a8+; DB credentials fixed 2026-10-17 (live /api/stats configured:true, deployed #/stats loads); golden-path data + browser visual QA pending |
 
 ### Lane ml — Python training: train/eval with a synthetic smoke test, feature twin + parity, Kaggle converter
 
@@ -318,7 +336,7 @@ Owns: `ml/`, `web/scripts/export-fixtures.ts`
 | [1.C3](plan/tasks/1.C3.md) | TTS live check + pick voice | HUMAN | 1.C1 | HUMAN |  |
 | [1.D1](plan/tasks/1.D1.md) | Record our signs, idle, letters | HUMAN | 1.B4 | HUMAN |  |
 | [3.3](plan/tasks/3.3.md) | Golden path on two laptops | HUMAN | 3.2, 2.B4, 1.D1, 1.C3 | HUMAN |  |
-| [4.1](plan/tasks/4.1.md) | Deploy web app to Vultr | HUMAN | 1.C4, 3.3 | HUMAN |  |
+| [4.1](plan/tasks/4.1.md) | Deploy web app to Vultr | HUMAN | 1.C4, 3.3 | HUMAN | deployed to GitHub Pages + Fly.io instead of Vultr (86df6f7); golden-path run on the deployed URL pending |
 | [4.6](plan/tasks/4.6.md) | Pitch + slides | HUMAN | — | HUMAN |  |
 | [4.7](plan/tasks/4.7.md) | Failure drills | HUMAN | 3.3 | HUMAN |  |
 | [4.8](plan/tasks/4.8.md) | More Kaggle signs (retrain) | HUMAN | 2.B4 | HUMAN |  |
