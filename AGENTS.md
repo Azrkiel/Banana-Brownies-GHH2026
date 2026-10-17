@@ -32,6 +32,9 @@ task done only when they pass (`done <ID>`).
 - "You are the <lane> lane agent": several agents run in parallel, one per lane (`recog`, `call`, `server`, `ml`).
   Use `--lane <lane>` on every `next`/`wait`, touch only that lane's files, and push after every task
   (`plan.md` §1.5).
+- "You are the MANAGER of the <lane> lane" or "you are a subagent of the <lane> manager": follow
+  `plan/managers/README.md`. Managers plan, delegate, and verify. Subagents do one phase, write its handoff, and
+  check it off with `verify.py tick`.
 - "Continue", "keep going", or no task named: loop with `python plan/verify.py next` until it prints
   `NO AGENT TASKS LEFT`. A task that needs a camera, key, GPU, or second laptop becomes `NEEDS-HUMAN`; it is
   not a reason to stop.

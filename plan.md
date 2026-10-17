@@ -127,6 +127,15 @@ pull --rebase, push, repeat. If WAITING, run `python plan/verify.py wait --lane 
 files. Stop only when `next --lane <lane>` prints NO AGENT TASKS LEFT, then give the §1.4 report.
 ```
 
+### 1.6 Lane managers + subagents (optional mode)
+
+Instead of one agent per lane, each lane can run as a **manager** that plans and verifies, plus **subagents** that
+do one phase each. The manager writes `plan/managers/<lane>.md`: notes, then phases that group the lane's tasks.
+Each subagent finishes one phase, writes a handoff to `plan/handoffs/<lane>/<P#>.md` (what it did, successes,
+challenges, next steps, verify output), and checks off its phase with `python plan/verify.py tick --lane <lane>
+<P#>`. That command refuses until the phase's tasks pass and the handoff is complete. Roles, file formats, the
+manager prompt, and the subagent prompt are in [`plan/managers/README.md`](plan/managers/README.md).
+
 ---
 
 ## 2. Status values
