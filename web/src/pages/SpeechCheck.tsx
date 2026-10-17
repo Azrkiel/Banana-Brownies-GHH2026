@@ -112,7 +112,7 @@ export default function SpeechCheck() {
       <header className="speech-check__heading">
         <div>
           <p className="speech-check__eyebrow">SIGNLINE / VOICE TO CAPTIONS</p>
-          <h1>Your voice,<br /><span>in view.</span></h1>
+          <h1>Speech check</h1>
           <p className="speech-check__intro">A little space to try live captions.<br />Speak naturally. Take your time.</p>
         </div>
         <div className="speech-check__environment"><span /> Local microphone check<br /><small>English (US) · Browser recognition</small></div>

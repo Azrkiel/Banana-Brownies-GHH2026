@@ -3,7 +3,6 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { RemoteTrack } from 'livekit-client';
 import { joinCall, type Call as CallT, type CallStatus } from '../lib/call';
 import { CaptionLane } from '../components/CaptionLane';
-import { MoonTrios } from '../components/MoonTrios';
 import { createCaptionHistory } from '../lib/captions';
 import { createSpeechCaptions } from '../lib/speechCaptions';
 import { createCallSpeech, type CallSpeechState } from '../lib/callSpeech';
@@ -62,33 +61,33 @@ export default function Call() {
 
   return (
     <main className="call-page home-page" id="main-content">
-      <div className="home-center">
-      <div className="home-hero">
-        <header className="call-heading">
-          <p className="eyebrow"><span /> A SPACE TO CONNECT</p>
-          <h1>Every conversation<br /><span>starts with you.</span></h1>
-          <p className="intro">See each other. Take your time.<br />Keep the conversation in view.</p>
-          <a className="hero-link" href="#/bench">Make yourself comfortable <Icon name="arrow" /></a>
-        </header>
-        <div className="home-art" aria-hidden="true"><div className="art-orbit art-orbit--one" /><div className="art-orbit art-orbit--two" /><div className="art-disc"><div className="conversation-mark"><span /><span /></div></div><div className="art-caption glass"><Icon name="captions" /><span>A little closer.</span><span className="art-wave"><i /><i /><i /><i /><i /></span></div><div className="art-icon glass"><Icon name="video" /></div><span className="art-star art-star--one">✧</span><span className="art-star art-star--two">✧</span></div>
-      </div>
-      <div className="join-heading"><h2>Your next conversation.</h2><span>Join the same room. Be yourself.</span></div>
-      <form className="join-bar glass" onSubmit={open}>
+      <header className="home-heading">
+        <p className="eyebrow">A SPACE TO CONNECT</p>
+        <h1>A little closer.</h1>
+        <p className="intro">See each other. Keep the words in view.</p>
+      </header>
+      <div className="home-layout">
+      <section className="home-join ui-surface" aria-labelledby="join-title">
+      <div className="join-heading"><span className="icon-well"><Icon name="video" /></span><h2 id="join-title">Join a conversation</h2><p>Use the same room name as the person you’re joining.</p></div>
+      <form className="join-bar" onSubmit={open}>
         <label>Your name<input autoComplete="given-name" placeholder="e.g. Kev" value={name} maxLength={40} required onChange={event => setName(event.target.value)} /></label>
         <label>Room name<input value={room} pattern="[a-z0-9-]{3,32}" title="3–32 lowercase letters, numbers or hyphens" required onChange={event => setRoom(event.target.value)} /></label>
         <label>I’m joining as<select value={role} onChange={event => setRole(event.target.value as Role)}><option value="signer">Signer</option><option value="hearing">Hearing participant</option></select></label>
         <Button variant="primary" type="submit" disabled={!name.trim()}>Join room <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 13 13 3M3 3h10v10" /></svg></Button>
       </form>
       {error && <div className="error-banner" role="alert">{error}</div>}
-      <p className="home-note"><Icon name="shield" /> Camera access starts after you join. Opens in a new tab.</p>
-      <div className="home-features">
-        <div><span className="icon-well"><Icon name="video" /></span><h3>Face to face.</h3><p>A shared space for a two-person video conversation.</p></div>
-        <div><span className="icon-well"><Icon name="captions" /></span><h3>Words, in view.</h3><p>Type captions, or opt in to browser speech captions.</p></div>
-        <div><span className="icon-well"><Icon name="shield" /></span><h3>At your pace.</h3><p>Your camera, your microphone, and your choice to share.</p></div>
+      <p className="home-note"><Icon name="shield" /><span>Camera access starts after you join.<br />Your conversation opens in a new tab.</span></p>
+      </section>
+      <aside className="home-guide" aria-labelledby="home-guide-title">
+        <div className="home-visual" aria-hidden="true"><div className="home-visual__tile"><span /></div><div className="home-visual__tile"><span /></div><div className="home-visual__mark"><Icon name="captions" /></div></div>
+        <div className="home-guide__content"><p className="eyebrow">YOUR CONVERSATION, YOUR WAY</p><h2 id="home-guide-title">Room for both of you.</h2>
+          <div className="home-guide__row"><Icon name="video" /><div><h3>Face to face</h3><p>Two people, one shared room. The signer’s microphone stays off.</p></div></div>
+          <div className="home-guide__row"><Icon name="captions" /><div><h3>Words that stay in view</h3><p>Type captions, or let the hearing participant opt in to speech captions.</p></div></div>
+          <a className="hero-link" href="#/bench">Check your camera <Icon name="arrow" /></a>
+        </div>
+      </aside>
       </div>
-      <div className="home-constellation"><MoonTrios /><span>HACK TO THE MOON · MADE FOR CONNECTION</span></div>
-      <p className="home-sketch-note">Sign sketches are illustrative. Learn exact forms from Lifeprint or a Deaf signer.</p>
-      </div>
+      <footer className="home-footer"><span>At your pace. In your words.</span><span>Built for a two-person conversation.</span></footer>
     </main>
   );
 }
@@ -362,7 +361,7 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
             <div className="local-tile"><video ref={local} autoPlay muted playsInline className="mirror local-video" aria-label="Your camera preview" />{!busy && <span className="camera-off" aria-hidden="true">Camera off</span>}<span className="video-label">{inRoom ? name : 'You'} <span>· {role === 'signer' ? 'Signer' : 'Hearing'}</span></span></div>
             {remoteVisible && <span className="peer-label">{peer ?? 'Other participant'}</span>}
           </div>
-          <div className="call-toolbar"><p><span className="privacy-dot" />{status === 'joining' ? 'Waiting for camera access and call connection' : inRoom ? role === 'signer' ? 'Camera on · microphone off' : muted ? 'Call microphone muted · speech recognition paused' : 'Camera and call microphone enabled' : 'Camera and microphone stay off until you join.'}</p><div>{role === 'hearing' && inRoom && <Button disabled={!canSend || muting} onClick={() => void toggleMicrophone()}>{muting ? 'Changing microphone…' : muted ? 'Unmute microphone' : 'Mute microphone'}</Button>}{status === 'audio-blocked' && <Button onClick={enableAudio}>Enable audio</Button>}{busy ? <Button variant="danger" onClick={leave}>{status === 'joining' ? 'Cancel' : 'Leave room'}</Button> : <Button variant="primary" onClick={() => void join()}>Rejoin</Button>}</div></div>
+          <div className="call-toolbar"><p><span className="privacy-dot" />{status === 'joining' ? 'Waiting for camera access and call connection' : inRoom ? role === 'signer' ? 'Camera on · microphone off' : muted ? 'Call microphone muted · speech recognition paused' : 'Camera and call microphone enabled' : 'Camera and microphone stay off until you join.'}</p><div className="glass">{role === 'hearing' && inRoom && <Button disabled={!canSend || muting} onClick={() => void toggleMicrophone()}>{muting ? 'Changing microphone…' : muted ? 'Unmute microphone' : 'Mute microphone'}</Button>}{status === 'audio-blocked' && <Button onClick={enableAudio}>Enable audio</Button>}{busy ? <Button variant="danger" onClick={leave}>{status === 'joining' ? 'Cancel' : 'Leave room'}</Button> : <Button variant="primary" onClick={() => void join()}>Rejoin</Button>}</div></div>
           {role === 'hearing' && <section className="call-speech" aria-labelledby="call-speech-title">
             <div className="call-speech__heading"><h2 id="call-speech-title">Speech captions</h2><span role="status">{speechLabels[speechState]}</span></div>
             <label><input type="checkbox" checked={consented} onChange={event => { setConsented(event.target.checked); speech.current?.consent(event.target.checked); }} /><span>I agree to send microphone audio to my browser’s speech service and share the recognized text with this room.</span></label>

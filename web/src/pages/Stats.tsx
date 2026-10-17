@@ -18,7 +18,7 @@ export default function Stats() {
     const id = setInterval(load, 5000);
     return () => clearInterval(id);
   }, []);
-  const heading = <PageHeader eyebrow="SIGNLINE / INSIGHTS" title="The conversation, at a glance."
+  const heading = <PageHeader eyebrow="SIGNLINE / INSIGHTS" title="Conversation insights"
     description="A quiet look at pipeline performance over the last 15 minutes. Live data refreshes every five seconds."
     accessory={<Badge tone={s?.configured && !err ? 'positive' : 'neutral'}>{s?.configured && !err ? 'Live stats' : 'Awaiting data'}</Badge>} />;
   if (err || !s || !s.configured) return <main className="stats" id="main-content">{heading}<Surface className="state-panel" aria-labelledby="stats-state-title"><span className="icon-well"><Icon name="chart" /></span><h2 id="stats-state-title">{err ? 'A little interruption.' : !s ? 'Gathering the details.' : 'A space for your insights.'}</h2><p role={err ? 'alert' : 'status'}>{err || (!s ? 'Loading pipeline stats…' : 'Database not configured. Your pipeline insights will appear here once the backend database is connected.')}</p><a className="ui-button ui-button--secondary" href="#/">Back to conversation <Icon name="arrow" /></a></Surface></main>;

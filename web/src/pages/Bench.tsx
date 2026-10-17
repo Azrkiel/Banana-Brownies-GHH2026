@@ -22,7 +22,7 @@ export default function Bench() {
   const { video, ready, error } = useCameraTracker(enabled, withFace, onFrame);
   return (
     <main className="studio-page" id="main-content">
-      <PageHeader eyebrow="SIGNLINE / CAMERA CHECK" title="Find your good side."
+      <PageHeader eyebrow="SIGNLINE / CAMERA CHECK" title="Camera check"
         description="Check hand and body tracking before a conversation. Nothing is recorded or uploaded."
         accessory={<Badge tone={ready ? 'positive' : 'neutral'}>{ready ? 'Camera ready' : 'Camera standby'}</Badge>} />
       <div className="studio-layout">

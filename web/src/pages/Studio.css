@@ -1,8 +1,40 @@
-.studio-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 1.5rem; align-items: start; }.studio-sidebar { display: grid; gap: 1.5rem; min-width: 0; }.studio-sidebar .icon-well { margin-bottom: 1.5rem; }.studio-sidebar h2 { font-size: 1.25rem; }.studio-sidebar .field { margin: 1.25rem 0; }.studio-sidebar .check-field { margin: 1.25rem 0; }.studio-sidebar .ui-button { width: 100%; }.studio-sidebar .note { font-size: var(--text-xs); margin: 1rem 0 0; }.studio-sidebar > .ui-surface > .note + .check-field { margin-top: 1.5rem; }
-.camera-stage { position: relative; min-height: 430px; border-radius: var(--radius-panel); background: radial-gradient(ellipse at 65% 30%, #28446c, #142239 70%); border: 1px solid #ffffff6b; color: #fff; overflow: hidden; box-shadow: 0 16px 35px -20px #122b575e; }.camera-stage > video { width: 100%; height: 100%; min-height: 430px; object-fit: cover; }.camera-stage__placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center; }.camera-stage__icon { width: 70px; height: 70px; display: grid; place-items: center; border-radius: 24px; background: #ffffff12; border: 1px solid #ffffff2e; box-shadow: inset 0 1px 0 #ffffff2e; margin-bottom: 1.5rem; }.camera-stage__icon .ui-icon { width: 30px; height: 30px; color: #c2dcff; }.camera-stage__placeholder h2 { font-size: 1.5rem; font-weight: 500; }.camera-stage__placeholder p { font-size: var(--text-sm); color: #bdcee6; max-width: 30ch; }.camera-stage__label { display: flex; align-items: center; gap: .5rem; position: absolute; bottom: 1.25rem; left: 1.25rem; padding: .5rem .75rem; border: 1px solid #ffffff30; border-radius: var(--radius-pill); background: #142239de; font-size: var(--text-xs); color: #d2e1f6; }
-.studio-target { font-size: 3rem; font-weight: 600; letter-spacing: -.045em; color: var(--color-accent); margin: 1.5rem 0; line-height: 1; }.studio-target > span { font-size: var(--text-sm); font-weight: 400; color: var(--color-muted); letter-spacing: 0; }.studio-status { padding: 1rem; border-radius: 15px; background: #edf2fa; color: var(--color-muted); font-size: var(--text-xs); line-height: 1.8; overflow-wrap: anywhere; margin-bottom: 0; }.studio-privacy { display: flex; align-items: center; gap: .5rem; font-size: var(--text-xs); color: var(--color-muted); margin-top: 1.5rem; }.studio-privacy .ui-icon { width: 16px; height: 16px; }
-.recorder-consent { display: flex; align-items: flex-start; gap: 1rem; padding: 1.5rem 2rem; border-radius: 24px; margin-bottom: 1.5rem; }.recorder-consent > .ui-icon { color: var(--color-accent); margin-top: .1rem; }.recorder-consent h2 { font-size: 1.0625rem; margin-bottom: .5rem; }.recorder-consent p { color: var(--color-muted); font-size: var(--text-sm); margin-bottom: 1rem; }.recorder-consent .check-field { font-size: var(--text-sm); color: var(--color-ink); }.recorder-workspace { min-width: 0; }.recorder-camera-controls { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 0 1.5rem; }.recorder-camera-controls > p { margin: 0; font-size: var(--text-xs); color: var(--color-muted); overflow-wrap: anywhere; }.recorder-camera-controls > .ui-button { flex-shrink: 0; }
-.clip-counts { display: flex; flex-wrap: wrap; gap: .5rem; }.clip-counts > span { display: inline-flex; align-items: center; gap: .75rem; padding: .5rem .75rem; border: 1px solid var(--color-border); border-radius: 12px; background: #f6f8fd; font-size: .6875rem; }.clip-counts b { font-weight: 600; }.clip-counts > span > span { color: var(--color-accent); min-width: 1ch; }.clip-library .button-row { margin-top: 1.5rem; }.clip-library .studio-status { margin-top: 1.25rem; }.clip-library > .note { font-size: var(--text-xs); margin: 1.25rem 0 0; }
-@media (max-width: 900px) { .studio-layout { grid-template-columns: minmax(0, 1fr) 290px; }.studio-sidebar .ui-surface { padding: 1.5rem; } }
-@media (max-width: 760px) { .studio-layout { grid-template-columns: 1fr; }.studio-sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); }.recorder-consent { padding: 1.25rem; }.camera-stage, .camera-stage > video { min-height: 360px; }.recorder-layout > .studio-sidebar { order: -1; } }
-@media (max-width: 560px) { .studio-sidebar { grid-template-columns: 1fr; }.camera-stage, .camera-stage > video { min-height: 320px; border-radius: 22px; }.camera-stage__placeholder h2 { font-size: 1.3rem; }.recorder-camera-controls { flex-wrap: wrap; }.recorder-consent { gap: .75rem; }.recorder-consent > .ui-icon { width: 18px; }.clip-library .button-row { align-items: stretch; flex-direction: column; }.studio-privacy { align-items: flex-start; } }
+.studio-layout { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 1.5rem; align-items: start; }
+.studio-sidebar { display: grid; gap: 1.5rem; min-width: 0; }
+.studio-sidebar .icon-well { margin-bottom: 1.5rem; }
+.studio-sidebar h2 { font-size: 1.25rem; }
+.studio-sidebar .field, .studio-sidebar .check-field { margin: 1.25rem 0; }
+.studio-sidebar .ui-button { width: 100%; }
+.studio-sidebar .note { font-size: var(--text-sm); margin: 1rem 0 0; }
+.studio-sidebar > .ui-surface > .note + .check-field { margin-top: 1.5rem; }
+.camera-stage { position: relative; min-height: 430px; border-radius: var(--radius-panel); background: #171c24; border: 1px solid #ffffff20; color: #fff; overflow: hidden; }
+.camera-stage > video { width: 100%; height: 100%; min-height: 430px; object-fit: cover; }
+.camera-stage__placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center; }
+.camera-stage__icon { width: 64px; height: 64px; display: grid; place-items: center; border-radius: 22px; background: #ffffff0d; border: 1px solid #ffffff26; margin-bottom: 1.5rem; }
+.camera-stage__icon .ui-icon { width: 30px; height: 30px; color: #d1d7df; }
+.camera-stage__placeholder h2 { font-size: 1.5rem; font-weight: 500; }
+.camera-stage__placeholder p { font-size: var(--text-sm); color: #bdc5d2; max-width: 30ch; }
+.camera-stage__label { display: flex; align-items: center; gap: .5rem; position: absolute; bottom: 1.25rem; left: 1.25rem; padding: .5rem .75rem; border: 1px solid #ffffff30; border-radius: var(--radius-pill); background: #171c24ed; font-size: var(--text-xs); color: #e2e6ee; }
+.studio-target { font-size: 2.5rem; font-weight: 600; letter-spacing: -.035em; color: var(--color-ink); margin: 1.5rem 0; line-height: 1; }
+.studio-target > span { font-size: var(--text-sm); font-weight: 400; color: var(--color-muted); letter-spacing: 0; }
+.studio-status { padding: 1rem; border-radius: var(--radius-control); background: var(--color-inset); color: var(--color-muted); font-size: var(--text-xs); line-height: 1.8; overflow-wrap: anywhere; margin-bottom: 0; }
+.studio-privacy { display: flex; align-items: center; gap: .5rem; font-size: var(--text-xs); color: var(--color-muted); margin-top: 1.5rem; }
+.studio-privacy .ui-icon { width: 16px; height: 16px; }
+.recorder-consent { display: flex; align-items: flex-start; gap: 1rem; padding: 1.5rem 2rem; margin-bottom: 1.5rem; }
+.recorder-consent > .ui-icon { color: var(--color-muted); margin-top: .1rem; }
+.recorder-consent h2 { font-size: 1.0625rem; margin-bottom: .5rem; }
+.recorder-consent p { color: var(--color-muted); font-size: var(--text-sm); margin-bottom: 1rem; }
+.recorder-consent .check-field { font-size: var(--text-sm); color: var(--color-ink); }
+.recorder-workspace { min-width: 0; }
+.recorder-camera-controls { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 0 1.5rem; }
+.recorder-camera-controls > p { margin: 0; font-size: var(--text-xs); color: var(--color-muted); overflow-wrap: anywhere; }
+.recorder-camera-controls > .ui-button { flex-shrink: 0; }
+.clip-counts { display: flex; flex-wrap: wrap; gap: .5rem; }
+.clip-counts > span { display: inline-flex; align-items: center; gap: .75rem; padding: .5rem .75rem; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-inset); font-size: .75rem; }
+.clip-counts b { font-weight: 600; }
+.clip-counts > span > span { color: var(--color-muted); min-width: 1ch; }
+.clip-library .button-row { margin-top: 1.5rem; }
+.clip-library .studio-status { margin-top: 1.25rem; }
+.clip-library > .note { font-size: var(--text-xs); margin: 1.25rem 0 0; }
+@media (max-width: 900px) { .studio-layout { grid-template-columns: minmax(0, 1fr) 290px; } .studio-sidebar .ui-surface { padding: 1.5rem; } }
+@media (max-width: 760px) { .studio-layout { grid-template-columns: 1fr; } .studio-sidebar { grid-template-columns: repeat(2, minmax(0, 1fr)); } .recorder-consent { padding: 1.25rem; } .camera-stage, .camera-stage > video { min-height: 360px; } .recorder-layout > .studio-sidebar { order: -1; } }
+@media (max-width: 560px) { .studio-sidebar { grid-template-columns: 1fr; } .camera-stage, .camera-stage > video { min-height: 320px; border-radius: 24px; } .camera-stage__placeholder h2 { font-size: 1.3rem; } .recorder-camera-controls { flex-wrap: wrap; } .recorder-consent { gap: .75rem; } .recorder-consent > .ui-icon { width: 18px; } .clip-library .button-row { align-items: stretch; flex-direction: column; } .studio-privacy { align-items: flex-start; } }

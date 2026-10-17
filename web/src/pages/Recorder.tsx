@@ -88,10 +88,10 @@ export default function Recorder() {
 
   return (
     <main className="studio-page" id="main-content">
-      <PageHeader eyebrow="SIGNLINE / RECORDER" title="A little motion. A little meaning."
+      <PageHeader eyebrow="SIGNLINE / RECORDER" title="Recorder"
         description="Capture hand and body landmarks to help train this project’s model. Verify sign forms with the team before recording."
         accessory={<Badge tone={busy ? 'warning' : ready ? 'positive' : 'neutral'}>{busy ? 'Recording in progress' : ready ? 'Camera ready' : 'Local capture'}</Badge>} />
-      <div className="recorder-consent glass"><Icon name="shield" /><div><h2>Your landmarks. Your choice.</h2><p>We store coordinates only, never video. Recordings train this project’s model and are not published.</p>
+      <div className="recorder-consent ui-surface"><Icon name="shield" /><div><h2>Your landmarks. Your choice.</h2><p>We store coordinates only, never video. Recordings train this project’s model and are not published.</p>
         <label className="check-field"><input type="checkbox" checked={consent} onChange={(event) => {
           stopRecording(); setCamera(false); setConsent(event.target.checked);
         }} /><span>I consent to recording my landmarks for this project.</span></label>
