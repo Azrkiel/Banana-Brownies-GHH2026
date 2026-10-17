@@ -9,6 +9,8 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
+    "dataset": "tsx scripts/build-dataset.ts",
+    "fixtures": "tsx scripts/export-fixtures.ts",
     "setup:assets": "python3 scripts/setup_assets.py"
   },
   "dependencies": {

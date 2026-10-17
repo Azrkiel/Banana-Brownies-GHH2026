@@ -1,0 +1,7 @@
+{
+  "gislr": ["hello", "bye", "thankyou", "please", "yes", "no", "hungry", "pizza", "water", "where", "go", "now", "later", "wait", "tomorrow", "store"],
+  "own": ["ME", "YOU", "NAME", "WHAT"],
+  "idle": "_idle",
+  "letters": ["K", "E", "V"],
+  "wh": ["WHAT", "WHERE", "WHO", "WHY", "HOW"]
+}

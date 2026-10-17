@@ -1,15 +1,10 @@
-// Single source of truth. Team verification against Lifeprint/Handspeak is pending.
-// Add verified form descriptions before collecting recordings.
-export const IDLE = '_idle'
-export const SIGNS_TIER1 = [
-  'HELLO', 'NICE', 'MEET', 'YOU', 'ME', 'MY', 'NAME', 'WHAT',
-  'DEAF', 'HEARING', 'YES', 'NO', 'PLEASE', 'SLOW', 'AGAIN', 'THANK-YOU',
-] as const
-export const SIGNS_TIER2 = [
-  'UNDERSTAND', 'HELP', 'WHERE', 'WHO', 'HOW', 'LEARN', 'SIGN', 'GO',
-  'TOMORROW', 'STORE', 'BYE',
-] as const
-// Default demo name: LIV. Confirm with the team before recording.
-export const LETTERS = ['L', 'I', 'V', 'K', 'O', 'F', 'Y', 'B', 'C', 'D'] as const
-export const WH_SIGNS = new Set(['WHAT', 'WHERE', 'WHO', 'HOW'])
-export const RECORD_LABELS: string[] = [...SIGNS_TIER1, IDLE]
+// Single source of truth for labels: vocab.json (Python training reads the same file).
+import vocab from './vocab.json';
+
+export const IDLE: string = vocab.idle;                                  // '_idle'
+export const GISLR_SIGNS: string[] = vocab.gislr.map((s) => s.toUpperCase()); // from the Kaggle dataset, no recording needed
+export const OWN_SIGNS: string[] = vocab.own;                            // not in the Kaggle set: we record these
+export const DEMO_SIGNS: string[] = [...GISLR_SIGNS, ...OWN_SIGNS];
+export const LETTERS: string[] = vocab.letters;                          // spell mode knows only these
+export const WH_SIGNS = new Set<string>(vocab.wh);
+export const RECORD_LABELS: string[] = [...OWN_SIGNS, IDLE, ...GISLR_SIGNS]; // own + idle required; GISLR signs optional (adaptation)

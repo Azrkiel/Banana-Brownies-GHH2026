@@ -52,7 +52,7 @@ Keep this checklist in sync when a task changes; only `verify.py done <ID>` may 
 
 **Recognition — 9 core tasks, 1 stretch:**
 
-- [ ] [0.4](plan/tasks/0.4.md): shared `vocab.json`, v2 exports, TypeScript JSON support, dataset/fixture scripts.
+- [x] [0.4](plan/tasks/0.4.md): shared `vocab.json`, v2 exports, TypeScript JSON support, dataset/fixture scripts.
 - [ ] [1.0](plan/tasks/1.0.md): v2 shared types, including the ASL control message and updated Session shape.
 - [ ] [2.B1](plan/tasks/2.B1.md): classifier, ONNX loader, and kNN fallback.
 - [ ] [1.B2](plan/tasks/1.B2.md): canonical handedness and body-centered features.
@@ -257,7 +257,7 @@ Owns: `web/src/vocab.*`, `web/src/lib/{types,features,segmenter,landmarks,useCam
 
 | ID | Task | Owner | Depends on | Status | Evidence |
 |---|---|---|---|---|---|
-| [0.4](plan/tasks/0.4.md) | Repo scaffold + vocabulary v2 | AGENT | — | PARTIAL | vocab.json missing; vocab.ts is v1 |
+| [0.4](plan/tasks/0.4.md) | Repo scaffold + vocabulary v2 | AGENT | — | DONE | verify PASS 2026-10-17 on 0a3d55f+ |
 | [1.0](plan/tasks/1.0.md) | Shared types v2 | AGENT | 0.4 | PARTIAL | no asl Ctrl; extra Session.leftHanded |
 | [2.B1](plan/tasks/2.B1.md) | Classifier, ONNX loader, kNN | AGENT | 0.4 | TODO |  |
 | [1.B2](plan/tasks/1.B2.md) | Features with canonical handedness | AGENT | 1.0 | PARTIAL | canonicalize/bodyCenterX missing |
