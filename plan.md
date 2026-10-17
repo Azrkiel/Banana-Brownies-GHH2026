@@ -32,16 +32,14 @@ No task status was changed by this audit, and no live provider, camera, GPU, dat
 
 ### Deployment — live since October 17, 2026 (`86df6f7`)
 
-The Vultr VM was never created. Hosting is now **GitHub Pages + Fly.io**, replacing the VM plan in 1.C4/4.1:
+The Vultr VM was never created. Hosting is **Fly.io only**, replacing the VM plan in 1.C4/4.1 (GitHub Pages was
+tried and removed on October 17):
 
-- **Web:** https://azrkiel.github.io/Banana-Brownies-GHH2026/ — `.github/workflows/pages.yml` builds `web/` on every
-  push to `main` (Pages source: GitHub Actions). Repo variable `VITE_API_BASE` points the build at the API.
-- **API + web on Fly:** https://signline-api.fly.dev — Fly app `signline-api` (root `Dockerfile`, `fly.toml`) serves
-  the API and its own build of the web app on one origin (`WEB_DIR`). Keys are Fly secrets, not files;
-  `CORS_ORIGINS=https://azrkiel.github.io` lets the Pages site call it. The machine sleeps when idle, so the first
-  request takes a few seconds. Redeploy from the repo root: `fly deploy --remote-only` (add `--depot=false` behind
-  TLS-intercepting antivirus). Pages redeploys on push; Fly only when you run `fly deploy`. After changing a key in `server/.env`, also run
-  `fly secrets set NAME=value -a signline-api`.
+- **App (web + API):** https://signline-api.fly.dev — Fly app `signline-api` (root `Dockerfile`, `fly.toml`) serves
+  the API and its own build of the web app on one origin (`WEB_DIR`). Keys are Fly secrets, not files. The machine
+  sleeps when idle, so the first request takes a few seconds. Pushing does **not** redeploy: run
+  `fly deploy --remote-only` from the repo root (add `--depot=false` behind TLS-intercepting antivirus). After
+  changing a key in `server/.env`, also run `fly secrets set NAME=value -a signline-api`.
 - **Local fallback** still works: `server` on port 8000 plus `npm --prefix web run dev`.
 
 ### Current to-do list — coding
@@ -120,8 +118,8 @@ Human-owned tasks, in useful working order:
 - [ ] **2.B4 human check:** run real training/evaluation on the MSI, publish model artifacts, and record held-out accuracy.
 - [ ] **3.3:** rehearse the full golden path on two laptops; retain a recoverable `golden-path` tag when proven.
 - [ ] **4.1 / 4.6 / 4.7 / 5:** deploy the web app or rehearse the local fallback, prepare pitch/slides and a backup
-  video, run failure drills, then freeze, rehearse, and submit by the deadline. *4.1: the app is deployed (GitHub
-  Pages + Fly.io, see Deployment above); its "Done when" still needs one golden-path run on the deployed URL.*
+  video, run failure drills, then freeze, rehearse, and submit by the deadline. *4.1: the app is deployed (Fly.io,
+  see Deployment above); its "Done when" still needs one golden-path run on the deployed URL.*
 - [ ] **4.8:** add more Kaggle signs only if time permits (stretch). **6:** post-event work stays deferred.
 
 ### Status rules
@@ -337,7 +335,7 @@ Owns: `ml/`, `web/scripts/export-fixtures.ts`
 | [1.C3](plan/tasks/1.C3.md) | TTS live check + pick voice | HUMAN | 1.C1 | HUMAN |  |
 | [1.D1](plan/tasks/1.D1.md) | Record our signs, idle, letters | HUMAN | 1.B4 | HUMAN |  |
 | [3.3](plan/tasks/3.3.md) | Golden path on two laptops | HUMAN | 3.2, 2.B4, 1.D1, 1.C3 | HUMAN |  |
-| [4.1](plan/tasks/4.1.md) | Deploy web app to Vultr | HUMAN | 1.C4, 3.3 | HUMAN | deployed to GitHub Pages + Fly.io instead of Vultr (86df6f7); golden-path run on the deployed URL pending |
+| [4.1](plan/tasks/4.1.md) | Deploy web app to Vultr | HUMAN | 1.C4, 3.3 | HUMAN | deployed to Fly.io (https://signline-api.fly.dev) instead of Vultr; golden-path run on the deployed URL pending |
 | [4.6](plan/tasks/4.6.md) | Pitch + slides | HUMAN | — | HUMAN |  |
 | [4.7](plan/tasks/4.7.md) | Failure drills | HUMAN | 3.3 | HUMAN |  |
 | [4.8](plan/tasks/4.8.md) | More Kaggle signs (retrain) | HUMAN | 2.B4 | HUMAN |  |
