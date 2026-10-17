@@ -37,7 +37,7 @@ tests, build, lint and pip check. No ledger status is promoted by this documenta
 
 The hearing participant can explicitly consent and start captions inside the room. Interim/final captions use
 ordered, sender-scoped messages; disabling, muting, reconnecting and leaving clean up recognition and drafts.
-The standalone development check remains available at `#/speech-check`, with local launch scripts.
+The standalone speech check is at `#/speech-check` (linked in the nav; live on Fly too).
 See the separate [voice-to-captions sub-plan](docs/subplans/voice-to-captions/README.md) and
 [integration evidence](docs/subplans/voice-to-captions/phase-5-handoff.md); its six phases stay in that sub-plan.
 
