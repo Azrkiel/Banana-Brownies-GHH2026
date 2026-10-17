@@ -5,6 +5,7 @@ Usage (from the repo root). Add `--lane <name>` to next/wait to stay inside one 
   python plan/verify.py next             which AGENT task to do now (first eligible ledger row)
   python plan/verify.py wait [minutes]   git pull every 60 s until a task is eligible (default 30 min)
   python plan/verify.py lanes            one line per lane: progress and what it is doing/waiting on
+  python plan/verify.py preflight        are this checkout's dependencies installed? (environment, not tasks)
   python plan/verify.py check 1.B2 ...   run those tasks' "Done when" blocks; exit 1 if any fails
   python plan/verify.py done 1.B2        run the checks; on PASS set the ledger row to DONE/NEEDS-HUMAN
   python plan/verify.py ledger           re-run checks for every DONE/NEEDS-HUMAN row; exit 1 on any FAIL
@@ -181,6 +182,23 @@ def wait_for(lane: str | None, minutes: int) -> int:
         time.sleep(60)
 
 
+def preflight(lane: str | None) -> int:
+    """Environment only (not task status): web deps everywhere, server deps for the server lane."""
+    ok = (ROOT / "web" / "node_modules").is_dir()
+    print(("ok  " if ok else "MISSING ") + "web deps        -> fix: npm --prefix web ci")
+    if lane in (None, "server"):
+        p = subprocess.run([venv_python("server/.venv"), "-c",
+                            "import fastapi, livekit.api, google.genai, asyncpg, httpx, jwt, dotenv, pytest"],
+                           capture_output=True)
+        print(("ok  " if p.returncode == 0 else "MISSING ") + "server deps     -> fix: README 'Development setup' "
+              "(on Windows drop the uvloop line until task 0.5 lands)")
+        ok = ok and p.returncode == 0
+    if lane == "ml":
+        print("info ml deps are created by the ml lane itself (card 1.B5 'Preflight: ML environment')")
+    print("PREFLIGHT OK" if ok else "PREFLIGHT FAILED: install the missing deps, then rerun")
+    return 0 if ok else 1
+
+
 def lanes_report(rows: list[dict]) -> None:
     names = [l for l in dict.fromkeys(r["lane"] for r in rows) if l != "human"]
     for name in names:
@@ -243,6 +261,8 @@ def main() -> None:
         sys.exit(wait_for(lane, int(args[0]) if args else 30))
     elif cmd == "lanes":
         lanes_report(rows)
+    elif cmd == "preflight":
+        sys.exit(preflight(lane))
     elif cmd == "check":
         ok = [run_check(t) for t in args]
         sys.exit(0 if ok and all(ok) else 1)

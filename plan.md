@@ -55,9 +55,8 @@ prevent it:
 
 ### 1.2 The loop
 ```
-0. Preflight (once per session):  python plan/verify.py check 0.5     # server venv usable
-                                  (cd web && npx vitest run)           # web deps usable
-   If either fails, set up the environment (README "Development setup"), then rerun. Never skip preflight.
+0. Preflight (once per session):  python plan/verify.py preflight [--lane X]   # deps installed?
+   If it fails, install what it names (README "Development setup"), then rerun. Never skip preflight.
 1. python plan/verify.py next [--lane X]   -> prints NEXT: <ID>
    If it prints WAITING (your next task depends on another lane): python plan/verify.py wait --lane X
    (pulls every 60 s for up to 30 min). Still WAITING after that? End the session with the §1.4 report.
