@@ -50,11 +50,15 @@ opening the camera pages.
 
 ## Run and check
 
-The root URL opens the Moon/Earth [welcome screen](docs/intro.md). Choose **Begin**
+The root URL opens the editorial [welcome screen](docs/intro.md). Choose **Begin**
 or **Skip intro** to reach the conversation options. Shared `#/room?...` links and
-the camera, recorder, speech, stats, and design-kit routes still open directly.
-The welcome screen supports pausing the stars and the system's reduced-motion
-preference; it does not request camera or microphone access.
+the camera, recorder, speech, stats, and design-kit routes open directly.
+
+The interface follows the supplied Anthropic design reference: warm ivory paper,
+serif reading text, flat navigation, and a single clay primary action. See
+[design system](docs/design-system.md) for source tokens, accessible adaptations,
+and the interactive `#/design-kit` page. The reference is light-only; the former
+appearance switch and animated glass presentation have been replaced.
 
 ```sh
 cd web

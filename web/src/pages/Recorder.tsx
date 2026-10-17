@@ -107,7 +107,7 @@ export default function Recorder() {
           <Surface className="clip-library" aria-labelledby="clip-library-title"><div className="panel-heading"><h2 id="clip-library-title">Your session</h2><Badge>{clips.length} clips</Badge></div>
             <div className="clip-counts" aria-label="Label counts">{labels.map(value => <span key={value}><b>{value}</b><span>{count(value)}</span></span>)}</div>
             <p className="studio-status" role="status">{message || 'Your captured landmarks will collect here.'}</p>
-            <div className="button-row"><Button disabled={busy || !clips.length} onClick={() => setClips((current) => current.slice(0, -1))}>Undo last</Button><Button variant="primary" disabled={busy || !clips.length || !signer} onClick={() => download({ version: 1, signer, leftHanded, recordedAt: new Date().toISOString(), clips })}><Icon name="download" />Download session ({clips.length} clips)</Button></div>
+            <div className="button-row"><Button disabled={busy || !clips.length} onClick={() => setClips((current) => current.slice(0, -1))}>Undo last</Button><Button disabled={busy || !clips.length || !signer} onClick={() => download({ version: 1, signer, leftHanded, recordedAt: new Date().toISOString(), clips })}><Icon name="download" />Download session ({clips.length} clips)</Button></div>
             <p className="note">Download your session before leaving. Keep recordings in the ignored data/raw folder.</p>
           </Surface>
         </div>

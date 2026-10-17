@@ -1,34 +1,36 @@
 @import './design-system.css';
 
 * { box-sizing: border-box; }
-:root { font-family: var(--font-sans); color: var(--color-ink); background: var(--color-canvas); font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; font-size: 16px; line-height: 1.6; font-weight: 400; }
-body { margin: 0; min-width: 320px; min-height: 100vh; }
-::selection { background: var(--color-accent); color: var(--color-on-accent); }
-a { color: var(--color-accent); text-underline-offset: 4px; }
-button, input, select, textarea { font: inherit; }
+:root { font-family: var(--font-serif); color: var(--color-ink); background: var(--color-canvas); font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; font-size: 16px; line-height: var(--leading-body); font-weight: 400; }
+body { margin: 0; min-width: 320px; min-height: 100vh; font-size: var(--text-body); }
+::selection { background: var(--color-inset); color: var(--color-ink); }
+a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+a:hover { text-decoration-thickness: 2px; }
+button, input, select, textarea { font: inherit; font-family: var(--font-sans); }
 button, a, input, select { -webkit-tap-highlight-color: transparent; }
-:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 4px; }
+:focus-visible { outline: 2px solid var(--color-focus); outline-offset: 4px; }
 h1, h2, h3, p { margin-top: 0; }
-h1, h2, h3 { line-height: 1.2; letter-spacing: -.025em; }
-h1 { font-size: var(--text-title); font-weight: 650; }
-h2 { font-size: 1.375rem; font-weight: 600; }
-h3 { font-size: 1.0625rem; font-weight: 600; }
-input:not([type='checkbox']), select, textarea { width: 100%; min-width: 0; min-height: 48px; border: 1px solid var(--color-field-border); border-radius: var(--radius-control); padding: .75rem 1rem; background: var(--color-inset); color: var(--color-ink); font-size: var(--text-sm); font-weight: 400; transition: border-color var(--duration-fast), background var(--duration-fast); }
+h1, h2, h3 { font-weight: 400; line-height: var(--leading-subheading); letter-spacing: var(--tracking-subheading); }
+h1 { font-size: var(--text-title); line-height: var(--leading-heading); }
+h2 { font-size: var(--text-subheading); }
+h3 { font-size: var(--text-body); }
+p { font-size: inherit; }
+label, small, th, td { font-family: var(--font-sans); }
+input:not([type='checkbox']), select, textarea { width: 100%; min-width: 0; min-height: 48px; border: 1px solid var(--color-field-border); border-radius: var(--radius-control); padding: 12px 16px; background: var(--color-surface); color: var(--color-ink); font-size: var(--text-sm); font-weight: 400; line-height: 1.5; transition: border-color var(--duration-fast), background var(--duration-fast); }
 input::placeholder, textarea::placeholder { color: var(--color-muted); opacity: 1; }
-input:not([type='checkbox']):hover, select:hover { border-color: var(--color-muted); }
-input:not([type='checkbox']):focus, select:focus, textarea:focus { border-color: var(--color-accent); background: var(--color-surface); }
-input:disabled, select:disabled { color: var(--color-muted); background: var(--color-inset); cursor: not-allowed; }
-input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--color-accent); cursor: pointer; }
+input:not([type='checkbox']):hover, select:hover { border-color: var(--color-ink); }
+input:not([type='checkbox']):focus, select:focus, textarea:focus { border-color: var(--color-ink); background: var(--color-surface); }
+input:disabled, select:disabled { color: var(--color-muted); background: var(--color-canvas); cursor: not-allowed; }
+input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--color-ink); cursor: pointer; }
 input[type='checkbox']:disabled { cursor: not-allowed; }
-select { padding-right: 2rem; }
+select { padding-right: 32px; }
 video { display: block; max-width: 100%; }
 .mirror { transform: scaleX(-1); }
 table { border-collapse: collapse; width: 100%; font-size: var(--text-sm); text-align: left; }
-th { font-weight: 600; font-size: var(--text-xs); color: var(--color-muted); }
-th, td { padding: 1rem; border-bottom: 1px solid var(--color-border); white-space: nowrap; }
+th { font-weight: 500; font-size: var(--text-xs); color: var(--color-muted); }
+th, td { padding: 16px; border-bottom: 1px solid var(--color-border); white-space: nowrap; }
 tbody tr:last-child td { border-bottom: 0; }
-code { font-family: var(--font-mono); font-size: .85em; background: var(--color-inset); border-radius: 5px; padding: .15em .35em; }
+code { font-family: var(--font-mono); font-size: .8em; background: var(--color-canvas); border-radius: 4px; padding: .15em .35em; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
-  .ui-button:not(:disabled):active { transform: none; }
 }

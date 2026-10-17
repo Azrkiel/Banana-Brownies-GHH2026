@@ -87,7 +87,7 @@ export default function Call() {
         </div>
       </aside>
       </div>
-      <footer className="home-footer"><span>At your pace. In your words.</span><a href="#/welcome">Back to the stars <span aria-hidden="true">↗</span></a></footer>
+      <footer className="home-footer"><span>At your pace. In your words.</span><a href="#/welcome">Back to welcome <Icon name="arrow" /></a></footer>
     </main>
   );
 }
@@ -361,7 +361,7 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
             <div className="local-tile"><video ref={local} autoPlay muted playsInline className="mirror local-video" aria-label="Your camera preview" />{!busy && <span className="camera-off" aria-hidden="true">Camera off</span>}<span className="video-label">{inRoom ? name : 'You'} <span>· {role === 'signer' ? 'Signer' : 'Hearing'}</span></span></div>
             {remoteVisible && <span className="peer-label">{peer ?? 'Other participant'}</span>}
           </div>
-          <div className="call-toolbar"><p><span className="privacy-dot" />{status === 'joining' ? 'Waiting for camera access and call connection' : inRoom ? role === 'signer' ? 'Camera on · microphone off' : muted ? 'Call microphone muted · speech recognition paused' : 'Camera and call microphone enabled' : 'Camera and microphone stay off until you join.'}</p><div className="glass">{role === 'hearing' && inRoom && <Button disabled={!canSend || muting} onClick={() => void toggleMicrophone()}>{muting ? 'Changing microphone…' : muted ? 'Unmute microphone' : 'Mute microphone'}</Button>}{status === 'audio-blocked' && <Button onClick={enableAudio}>Enable audio</Button>}{busy ? <Button variant="danger" onClick={leave}>{status === 'joining' ? 'Cancel' : 'Leave room'}</Button> : <Button variant="primary" onClick={() => void join()}>Rejoin</Button>}</div></div>
+          <div className="call-toolbar"><p><span className="privacy-dot" />{status === 'joining' ? 'Waiting for camera access and call connection' : inRoom ? role === 'signer' ? 'Camera on · microphone off' : muted ? 'Call microphone muted · speech recognition paused' : 'Camera and call microphone enabled' : 'Camera and microphone stay off until you join.'}</p><div className="call-actions">{role === 'hearing' && inRoom && <Button disabled={!canSend || muting} onClick={() => void toggleMicrophone()}>{muting ? 'Changing microphone…' : muted ? 'Unmute microphone' : 'Mute microphone'}</Button>}{status === 'audio-blocked' && <Button onClick={enableAudio}>Enable audio</Button>}{busy ? <Button variant="danger" onClick={leave}>{status === 'joining' ? 'Cancel' : 'Leave room'}</Button> : <Button variant="primary" onClick={() => void join()}>Rejoin</Button>}</div></div>
           {role === 'hearing' && <section className="call-speech" aria-labelledby="call-speech-title">
             <div className="call-speech__heading"><h2 id="call-speech-title">Speech captions</h2><span role="status">{speechLabels[speechState]}</span></div>
             <label><input type="checkbox" checked={consented} onChange={event => { setConsented(event.target.checked); speech.current?.consent(event.target.checked); }} /><span>I agree to send microphone audio to my browser’s speech service and share the recognized text with this room.</span></label>

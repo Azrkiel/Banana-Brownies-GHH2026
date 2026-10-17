@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'glass';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 /** Native semantics, with one shared set of interaction states. */
 export function Button({ variant = 'secondary', size = 'regular', className = '', type = 'button', ...props }:
