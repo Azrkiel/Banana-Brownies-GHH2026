@@ -23,9 +23,17 @@ requiring the user's accounts or real-world participation.
 SignLine is a two-person video call: a signer's ASL (a small vocabulary + fingerspelled names) becomes spoken
 English; the hearing person's speech becomes captions. Built at Girls Hoo Hack 2026 (deadline Sun Oct 18, 17:00 EDT).
 
-**The spec is `plan.md`.** Each task there has the exact code, tests and expected
-output. When asked to do "Task X", read that task, do exactly it, run its checks, show the output, then commit with
-its commit message. Don't start other tasks.
+**Start at `plan.md` and follow its agent protocol (§1).** It holds the ledger, the only record of what is done.
+Each task is a card in `plan/tasks/<ID>.md` with its intent, exact steps, reference code, and a runnable
+"Done when" block. `plan/verify.py` picks the next task (`next`), runs a card's checks (`check <ID>`), and marks a
+task done only when they pass (`done <ID>`).
+
+- "Do Task X": do only that card, then report.
+- "Continue", "keep going", or no task named: loop with `python plan/verify.py next` until it prints
+  `NO AGENT TASKS LEFT`. A task that needs a camera, key, GPU, or second laptop becomes `NEEDS-HUMAN`; it is
+  not a reason to stop.
+- Never say the work is finished unless `verify.py next` prints `NO AGENT TASKS LEFT`. End every session with the
+  report format in `plan.md` §1.4.
 
 ## Layout
 - `web/` Vite + React + TypeScript (browser: MediaPipe, ONNX classifier, LiveKit call, UI)
@@ -36,8 +44,9 @@ its commit message. Don't start other tasks.
 
 ## Commands
 - web: `cd web && npm run dev` · `npm test` · `npx tsc -b` · `npm run fixtures` (after changing features.ts)
-- server: `cd server && source .venv/bin/activate && pytest -q` · `uvicorn app.main:app --reload --port 8000`
-- ml: `pytest ml/tests` · `python ml/gislr_to_features.py ...` · `python ml/train.py pretrain|finetune ...`
+- server: `cd server && .venv/bin/python -m pytest -q` (Windows: `.venv\Scripts\python`) · `uvicorn app.main:app --reload --port 8000`
+- ml: `ml/.venv/bin/python -m pytest ml/tests` · `python ml/gislr_to_features.py ...` · `python ml/train.py pretrain|finetune ...`
+- plan: `python plan/verify.py next` · `check <ID>` · `done <ID>` · `ledger` · `status`
 
 ## Rules
 1. Secrets: keys live only in `server/.env` (gitignored) and the Presage key in the sidecar's environment. Never put
@@ -48,9 +57,9 @@ its commit message. Don't start other tasks.
    after touching either, run `cd web && npm run fixtures` then `pytest ml/tests/test_parity.py`.
 3. TypeScript runs with the Vite template's `erasableSyntaxOnly` and `noUnusedLocals`: no constructor parameter
    properties (`constructor(private x)`), no `enum`, no `namespace`, no unused imports.
-4. Stay in your track's files (see the plan's file map). Small commits; fetch and integrate `origin/main` before every push (see Repository workflow above).
-5. Before saying a task is done: run its tests/commands and paste the result. If something can't be verified
-   (needs a camera, a key, two laptops), say so instead of claiming it works.
+4. Stay inside the card's Files list. Small commits; fetch and integrate `origin/main` before every push (see Repository workflow above).
+5. A task is done only when `python plan/verify.py done <ID>` passes. Paste its output. Never edit a verify block,
+   delete a test, or loosen a check to pass. Live checks (camera, key, two laptops) go in the report as human checks.
 6. No new dependencies unless the task lists them.
 7. Product rules (they are judged): UI text says "Deaf", "hard of hearing", "signer" — never "mute", "deaf-mute",
    "hearing-impaired". Never claim the app "translates ASL" or "replaces interpreters". Auto-speak only voices

@@ -1,5 +1,7 @@
 # SignLine: scope and implementation status
 
+> **Outdated snapshot.** For current status use the ledger in [`plan.md`](../plan.md) §3, not this file.
+
 Status reviewed October 17, 2026 against `plan.md` v2 and the repository at
 `48076b6`, including the latest segmenter commit. This is an implementation
 inventory, not a claim that the complete app works.

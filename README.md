@@ -6,18 +6,9 @@ for the implementation roadmap, consent requirements, and limitations.
 
 ## Current status
 
-Phase 0's development setup is implemented. The home page is now a responsive
-call interface with a room/name/role form, local and remote video, connection
-states, typed captions, audio-unlock, and leave controls (Task 1.A1). Camera Check
-and Recorder remain available in the navigation. Shared types, feature extraction,
-segmenter, tracker, and the backend API routes are implemented.
-
-Call lifecycle/caption unit tests and Chromium checks with synthetic camera input
-pass. The connected UI was checked with a mocked transport; a real LiveKit call
-between two laptops is still unverified. Automatic sign recognition, automatic
-speech captions, and synthesized voice playback are not wired into the call yet.
-No recognition accuracy or real-camera benchmark has been measured. The updated
-plan's canonical-handedness feature contract and Python parity work remain pending.
+The **ledger in [plan.md](plan.md) §3** is the single source of truth for what is done.
+Run `python plan/verify.py status` for counts and `python plan/verify.py next` for the next
+task. Most of the app (ASL switch, recognition, voice, ML training) is not built yet.
 
 ## Development setup
 
