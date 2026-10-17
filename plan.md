@@ -15,10 +15,97 @@ Girls Hoo Hack 2026; the Devpost deadline is **Sun Oct 18, 17:00 EDT**.
 
 ## 0. Read this first: the app is NOT built yet
 
-As of `ee9f61f`, the repo contains the scaffold, the backend routes, feature extraction, the segmenter, the
-Bench/Recorder dev pages, and a first call skeleton. There is **no ASL switch, no recognition, no voice, no ML code,
-and no trained model**.
-Most rows in the ledger (§3) are TODO.
+### Current snapshot — audited October 17, 2026 at `8a89e2f`
+
+The repo contains the scaffold, FastAPI routes, Gemini prompt/evaluation script, database schema, deployment
+templates, stats page, feature extraction, segmenter, Bench/Recorder pages, and a first call skeleton.
+The **server lane's code is complete; its live checks are not**. There is still **no ASL switch, sign classifier,
+call voice output, ML training code, or trained sign model**. The browser vocabulary and shared types are still v1.
+
+The ledger currently has **2 DONE, 7 NEEDS-HUMAN, 4 PARTIAL, 16 TODO, and 12 HUMAN** rows. That means
+**20 coding tasks remain**, plus seven live acceptance checks and twelve human-owned tasks. These counts describe
+this audit; §3 remains the only task-status record. Refresh with `python plan/verify.py status` and `lanes`.
+
+Audit evidence: `preflight` passed; `ledger` rechecked all nine DONE/NEEDS-HUMAN rows and reported
+`ledger consistent`. Checks for 0.4, 1.0, 1.B2, 1.B4, 2.A1, and 2.B4 still fail at their documented gaps.
+No task status was changed by this audit, and no live provider, camera, GPU, database, or VM check was repeated.
+
+### Current to-do list — coding
+
+**Start now:** recog **0.4**, call **2.A1**, and ml **2.B4** are independently eligible. The global runner selects
+**0.4** first. There is no open server coding card; finish its human checks below rather than rebuilding its routes.
+
+Follow this dependency order:
+
+1. Publish vocabulary v2 (0.4), shared types (1.0), classifier interfaces (2.B1), and canonical features (1.B2).
+   These unblock most browser work and the Python feature twin.
+2. Update Recorder (1.B4), implement letters (2.B2), build datasets (2.B3), and add Bench recognition (2.B5).
+   In the ML lane, finish parity (1.B5) before the Kaggle converter (1.B6). Start recording once Recorder is ready.
+3. In the call lane, finish voice (2.A1), gloss buffering/offline English (2.C1), STT/metrics/Chips/Consent (2.A2),
+   then the ASL switch screen (2.A3). Keep all confidence holds, correction controls, and offline fallbacks.
+4. Build the signer pipeline (3.1), wire it to the ASL switch (3.2), train on real data, and run the two-laptop
+   golden path (3.3). Synthetic training checks do not establish real recognition accuracy.
+5. Only after the core demo works, consider the stretch cards below. Use `plan/context.md` §10 if time is short.
+
+Each checkbox below points to a ledger row; use that row's dependencies and card acceptance checks before working.
+Keep this checklist in sync when a task changes; only `verify.py done <ID>` may promote a ledger status.
+
+**Recognition — 9 core tasks, 1 stretch:**
+
+- [ ] [0.4](plan/tasks/0.4.md): shared `vocab.json`, v2 exports, TypeScript JSON support, dataset/fixture scripts.
+- [ ] [1.0](plan/tasks/1.0.md): v2 shared types, including the ASL control message and updated Session shape.
+- [ ] [2.B1](plan/tasks/2.B1.md): classifier, ONNX loader, and kNN fallback.
+- [ ] [1.B2](plan/tasks/1.B2.md): canonical handedness and body-centered features.
+- [ ] [1.B4](plan/tasks/1.B4.md): Recorder on v2 vocabulary/types; remove the old `leftHanded` output.
+- [ ] [2.B2](plan/tasks/2.B2.md): fingerspelling K, E, V.
+- [ ] [2.B3](plan/tasks/2.B3.md): dataset builder and synthetic sessions.
+- [ ] [2.B5](plan/tasks/2.B5.md): Bench live recognition readout.
+- [ ] [3.1](plan/tasks/3.1.md): signer pipeline with pause/resume and confidence gating.
+- [ ] [4.3](plan/tasks/4.3.md): optional eyebrows/headshake integration (stretch).
+
+**Call — 5 core tasks, 2 stretch:**
+
+- [ ] [2.A1](plan/tasks/2.A1.md): voice into the call, cache-generation script, and fallback cache index.
+- [ ] [2.C1](plan/tasks/2.C1.md): gloss buffer and offline English rules.
+- [ ] [2.A2](plan/tasks/2.A2.md): STT, metrics, Chips, and Consent.
+- [ ] [2.A3](plan/tasks/2.A3.md): ASL switch screen, sentence holds, correction, and auto-speak behavior.
+- [ ] [3.2](plan/tasks/3.2.md): connect the recognizer to the ASL switch.
+- [ ] [4.4](plan/tasks/4.4.md): optional Scribe captions with fallback (stretch).
+- [ ] [4.5](plan/tasks/4.5.md): optional teach-my-sign flow (stretch).
+
+**ML — 3 core tasks:**
+
+- [ ] [2.B4](plan/tasks/2.B4.md): training/evaluation/ONNX export with an isolated synthetic CPU smoke test.
+- [ ] [1.B5](plan/tasks/1.B5.md): Python feature twin and browser/Python parity fixtures.
+- [ ] [1.B6](plan/tasks/1.B6.md): Kaggle GISLR converter and synthetic conversion test.
+
+### Current to-do list — live checks and human work
+
+Code-complete rows still awaiting acceptance:
+
+- [ ] **1.B1:** check Bench FPS on both laptops (face on: at least 20 FPS on signer laptop) and one/two-hand tracking.
+- [ ] **1.A1:** join `demo-room` on two laptops; verify video and typed captions in both directions.
+- [ ] **1.C1:** verify configured API providers live, including LiveKit token issuance.
+- [ ] **1.C2:** run the 12-case Gemini eval; inspect confidence for nonsense and record measured p50 in README.
+- [ ] **1.C5:** correct database access, apply `server/sql/schema.sql`, and verify configured stats.
+- [ ] **1.C4:** deploy the systemd/Caddy templates on the VM, replace the placeholder hostname, and check HTTPS health.
+- [ ] **4.2:** after event logging works, run the golden path twice and check dashboard counts, latency, and trend;
+  complete browser visual QA. The last live attempt on October 17 failed with database `InvalidPasswordError`
+  before SQL ran. Schema application and dashboard data remain unverified; an env variable being present is not
+  proof that its credentials work.
+
+Human-owned tasks, in useful working order:
+
+- [ ] **0.1 / 0.2 / 0.3:** validate accounts/keys, download Kaggle data and prepare CUDA on the MSI, learn the signs.
+- [ ] **1.C3:** check ElevenLabs live and choose the demo voice; after 2.A1, generate and verify the demo MP3 cache.
+- [ ] **1.D1:** after Recorder is updated, record signs, idle, and letters with the required signers/repetitions.
+- [ ] **2.B4 human check:** run real training/evaluation on the MSI, publish model artifacts, and record held-out accuracy.
+- [ ] **3.3:** rehearse the full golden path on two laptops; retain a recoverable `golden-path` tag when proven.
+- [ ] **4.1 / 4.6 / 4.7 / 5:** deploy the web app or rehearse the local fallback, prepare pitch/slides and a backup
+  video, run failure drills, then freeze, rehearse, and submit by the deadline.
+- [ ] **4.8:** add more Kaggle signs only if time permits (stretch). **6:** post-event work stays deferred.
+
+### Status rules
 
 Earlier sessions ended with "everything is done" after the scaffold. That was wrong. The rules below exist to
 prevent it:
