@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { RemoteTrack } from 'livekit-client';
 import { joinCall, type Call as CallT, type CallStatus } from '../lib/call';
 import { CaptionLane } from '../components/CaptionLane';
+import { MoonTrios } from '../components/MoonTrios';
 import { upsertCaption } from '../lib/captions';
 import type { Caption, Role } from '../lib/types';
 
@@ -50,9 +51,11 @@ export default function Call() {
   }
 
   return (
-    <main className="call-page">
+    <main className="call-page home-page">
+      <MoonTrios />
+      <div className="home-center">
       <header className="call-heading">
-        <div><p className="eyebrow">A SPACE TO CONNECT</p><h1>Every conversation<br />starts with you.</h1></div>
+        <div><p className="eyebrow">A SPACE TO CONNECT · HACK TO THE MOON</p><h1>Every conversation<br />starts with you.</h1></div>
         <p className="intro">See each other. Take your time.<br /> Keep the conversation in view.</p>
       </header>
 
@@ -63,6 +66,8 @@ export default function Call() {
         <button className="primary-button" type="submit" disabled={!name.trim()}>Join room <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 13 13 3M3 3h10v10" /></svg></button>
       </form>
       {error && <div className="error-banner" role="alert">{error}</div>}
+      <p className="home-note">Floating signs are simplified emoji sketches. Learn exact forms from Lifeprint or a Deaf signer.</p>
+      </div>
     </main>
   );
 }

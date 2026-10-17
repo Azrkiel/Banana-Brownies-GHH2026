@@ -1,7 +1,7 @@
 :root {
   font-family: 'Segoe UI', system-ui, sans-serif;
-  color: #243d35;
-  background: #f7f8f2;
+  color: #16131d;
+  background: #f4f1e8;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   line-height: 1.6;
@@ -13,15 +13,15 @@ a { color: inherit; }
 button, input, select { font: inherit; }
 button { cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .55; }
-:focus-visible { outline: 3px solid #648b30; outline-offset: 4px; }
+:focus-visible { outline: 3px solid #5a308b; outline-offset: 4px; }
 h1, h2, h3, p { margin-top: 0; }
 h1, h2, h3 { line-height: 1.2; }
 h1 { font-weight: 550; letter-spacing: -.045em; font-size: clamp(2.4rem, 4.4vw, 3.7rem); }
 h2 { font-weight: 550; font-size: 1.4rem; letter-spacing: -.025em; }
-input, select { min-width: 0; border: 1px solid #cbd6c9; border-radius: 8px; padding: .65rem .8rem; background: #fff; color: #243d35; }
-input:disabled, select:disabled { background: #f2f4ee; color: #66736b; }
-button { border: 1px solid #cbd6c9; border-radius: 8px; padding: .65rem 1rem; color: #243d35; background: #fff; }
-button:not(:disabled):hover { border-color: #416754; background: #edf2e6; }
+input, select { min-width: 0; border: 1px solid #cfc9d6; border-radius: 8px; padding: .65rem .8rem; background: #fff; color: #16131d; }
+input:disabled, select:disabled { background: #f4f2ee; color: #6c6673; }
+button { border: 1px solid #cfc9d6; border-radius: 8px; padding: .65rem 1rem; color: #16131d; background: #fff; }
+button:not(:disabled):hover { border-color: #534167; background: #f2efe6; }
 button, a, input, select { -webkit-tap-highlight-color: transparent; }
 .mirror { transform: scaleX(-1); }
 @media (prefers-reduced-motion: no-preference) { a, button { transition: background .15s, border-color .15s; } }
