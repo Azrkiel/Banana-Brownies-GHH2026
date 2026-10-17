@@ -22,6 +22,7 @@ vi.mock('livekit-client', () => ({
     ParticipantConnected: 'peer-joined', ParticipantDisconnected: 'peer-left',
     Reconnecting: 'reconnecting', Reconnected: 'reconnected', Disconnected: 'disconnected',
     AudioPlaybackStatusChanged: 'audio',
+    TrackMuted: 'muted', TrackUnmuted: 'unmuted',
   },
   Track: { Kind: { Video: 'video', Audio: 'audio' }, Source: { Camera: 'camera', Microphone: 'microphone' } },
 }));
@@ -104,14 +105,52 @@ describe('LiveKit call lifecycle', () => {
   it('receives captions and control messages without crashing on invalid JSON', async () => {
     const h = handlers();
     await joinCall(options(h));
-    const caption = { id: 'a', text: 'Hello' };
-    await mock.streams.get('caption')?.({ readAll: async () => JSON.stringify(caption) }, {});
-    expect(h.onCaption).toHaveBeenCalledWith(caption);
+    const caption: Caption = { id: 'a', text: 'Hello', speaker: 'Peer', role: 'hearing', kind: 'speech', final: true, ts: 1, revision: 1 };
+    await mock.streams.get('caption')?.({ readAll: async () => JSON.stringify(caption) }, { identity: 'peer' });
+    expect(h.onCaption).toHaveBeenCalledWith(caption, 'peer');
     await mock.streams.get('ctrl')?.({ readAll: async () => '{"type":"attention"}' }, { identity: 'peer' });
     expect(h.onCtrl).toHaveBeenCalledWith({ type: 'attention' }, 'peer');
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
     await expect(mock.streams.get('caption')?.({ readAll: async () => 'bad json' }, {})).resolves.toBeUndefined();
     warning.mockRestore();
+  });
+  it('ignores malformed payloads and messages without sender metadata', async () => {
+    const h = handlers(); await joinCall(options(h));
+    for (const value of [{ id: 'a', text: 'incomplete' }, { type: 'caption-clear', id: 'a', revision: -1 }]) {
+      await mock.streams.get('caption')?.({ readAll: async () => JSON.stringify(value) }, { identity: 'peer' });
+      await mock.streams.get('ctrl')?.({ readAll: async () => JSON.stringify(value) }, { identity: 'peer' });
+    }
+    await mock.streams.get('ctrl')?.({ readAll: async () => '{"type":"attention"}' }, {});
+    expect(h.onCaption).not.toHaveBeenCalled(); expect(h.onCtrl).not.toHaveBeenCalled();
+  });
+  it('drops a text stream that finishes after leave or reconnect', async () => {
+    const h = handlers(); const call = await joinCall(options(h));
+    let resolve!: (s: string) => void;
+    const receive = mock.streams.get('ctrl')?.({ readAll: () => new Promise<string>(yes => { resolve = yes; }) }, { identity: 'peer' });
+    mock.events.get('reconnecting')?.(); resolve('{"type":"attention"}'); await receive;
+    expect(h.onCtrl).not.toHaveBeenCalled();
+    await call.leave();
+    await mock.streams.get('ctrl')?.({ readAll: async () => '{"type":"attention"}' }, { identity: 'peer' });
+    expect(h.onCtrl).not.toHaveBeenCalled();
+  });
+  it('an audio playback event cannot hide an active reconnect', async () => {
+    const h = handlers(); await joinCall(options(h));
+    mock.events.get('reconnecting')?.(); mock.events.get('audio')?.();
+    expect(h.onStatus).toHaveBeenLastCalledWith('reconnecting');
+  });
+  it('reports only the local microphone mute state and supports explicit call mute', async () => {
+    const h = { ...handlers(), onMicrophoneMuted: vi.fn() };
+    const call = await joinCall({ ...options(h), role: 'hearing' });
+    mock.events.get('muted')?.({ source: 'microphone' }, {});
+    expect(h.onMicrophoneMuted).not.toHaveBeenCalled();
+    mock.events.get('muted')?.({ source: 'microphone' }, mock.participant);
+    expect(h.onMicrophoneMuted).toHaveBeenLastCalledWith(true);
+    await call.setMicrophoneEnabled(true);
+    expect(h.onMicrophoneMuted).toHaveBeenLastCalledWith(false);
+  });
+  it('reports departed sender identity for draft cleanup', async () => {
+    const h = { ...handlers(), onPeerLeft: vi.fn() }; await joinCall(options(h));
+    mock.events.get('peer-left')?.({ identity: 'peer' }); expect(h.onPeerLeft).toHaveBeenCalledWith('peer');
   });
   it('reports reconnecting, reconnected, audio blocked and disconnected states', async () => {
     const h = handlers();

@@ -3,8 +3,17 @@ import type { RemoteTrack } from 'livekit-client';
 import { joinCall, type Call as CallT, type CallStatus } from '../lib/call';
 import { CaptionLane } from '../components/CaptionLane';
 import { MoonTrios } from '../components/MoonTrios';
-import { upsertCaption } from '../lib/captions';
+import { createCaptionHistory } from '../lib/captions';
+import { createSpeechCaptions } from '../lib/speechCaptions';
+import { createCallSpeech, type CallSpeechState } from '../lib/callSpeech';
 import type { Caption, Role } from '../lib/types';
+import './CallSpeech.css';
+
+const speechLabels: Record<CallSpeechState, string> = {
+  disabled: 'Speech captions off', starting: 'Starting captions…', listening: 'Listening',
+  stopping: 'Stopping recognition…', retrying: 'Reconnecting captions…',
+  failed: 'Speech captions need attention', stopped: 'Speech captions stopped', paused: 'Speech captions paused',
+};
 
 type Status = CallStatus | 'idle' | 'joining';
 const statusText: Record<Status, string> = {
@@ -92,6 +101,16 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
   const [peer, setPeer] = useState<string | null>(null);
   const [remoteVisible, setRemoteVisible] = useState(false);
   const [sending, setSending] = useState(false);
+  const [speechState, setSpeechState] = useState<CallSpeechState>('disabled');
+  const [speechError, setSpeechError] = useState('');
+  const [deliveryError, setDeliveryError] = useState('');
+  const [consented, setConsented] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [muting, setMuting] = useState(false);
+  const [history] = useState(() => createCaptionHistory(setCaptions));
+  const speech = useRef<ReturnType<typeof createCallSpeech> | null>(null);
+  const delivery = useRef<ReturnType<typeof createSpeechCaptions> | null>(null);
+  const mutingRef = useRef(false);
   const local = useRef<HTMLVideoElement>(null);
   const remote = useRef<HTMLVideoElement>(null);
   const remoteTrack = useRef<RemoteTrack | null>(null);
@@ -104,6 +123,7 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
   const inRoom = status === 'connected' || status === 'reconnecting' || status === 'audio-blocked';
   const busy = inRoom || status === 'joining';
   const canSend = status === 'connected' || status === 'audio-blocked';
+  const speechEnabled = !['disabled', 'failed', 'stopped'].includes(speechState);
 
   useEffect(() => {
     document.title = `${room} · SignLine`;
@@ -112,12 +132,23 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
   // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => () => {
-    generation.current++;
-    connectionAbort.current?.abort();
-    stream.current?.getTracks().forEach(track => track.stop());
-    if (remote.current) remoteTrack.current?.detach(remote.current);
-    void call.current?.leave().catch(() => {});
+  useEffect(() => {
+    const release = () => {
+      generation.current++;
+      joining.current = false;
+      speech.current?.dispose(); speech.current = null;
+      delivery.current?.dispose(); delivery.current = null;
+      connectionAbort.current?.abort();
+      stream.current?.getTracks().forEach(track => track.stop());
+      if (remote.current) remoteTrack.current?.detach(remote.current);
+      const previous = call.current; call.current = null;
+      void previous?.leave().catch(() => {});
+    };
+    const hidden = () => { release(); resetMedia(); setStatus('disconnected'); setSpeechState('disabled'); };
+    window.addEventListener('pagehide', hidden);
+    return () => { window.removeEventListener('pagehide', hidden); release(); };
+  // Refs own cleanup for this room tab, including StrictMode's setup/cleanup cycle.
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function resetMedia() {
@@ -142,7 +173,29 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
     connectionAbort.current = new AbortController();
     setStatus('joining');
     setError('');
-    setCaptions([]);
+    speech.current?.dispose();
+    delivery.current?.dispose();
+    history.reset();
+    setSpeechState('disabled'); setSpeechError(''); setDeliveryError(''); setConsented(false);
+    setMuted(false); setMuting(false); mutingRef.current = false;
+    const sender = createSpeechCaptions({
+      speaker: name,
+      local: caption => { if (active()) history.receive(caption, 'local'); },
+      remove: (id, revision) => { if (active()) history.clear(id, revision, 'local'); },
+      send: async message => {
+        const current = call.current;
+        if (!active() || !current) throw new Error('Room session ended.');
+        if ('type' in message) await current.sendCtrl(message);
+        else await current.sendCaption(message);
+      },
+      onError: message => { if (active()) setDeliveryError(message); },
+    });
+    const recognizer = createCallSpeech({
+      role, transcript: sender.transcript, clearDraft: sender.clearDraft,
+      onState: next => { if (active()) { setSpeechState(next); if (next === 'listening') setSpeechError(''); } },
+      onError: message => { if (active()) setSpeechError(message); },
+    });
+    delivery.current = sender; speech.current = recognizer;
     setDraft('');
     setSending(false);
     sendingRef.current = false;
@@ -157,8 +210,14 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
       const connected = await joinCall({
         room, name, role, camera: media.getVideoTracks()[0], signal: connectionAbort.current.signal,
         h: {
-          onCaption: caption => { if (active()) setCaptions(list => upsertCaption(list, caption)); },
-          onCtrl: () => {},
+          onCaption: (caption, identity) => { if (active()) history.receive(caption, identity); },
+          onCtrl: (message, identity) => {
+            if (!active()) return;
+            if (message.type === 'caption-clear') history.clear(message.id, message.revision, identity);
+            if (message.type === 'tts') recognizer.playback(identity, message.on);
+          },
+          onPeerLeft: identity => { if (active()) { history.clearDrafts(identity); recognizer.playback(identity, false); } },
+          onMicrophoneMuted: value => { if (active()) { setMuted(value); recognizer.mute(value); } },
           onRemoteVideo: track => {
             if (!active()) return;
             if (remote.current) {
@@ -172,7 +231,13 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
           onStatus: next => {
             if (!active()) return;
             setStatus(next);
+            const online = next === 'connected' || next === 'audio-blocked';
+            sender.connection(online && !!call.current);
+            recognizer.connection(online && !!call.current);
+            if (next === 'reconnecting') history.clearDrafts();
             if (next === 'disconnected') {
+              recognizer.dispose(); sender.dispose(); history.clearDrafts();
+              setSpeechState('disabled');
               generation.current++;
               call.current = null;
               joining.current = false;
@@ -186,8 +251,10 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
       });
       if (!active()) { await connected.leave(); return; }
       call.current = connected;
+      sender.connection(true); recognizer.connection(true);
     } catch (cause) {
       if (!active()) return;
+      recognizer.dispose(); sender.dispose();
       resetMedia();
       setStatus('idle');
       setError(friendlyError(cause));
@@ -197,6 +264,10 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
   }
 
   async function leave() {
+    speech.current?.enable(false);
+    speech.current?.dispose(); speech.current = null;
+    delivery.current?.dispose(); delivery.current = null;
+    history.clearDrafts();
     generation.current++;
     connectionAbort.current?.abort();
     joining.current = false;
@@ -205,6 +276,7 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
     resetMedia();
     setStatus('disconnected');
     setError('');
+    setSpeechState('disabled'); setSpeechError(''); setDeliveryError(''); setConsented(false);
     setSending(false);
     sendingRef.current = false;
     try { await previous?.leave(); }
@@ -224,7 +296,7 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
     try {
       await current.sendCaption(caption);
       if (generation.current !== attempt) return;
-      setCaptions(list => upsertCaption(list, caption));
+      history.receive(caption, 'local');
       setDraft(value => value === draft ? '' : value);
     } catch {
       if (generation.current === attempt) setError('Your caption wasn’t sent. Your text is still here; try sending it again.');
@@ -236,6 +308,25 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
   async function enableAudio() {
     try { await call.current?.room.startAudio(); }
     catch { setError('Audio is still blocked. Check browser permissions and try again.'); }
+  }
+
+  async function toggleMicrophone() {
+    const current = call.current;
+    if (!current || !canSend || mutingRef.current) return;
+    const attempt = generation.current;
+    const nextMuted = !muted;
+    mutingRef.current = true; setMuting(true);
+    if (nextMuted) speech.current?.mute(true);
+    try { await current.setMicrophoneEnabled(!nextMuted); }
+    catch {
+      if (generation.current === attempt) {
+        speech.current?.enable(false);
+        speech.current?.mute(muted);
+        setError('Could not change the call microphone. Speech captions are off; check your microphone and try again.');
+      }
+    } finally {
+      if (generation.current === attempt) { mutingRef.current = false; setMuting(false); }
+    }
   }
 
   return (
@@ -259,8 +350,15 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
             <div className="local-tile"><video ref={local} autoPlay muted playsInline className="mirror local-video" aria-label="Your camera preview" />{!busy && <span className="camera-off" aria-hidden="true">Camera off</span>}<span className="video-label">{inRoom ? name : 'You'} <span>· {role === 'signer' ? 'Signer' : 'Hearing'}</span></span></div>
             {remoteVisible && <span className="peer-label">{peer ?? 'Other participant'}</span>}
           </div>
-          <div className="call-toolbar"><p><span className="privacy-dot" />{busy ? role === 'signer' ? 'Camera on · microphone off' : 'Camera and microphone enabled during the call' : 'Camera and microphone stay off until you join.'}</p><div>{status === 'audio-blocked' && <button onClick={enableAudio}>Enable audio</button>}{busy ? <button className="leave-button" onClick={leave}>{status === 'joining' ? 'Cancel' : 'Leave room'}</button> : <button className="primary-button" onClick={() => void join()}>Rejoin</button>}</div></div>
-          <div className="scope-note"><span className="note-icon" aria-hidden="true">i</span><p><strong>One step at a time.</strong> Video calls and typed captions are available here. Automatic sign recognition and speech captions are still being built.</p></div>
+          <div className="call-toolbar"><p><span className="privacy-dot" />{status === 'joining' ? 'Waiting for camera access and call connection' : inRoom ? role === 'signer' ? 'Camera on · microphone off' : muted ? 'Call microphone muted · speech recognition paused' : 'Camera and call microphone enabled' : 'Camera and microphone stay off until you join.'}</p><div>{role === 'hearing' && inRoom && <button disabled={!canSend || muting} onClick={() => void toggleMicrophone()}>{muting ? 'Changing microphone…' : muted ? 'Unmute microphone' : 'Mute microphone'}</button>}{status === 'audio-blocked' && <button onClick={enableAudio}>Enable audio</button>}{busy ? <button className="leave-button" onClick={leave}>{status === 'joining' ? 'Cancel' : 'Leave room'}</button> : <button className="primary-button" onClick={() => void join()}>Rejoin</button>}</div></div>
+          {role === 'hearing' && <section className="call-speech" aria-labelledby="call-speech-title">
+            <div className="call-speech__heading"><h2 id="call-speech-title">Speech captions</h2><span role="status">{speechLabels[speechState]}</span></div>
+            <label><input type="checkbox" checked={consented} onChange={event => { setConsented(event.target.checked); speech.current?.consent(event.target.checked); }} /><span>I agree to send microphone audio to my browser’s speech service and share the recognized text with this room.</span></label>
+            <div className="call-speech__actions"><button disabled={!speechEnabled && (!consented || !canSend || muted)} onClick={() => { setSpeechError(''); speech.current?.enable(!speechEnabled); }}>{speechEnabled ? 'Stop captions' : 'Start captions'}</button><p>Use desktop Chrome. Stopping captions leaves call audio on. Mute the microphone to pause both.</p></div>
+            {speechError && <p className="call-speech__error" role="alert">{speechError}</p>}
+            {deliveryError && <p className="call-speech__error" role="alert">{deliveryError}</p>}
+          </section>}
+          <div className="scope-note"><span className="note-icon" aria-hidden="true">i</span><p><strong>Keep the words in view.</strong> Typed captions stay available. {role === 'hearing' ? 'Enable speech captions above after giving consent.' : 'The hearing participant can enable speech captions for the room.'} Browser recognition can make mistakes. Automatic sign recognition is still being built.</p></div>
         </div>
 
         <section className="caption-panel" aria-labelledby="caption-title">

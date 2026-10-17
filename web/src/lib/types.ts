@@ -16,10 +16,12 @@ export type Caption = {
   id: string; speaker: string; role: Role;
   kind: 'english' | 'speech'; text: string; final: boolean; ts: number;
   retracted?: boolean; // signer withdrew a mistaken sentence
+  revision?: number; // ordered speech draft/final updates; other producers remain compatible
 };
 export type Ctrl =
   | { type: 'signing'; on: boolean }
   | { type: 'tts'; on: boolean }
   | { type: 'clarify' }
   | { type: 'attention' }
-  | { type: 'speak-local'; text: string };
+  | { type: 'speak-local'; text: string }
+  | { type: 'caption-clear'; id: string; revision: number };

@@ -1,9 +1,11 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import Bench from './pages/Bench'
 import Recorder from './pages/Recorder'
 import Call, { CallRoom } from './pages/Call'
 import Stats from './pages/Stats'
 import './App.css'
+
+const SpeechCheck = import.meta.env.DEV ? lazy(() => import('./pages/SpeechCheck')) : null
 
 export default function App() {
   const [hash, setHash] = useState(window.location.hash)
@@ -24,6 +26,6 @@ export default function App() {
       <nav aria-label="Main navigation"><a href="#/" aria-current={!['bench', 'record', 'stats'].includes(route) ? 'page' : undefined}>Conversation</a><a href="#/bench" aria-current={route === 'bench' ? 'page' : undefined}>Camera check</a><a href="#/record" aria-current={route === 'record' ? 'page' : undefined}>Recorder</a><a href="#/stats" aria-current={route === 'stats' ? 'page' : undefined}>Stats</a></nav>
       <span className="build-badge">IN DEVELOPMENT</span>
     </header>
-    {route === 'stats' ? <Stats /> : route === 'record' ? <Recorder /> : route === 'bench' ? <Bench /> : route === 'room' ? <CallRoom query={query} /> : <Call />}
+    {route === 'speech-check' && SpeechCheck ? <Suspense fallback={<main><p>Opening speech check…</p></main>}><SpeechCheck /></Suspense> : route === 'stats' ? <Stats /> : route === 'record' ? <Recorder /> : route === 'bench' ? <Bench /> : route === 'room' ? <CallRoom key={query} query={query} /> : <Call />}
   </>
 }
