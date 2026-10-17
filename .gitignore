@@ -1,0 +1,5 @@
+__pycache__/
+*.py[cod]
+data.pickle
+model.p
+.DS_Store
