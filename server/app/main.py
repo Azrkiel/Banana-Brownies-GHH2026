@@ -11,6 +11,7 @@ from typing import Literal
 import httpx
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Response
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from google.genai import errors as genai_errors
 from livekit import api as lk
@@ -21,6 +22,10 @@ load_dotenv()
 from . import db, gloss  # noqa: E402  (imported after .env is loaded)
 
 app = FastAPI(title="SignLine API")
+# A static frontend on another origin (e.g. GitHub Pages) needs CORS; local dev uses the Vite proxy.
+if origins := [o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()]:
+    app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["GET", "POST"],
+                       allow_headers=["Content-Type"])
 ELEVEN = "https://api.elevenlabs.io"
 
 
