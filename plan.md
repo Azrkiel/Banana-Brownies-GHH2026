@@ -1,115 +1,109 @@
-# SignLine — Implementation Plan (Girls Hoo Hack 2026)
+# SignLine — Implementation Plan v2 (Girls Hoo Hack 2026)
 
-> Written with the **xvant-plan** method: file map first, ASCII diagrams of data / user / error flows, phases broken into small checkbox steps (test → code → pass → commit), no placeholders, then a self-review.
-> "SignLine" is a working name. Rename it whenever you pick your domain.
+> Written with the **xvant-plan** method: decisions first, ASCII diagrams with unhappy paths, a file map, then phases broken into small checkbox tasks (test → see it fail → code → see it pass → commit), and a self-review.
+> **v2 (Sat Oct 17):** rebuilt around your answers — Kaggle GISLR pretraining on the RTX 3060, a 20-sign vocabulary drawn from the Kaggle set plus 4 recorded signs, "KEV" fingerspelling, one **ASL → voice** switch with auto-speak, eyebrow/headshake reading through **Presage** (MediaPipe fallback), 3 machines, and a Claude Code + Codex workflow. Every code block here was type-checked and tested before handing over (§11).
 
-**Goal:** In 31 hours, ship a two-laptop video call where a Deaf signer's ASL (a ~16–27 sign vocabulary + slow fingerspelling) becomes confirmed English captions and an ElevenLabs voice, and the hearing person's speech becomes captions for the signer.
+**Goal:** By Sunday 17:00, ship a two-laptop video call where Kev signs a 20-sign vocabulary plus "K-E-V" and the other person hears it spoken by ElevenLabs within ~2 s, while their speech shows up as captions for Kev.
 
-**Architecture:** Everything that touches the camera runs in the signer's browser: MediaPipe landmarks → segmenter → a small classifier we train at the event → gloss chips. A thin FastAPI server (hosted on Vultr) holds every API key and does four jobs: LiveKit tokens, Gemini gloss→English, ElevenLabs TTS streaming, and logging timing/quality events to Tiger Data. LiveKit Cloud carries video, the synthesized voice track, and caption text between the two browsers.
+**Architecture:** A small 1D-CNN is pretrained on the Kaggle "Isolated Sign Language Recognition" landmarks on the MSI's RTX 3060, fine-tuned on the demo vocabulary plus our own recordings, and exported to ONNX. In the signer's browser, MediaPipe turns the webcam into landmarks; a segmenter cuts out each sign; the ONNX model labels it. When the signer pauses, Gemini turns the glosses into English, and ElevenLabs speaks it into the LiveKit call. A thin FastAPI server on Vultr holds every key and logs timing and accuracy to Tiger Data. An optional local Presage sidecar reads eyebrows for question marking.
 
-**Tech stack:** Vite + React + TypeScript · `@mediapipe/tasks-vision@1.1.1` · `onnxruntime-web@1.30.0` · `livekit-client` · PyTorch (training only) · FastAPI + `livekit-api` + `google-genai` + `httpx` + `asyncpg` · Gemini `gemini-3.5-flash-lite` · ElevenLabs `eleven_flash_v2_5` (+ Scribe v2 Realtime later) · Tiger Data (TimescaleDB) · Vultr VM + Caddy · GoDaddy Registry domain.
+**Tech stack:** Vite + React + TypeScript · `@mediapipe/tasks-vision@1.1.1` · `onnxruntime-web@1.30.0` · `livekit-client` · PyTorch (CUDA on the 3060) + pandas/pyarrow for the Kaggle parquet files · FastAPI + `livekit-api` + `google-genai` + `httpx` + `asyncpg` · Gemini `gemini-3.5-flash-lite` · ElevenLabs `eleven_flash_v2_5` (Scribe v2 Realtime later) · Tiger Data · Vultr + Caddy · Presage `@smartspectra/node-sdk` (optional) · Claude Code + Codex as builders.
 
-**Event clock (all times EDT):** hacking started **Sat 10:00** (H0). Devpost deadline **Sun 17:00** (H31). Pitch workshop Sun 09:00–10:00. Judging + live demos **Sun 17:45–19:15**, Rice 130. Winners ~21:00. If you are starting later than H0, keep the phase *order* and use the cut list in §10.
-
----
-
-## 0. Ground rules (read once, then follow)
-
-1. **Event rules.** All project code is written during the event (this plan's code counts as event work because the clock is running). List AI tools (Claude) in the Devpost "Built with" / write-up — MLH requires it. Public GitHub repo, public demo video ≤ 3 min, code stays public after the event.
-2. **Keys never touch the browser or git.** Only `server/.env` holds keys. `.env*` is in `.gitignore` from the first commit. Hackathon repos get scraped within minutes.
-3. **Honest claims only.** Say "recognizes a 16-sign (later 27) vocabulary plus slow fingerspelling." Never say "translates ASL", "replaces interpreters", "gives Deaf people a voice", or quote training accuracy as real-world accuracy. Never pitch hospitals, courts, or emergencies. (§9 has the exact wording.)
-4. **The signer stays in control.** Nothing is spoken until the signer approves it, unless they switch on auto-speak. A low-confidence guess is never spoken silently.
-5. **Consent.** Landmarks only (no video) are recorded, only from people who said yes. Anyone outside the team signs a short consent note first. Their data does not go in the public repo.
-6. **Terminology.** "Deaf", "deaf", "hard of hearing", "signer". Never "mute", "deaf-mute", or "hearing-impaired".
+**Event clock (EDT):** hacking Sat 10:00 → Devpost deadline **Sun 17:00**. Pitch workshop Sun 09:00–10:00. Judging + live demos **Sun 17:45–19:15**, Rice 130. Winners ~21:00. Clock times below assume you are on pace. If you're behind, keep the order and use the cut list (§10).
 
 ---
 
-## 1. Open questions — answers change the plan
+## 0. Ground rules
 
-Each question has a **default** this plan uses until you answer it.
+1. **Event rules.** All project code is written during the event. Public pretrained/open data is fine with credit (Kaggle GISLR is CC BY 4.0 — confirm on the competition's Data tab and credit it). List **Claude Code and Codex** in Devpost "Built with" — MLH requires disclosing AI tools. Public repo, public demo video ≤ 3 min.
+2. **Keys never touch the browser or git.** Only `server/.env` and the Presage sidecar's environment hold keys. `.env*` is ignored from the first commit.
+3. **The signer controls the voice.** One switch, **ASL → voice**. When it's on, sentences whose signs were all recognized confidently are spoken automatically; anything unsure waits for a tap. **That was wrong** crosses out the last sentence on both screens and says "Sorry, that came out wrong."
+4. **Honest claims only** (§9): "recognizes a 20-sign vocabulary plus fingerspelled names", never "translates ASL" or "replaces interpreters". Say plainly that Kev is learning ASL.
+5. **Recordings.** Only teammates are recorded, as landmarks (no video), and only after they say yes. Raw recordings stay out of the public repo.
+6. **Terminology.** "Deaf", "deaf", "hard of hearing", "signer". Never "mute", "deaf-mute", "hearing-impaired".
+7. **Agents follow `AGENTS.md`** (Task 0.4). Claude Code reads it through `CLAUDE.md`; Codex reads it directly.
 
-**Ask an organizer or the MLH coach today (blocking):**
+---
 
-| # | Question | Why it matters | Default if no answer |
-|---|---|---|---|
-| Q1 | May we start from a public pretrained ASL model or dataset (PopSign / Kaggle GISLR, CC BY 4.0)? | Decides whether Phase 2 can use a pretrained backbone. | Train only on data we record at the event; public data is not needed. |
-| Q2 | What counts as a "beginner hacker" for Best Beginner? | Track eligibility. | Don't enter Best Beginner. |
-| Q3 | How does the Live Demo Event work (stage or tables, minutes per team, sign-up)? | Demo script length, whether two laptops fit. | 3-minute table demo on two laptops. |
-| Q4 | Does Best Overall count toward the 3 event tracks? Can one project win more than one event track? | Track picks. | Best Overall is automatic; pick 3 others (§8). |
-| Q5 | How do we redeem the GoDaddy Registry free domain this year? | Domain + HTTPS timing. | Ask MLH coach at 12:00; fall back to `<ip>.sslip.io`. |
-| Q6 | Is anyone Deaf or fluent in ASL at the event, or is there a UVA ASL club/program contact? | A Deaf tester is the single strongest credibility move. | Team learns signs from Lifeprint; one teammate owns sign accuracy. |
+## 1. Decisions (your answers, Oct 17)
 
-**Team decisions (answer in the first 30 minutes):**
-
-| # | Question | Default |
+| # | Question | Decision |
 |---|---|---|
-| Q7 | How many people, and who knows Python / React / ML? Who are beginners? | 4 people, roles in §5. With 3, merge roles C and D. |
-| Q8 | Which laptop is the signer machine? Does it have a decent GPU (M-series Mac or recent Windows laptop)? | Benchmark at H1 decides Hand+Pose vs Holistic. |
-| Q9 | Spend up to ~$7 total? (ElevenLabs Starter $1 first month if the promo is still on, else $6; Gemini Tier-1 billing ≈ $0.20 of calls) | Yes — removes 429 risk on stage. |
-| Q10 | Whose name gets fingerspelled in the demo? | Pick a name with letters outside the confusable cluster A/E/M/N/S/T (e.g. "LIV", "KOFI", "IVY"). |
-| Q11 | **Your Claude Project says "wellness suite (phone app + watch data + website)" but this plan is the ASL call app.** Which are you building? | ASL call app. Don't mix them in 31 hours. |
-| Q12 | Product name + domain? | "SignLine"; a `.co` or `.us` GoDaddy Registry domain. |
+| Q1 | Pretrained data? | **Yes — Kaggle GISLR** (`asl-signs`, 250 signs, ~94k clips, 21 signers). Pretrain on all 250; fine-tune on the demo set. |
+| Q2 | Best Beginner? | Not entering. |
+| Q3 | Demo format | **3-minute table demo on two laptops.** |
+| Q4 | Tracks | Best Overall is automatic. Event tracks: **Best AI/ML, Best Live Demo, Next Giant Leap**. |
+| Q5 | GoDaddy domain | Not now. Use the free `sslip.io` hostname; claim a domain only if there's spare time (Task 4.1, 15 min). |
+| Q6 | Deaf tester | No — **the team is learning ASL**. Learn each Kaggle sign from its PopSign video (Task 0.3). |
+| Q7/Q8 | Team & machines | **Two Macs + Kev's MSI with an RTX 3060.** MSI = training box (and likely the signer laptop). Builders: **Claude Code + Codex**. |
+| Q10 | Fingerspelled name | **KEV** (letters K, E, V). |
+| Q11 | Wellness app? | Pivoted. This plan is the ASL call app. |
+| Q13 | Confirm vs auto-speak | **Auto-speak by default** via the ASL → voice switch (rule 3 above). |
+| Q14 | Eyebrows/headshake | **Presage if time** (Task 4.3), MediaPipe as the automatic fallback, manual "?" button as the last resort. |
+| Q15 | Female Empowerment | No. |
+| — | MLH sponsor prizes | Priority: **Gemini, Tiger Data, Vultr**, then Presage. GoDaddy later. DEV post after the event. Skip Solana. |
 
-**Product decisions (default is the research-backed one):**
-
-| # | Question | Default |
-|---|---|---|
-| Q13 | Confirm-before-speak or auto-speak by default? | Confirm by default; auto-speak toggle in settings. |
-| Q14 | Do we read eyebrows/headshake for questions and negation? | Yes, as a Phase 4 feature with a manual "?" button fallback. |
-| Q15 | Enter Best Female Empowerment? | Only if you have a genuine women-centered angle (e.g. a Deaf woman co-designer, or a use case you can back up). A general accessibility pitch did not win this track in 2025. |
-| Q16 | Presage track? | Skip unless someone already knows Node/Electron. It has no browser SDK (6–10 h, high risk). |
+**Still open (answer when convenient; defaults in bold):**
+- How many people? **Plan assumes 3 (one per machine). With 2, the Mac person takes Tracks A + C.**
+- Spend ~$7 for safety (ElevenLabs Starter + Gemini Tier-1 billing)? **Yes.**
+- Are both Macs Apple Silicon? Presage's Node SDK runs on **Apple Silicon Macs and Windows x64** only, not Intel Macs. **Default: Presage runs on the MSI.**
+- Who plays the hearing person in the demo? **A teammate, and invite each judge to try.**
 
 ---
 
 ## 2. Scope
 
 ### In (MVP — must work on stage)
-- Two-person call on two laptops (LiveKit), signer video + hearing video.
-- Signer: live sign chips with confidence → English preview (Gemini) → **Speak** → ElevenLabs voice inside the call + caption on both screens.
-- Fingerspelling mode for names (letters you choose, debounced).
-- Hearing side: speech → captions on the signer's screen (Web Speech first).
-- "Signing…" indicator, "I didn't catch that" button, attention button.
-- Fallbacks so the demo never goes silent: rule-based English, cached MP3s, receiver-side `speechSynthesis`.
-- Evaluation numbers we actually measured (held-out-signer accuracy, latency p50/p95).
+- Two-laptop LiveKit call: video both ways, captions both ways.
+- **ASL → voice** switch: on = recognition runs, confident sentences are spoken automatically, unsure ones wait; off = nothing is read or spoken.
+- 20-sign vocabulary + `_idle`, fingerspelling **K/E/V** in spell mode.
+- Gemini gloss → English; ElevenLabs voice inside the call; "That was wrong" retraction.
+- Hearing side: speech → captions (Web Speech first).
+- Fallbacks: rule-based English, cached demo MP3s, the hearing laptop's built-in voice.
+- Real numbers: held-out-signer accuracy (Kaggle signers and our signers), latency p50/p95.
 
 ### Stretch (Phase 4, in this order)
-1. Tiger Data event logging + live stats page (Tiger track, latency readout on stage).
-2. Vultr deploy + GoDaddy domain (Vultr + GoDaddy tracks).
-3. Eyebrow/headshake tags → question/negation (shows ASL grammar awareness).
-4. Scribe v2 Realtime instead of Web Speech (robust captions, echo cancellation).
-5. Per-user calibration (judge records 3 examples, k-NN adapts).
-6. Tier-2 vocabulary (11 more signs).
+1. Tiger Data logging + live stats page.
+2. Vultr deployment.
+3. Eyebrows/headshake → question/negation tags via **Presage** (MediaPipe fallback).
+4. Scribe captions (echo-cancelled, any browser).
+5. "Teach my sign" per-user calibration.
+6. More Kaggle signs — no recording needed, just retrain (Task 4.8).
+7. GoDaddy domain.
 
 ### Out (say so in the pitch)
-Continuous / fluent signing, classifiers, directional verbs, mouth morphemes, emotion from the face, fast fingerspelling, mobile, more than 2 people, medical/legal use, Presage, Solana.
+Continuous/fluent signing, classifiers, directional verbs, mouth morphemes, emotion in the voice, fast fingerspelling, mobile, more than 2 people, medical/legal use, Solana.
 
 ### Vocabulary
 
-**Tier 1 — record first (16 signs + idle):** `HELLO, NICE, MEET, YOU, ME, MY, NAME, WHAT, DEAF, HEARING, YES, NO, PLEASE, SLOW, AGAIN, THANK-YOU` + `_idle`.
+**From Kaggle (no recording needed) — 16:** `HELLO, BYE, THANKYOU, PLEASE, YES, NO, HUNGRY, PIZZA, WATER, WHERE, GO, NOW, LATER, WAIT, TOMORROW, STORE`.
+**Recorded by us (not in the Kaggle set) — 4 + idle:** `ME, YOU, NAME, WHAT` and `_idle`.
+**Letters:** `K, E, V` only. Spell mode can only output letters it was trained on, which keeps "KEV" reliable. (E is a closed fist and K/V share two raised fingers, so record them carefully, Task 1.D1.)
 
-**Tier 2 — only after Tier 1 hits target accuracy (11):** `UNDERSTAND, HELP, WHERE, WHO, HOW, LEARN, SIGN, GO, TOMORROW, STORE, BYE`.
+Why these: the Kaggle set is the PopSign list of 250 everyday words. It has HELLO, THANKYOU, WHERE, PIZZA… but **not** NAME, YOU, ME, WHAT, NICE, MEET, DEAF or AGAIN, so the four we need for introductions are recorded. Avoided on purpose: chest-located signs that look alike (`MINEMY`, `HAPPY`, `LIKE` next to `PLEASE`/`HUNGRY`).
 
-**Letters:** only the letters in the demo name(s) plus 3–4 spares, e.g. `L I V K O F Y B C D`. Avoid the A/E/M/N/S/T cluster unless the name needs it.
+All of it lives in one file, `web/src/vocab.json`, which both the browser and Python training read. Adding a Kaggle sign later is one line plus a retrain (Task 4.8).
 
-**Deliberately excluded (look-alike pairs):** SORRY (vs PLEASE), GOOD (vs THANK-YOU), MOTHER/FATHER, THINK/KNOW, CHAIR (vs NAME). ME vs MY is kept — handshape features separate index vs flat hand — but watch it in the confusion matrix.
+`_idle` = non-sign motion with hands up: scratching your face, adjusting glasses, waving someone off, typing in the air, reaching for a cup, a half-started sign.
 
-**`_idle` class:** non-sign motion that still moves your hands up: scratching your face, adjusting glasses, waving someone off, typing in the air, reaching for a cup. Record 1.5× as many as a sign.
+### Demo script (≈ 3 min at the table; Kev signs, a teammate or the judge speaks)
 
-> Person D verifies every sign against its Lifeprint or Handspeak video **before** anyone records. Everyone signs it the same way.
-
-### Demo script (≈ 90 s, two laptops, judge plays the hearing person if willing)
-
-| Who | Does | Screen shows |
+| Who | Does | Screen / sound |
 |---|---|---|
-| Hearing | Says "Hi! I'm Priya, nice to meet you." | Caption appears on the signer laptop |
-| Signer | `HELLO` `NICE` `MEET` `YOU` · pause | Chips → "Hello, nice to meet you!" → Speak → voice plays on hearing laptop |
-| Signer | `MY` `NAME` · spell mode `L-I-V` · pause | "My name is Liv." |
-| Signer | `YOU` `NAME` `WHAT` (brows down) | "What's your name?" |
-| Hearing | Answers fast and mumbled | Caption |
-| Signer | `AGAIN` `PLEASE` `SLOW` | "Could you say that again, slowly please?" |
-| Signer | `ME` `DEAF` · `YOU` `HEARING` (brows up) | "I'm Deaf." · "Are you hearing?" |
-| Signer | `THANK-YOU` | "Thank you!" |
-| Presenter | Points at the stats panel | Live p50/p95 latency from Tiger Data |
+| Kev | Flips **ASL → voice: ON** | Hearing laptop shows "ASL voice on" |
+| Hearing | "Hi! I'm Priya." | Caption on Kev's screen |
+| Kev | `HELLO` `ME` `NAME` · spell `K-E-V` · pause | "Hello! My name is Kev." spoken automatically |
+| Kev | `YOU` `NAME` `WHAT` (brows down) | "What's your name?" |
+| Hearing | "Priya. Are you hungry?" | Caption |
+| Kev | `ME` `HUNGRY` · `YOU` `HUNGRY` (brows up) | "I'm hungry. Are you hungry?" |
+| Hearing | "Starving." | Caption |
+| Kev | `PIZZA` `WHERE` | "Where can we get pizza?" |
+| Hearing | Says a place, quickly | Caption |
+| Kev | `GO` `NOW` | "Let's go now!" |
+| Kev | `THANKYOU` `BYE` | "Thank you! Bye!" |
+| Presenter | Points at the stats tab; offers the judge a try | Live p50/p95 latency (Tiger Data) |
+
+If a sign comes out wrong on stage, press **That was wrong** — showing the recovery is better than hiding it.
 
 ---
 
@@ -118,156 +112,115 @@ Continuous / fluent signing, classifiers, directional verbs, mouth morphemes, em
 ### 3.1 Data flow (happy path)
 
 ```
-SIGNER BROWSER (Chrome)                          FASTAPI on Vultr (keys live here)     VENDORS
------------------------                          ---------------------------------     -------
-webcam --getUserMedia (once)--+--> LiveKit publishTrack(camera) ---------------------> LiveKit Cloud
-                              |
-                              +--> <video> --> MediaPipe Hand+Pose (+Face every 3rd frame)
-                                                 | Frame{t, w, h, pose[17], hands[0..2][21], brow}
-                                                 v
-                                     mirrorFrame() if left-handed
-                                                 |
-                              +------------------+------------------+
-                              v                                     v
-                        Segmenter                                  Nmm
-                  IDLE -> ACTIVE -> COOLDOWN               brow raise/furrow, headshake
-                              | end(frames)                         |
-                              v                                     |
-                   clipFeatures -> Float32[32 x 174]                |
-                              v                                     |
-                   SignClassifier (ONNX CNN | kNN)                  |
-                              | Pred{label, p, alts, accepted}      |
-                              v                                     |
-                   GlossBuffer: chips on screen                     |
-                              | no new sign for 1.1 s               |
-                              v                                     v
-                   POST /api/gloss {signs, tags, context} --> gloss.translate() --> Gemini 3.5 Flash-Lite
-                              | {english, sentence_type, confidence, uncertain}     (JSON schema)
-                              v
-                   Preview -> signer presses Speak (or auto-speak)
-                              |
-             +----------------+------------------------+
-             v                                         v
-   sendText(topic 'caption')               POST /api/tts --> httpx stream proxy --> ElevenLabs flash_v2_5
-             |                                         | audio/mpeg
-             |                                         v
-             |                 <audio> -> AudioContext -> MediaStreamDestination
-             |                                         | (track published once at join)
-             v                                         v
-   ===================== LiveKit room "demo-room" ======================
-             |                                         |
-             v                                         v
-HEARING BROWSER: caption lane            hears the voice like a normal participant
-HEARING BROWSER: mic --Web Speech (later Scribe)--> transcript --sendText('caption')--> SIGNER caption lane
+TRAINING (MSI, RTX 3060) — before the demo
+Kaggle asl-signs.zip ──gislr_to_features.py──> data/gislr-all (250 signs) ──train.py pretrain──> ml/out/pretrain.pt
+                     └─────────────────────────> data/gislr-demo (16 signs) ─┐
+our recordings (#/record) ──build-dataset.ts──> data/processed (ME YOU NAME WHAT _idle) ─┴─train.py finetune──>
+        web/public/models/{sign.onnx, sign_meta.json, knn.*}   (+ letters.* for K E V)
 
-BOTH BROWSERS --sendBeacon /api/events--> db.insert_events() --> Tiger Data hypertables
-STATS PAGE <-- GET /api/stats (p50/p95 latency, accept rate) <-- continuous aggregates
+LIVE
+SIGNER BROWSER (Chrome)                            FASTAPI on Vultr (keys)              VENDORS
+webcam --getUserMedia (once)--+--> LiveKit publishTrack(camera) ----------------------> LiveKit Cloud
+                              +--> MediaPipe Hand(2)+Pose(+Face) --> Frame
+                              +--> (ASL on, optional) PresageLink --frames--> presage sidecar (localhost) --> face scores
+   ASL → voice ON:
+   Frame --> Segmenter --end--> clipFeatures (canonical handedness) --> ONNX CNN --> Pred{label,p,alts,accepted}
+                                                                                       |
+   Nmm (Presage brows | MediaPipe brows | "?" button) + headshake --> tags            v
+   GlossBuffer chips --pause 1.1 s--> POST /api/gloss --> Gemini 3.5 Flash-Lite (JSON) --> {english, confidence}
+        all signs accepted AND confidence >= 0.6 ?  --yes--> speak()   --no--> hold for the signer's tap
+   speak(): caption via sendText + POST /api/tts --> ElevenLabs flash_v2_5 --> WebAudio --> LiveKit voice track
+HEARING BROWSER: hears the voice · sees captions · mic --Web Speech/Scribe--> caption --> signer
+BOTH --sendBeacon /api/events--> Tiger Data hypertables --> /api/stats --> #/stats
 ```
 
-### 3.2 Signer user flow (with failure branches)
+### 3.2 Signer user flow
 
 ```
-[Open site] --> [Consent screen] --declines--> [Captions-only mode: reads hearing captions, types replies]
-                     | accepts
-                     v
-[Setup: name, room, voice, left-handed?, auto-speak?] --voices fail to load--> [use first cached voice id]
-                     |
-                     v
-[Join] --camera denied--> [banner: "Allow camera in the address bar", retry button]
-   | --LiveKit token 5xx--> [banner: "Call server unreachable", retry; Offline mode keeps chips+captions local]
-   v
-[In call] --tracker FPS < 15--> [banner "Close other tabs"; drop face model]
-   |
-   v
-[Sign] --hands out of frame--> [hint "Move back so both hands are visible"]
-   |   --segment < 8 frames--> [ignored]
-   |   --classifier says _idle--> [ignored, no chip]
-   |   --low confidence--> ["?" chip with top-2 alternatives; tap to choose]
-   v
-[Chips] --pause 1.1 s--> [Preview "..."] --/api/gloss 502 or >2.5 s--> [rule-based English, marked "offline"]
-   |                         |
-   |                         v
-   |                  [Speak? Enter / button] --Esc--> [clear]  --click chip--> [fix, re-translate]
-   |                         |
-   |                         v
-   |                  [/api/tts] --cache hit--> [play cached MP3]
-   |                         |  --fails (429/402/5xx)--> [ctrl speak-local: hearing laptop uses speechSynthesis]
-   |                         v
-   |                  [voice plays in call, caption sent]
-   v
-[Hearing pressed "?"] --> [signer screen flashes "They didn't catch that" -> repeat or fix]
-[Network drops] --> ["Reconnecting..." banner -> on Reconnected resend last 3 captions]
+[Open] -> [Consent] --declines--> [stays on consent screen; nothing starts]
+   -> [Setup: name, room, voice] --voices fail--> [banner; backup voice]
+   -> [Join] --camera denied--> [banner + retry]   --token 5xx--> [banner "call server unreachable"]
+   -> [In call, models preload] --model files missing--> [banner "Sign recognition could not start" (call still works)]
+   -> [ASL → voice OFF]  (video still shared; nothing read or spoken)
+   -> flip ON --> [recognizing]
+        sign --hands out of frame--> ["Move back" hint]
+             --_idle / too short--> [ignored]
+             --low confidence--> ["?" chip with alternatives]
+        pause 1.1 s --> Gemini --fails/slow--> [offline rules English]
+             all chips confident & Gemini >= 0.6 --> [SPOKEN automatically + caption]
+             otherwise --> [held: "Not sure about this one"] --tap chip / Speak (Enter)--> [spoken]  --Esc--> [dropped]
+        spoken wrong? --> [That was wrong] --> [caption crossed out on both screens + "Sorry, that came out wrong."]
+        TTS fails --> [hearing laptop reads it with its built-in voice]
+   -> flip OFF --> [chips cleared; recognition paused; models stay loaded]
 ```
 
 ### 3.3 Hearing user flow
 
 ```
-[Join as hearing] --> [click Join (unlocks audio)] --audio blocked--> [banner "Click to enable audio" -> room.startAudio()]
-     |
-     v
-[mic -> Web Speech] --unsupported browser--> [banner "Use Chrome"; type-to-caption box]
-     |              --onend / no-speech--> [auto-restart if still joined]
-     |              --TTS playing (ctrl tts on)--> [drop transcripts until tts off + 300 ms]
-     v
-[caption sent to signer]   [sees "Liv is signing..."]   [hears voice]   [presses "?" if unclear]
+[Join as "I'm speaking"] --audio blocked--> ["Click to enable audio"]
+   -> [mic -> Web Speech (later Scribe)] --not Chrome--> [banner "Use Chrome"] --silence/onend--> [auto-restart]
+   -> [sees "ASL voice on" / "Kev is signing…"] -> [hears voice, sees captions]
+   -> [caption crossed out] = signer retracted it      -> [presses "I didn't catch that"] -> signer sees a flash
+   while the signer's voice plays: own mic transcripts dropped (+300 ms) so the voice isn't captioned back
 ```
 
-### 3.4 Segmenter state machine
+### 3.4 Segmenter (handedness-agnostic)
 
 ```
-                 hands visible AND wrist above rest line AND speed > 0.8 S/s for 3 frames
-   +--------+ ------------------------------------------------------------------> +--------+
-   |  IDLE  |   (keeps last 8 frames as pre-roll)                                  | ACTIVE |
-   +--------+ <----+                                                               +--------+
-        ^          |  t >= coolUntil                                                   |
-        |     +----------+      end when ANY of:                                       |
-        +-----| COOLDOWN | <----  speed < 0.4 S/s for 8 frames      -> 'still'   ------+
-              |  300 ms  |        dominant wrist below rest line     -> 'lowered'
-              +----------+        no hands for 10 frames             -> 'lost'
-                                  longer than 3000 ms                -> 'timeout'
-   emit end(frames) only if frames >= 8; classifier then decides sign vs _idle
-   S = shoulder width (aspect-corrected); rest line = shoulder y + 0.8 S
+                 any hand visible AND any wrist above rest line AND fastest hand > 0.8 S/s for 3 frames
+   +--------+ ---------------------------------------------------------------------------> +--------+
+   |  IDLE  |   (keeps last 8 frames as pre-roll)                                           | ACTIVE |
+   +--------+ <----+                                                                        +--------+
+        ^          | t >= coolUntil                                                            |
+        |     +----------+   end when ANY of:  fastest hand < 0.4 S/s for 8 frames  -> 'still'  |
+        +-----| COOLDOWN | <-------------------  all visible hands below rest line   -> 'lowered'|
+              |  300 ms  |                       no hands for 10 frames              -> 'lost'   |
+              +----------+                       longer than 3000 ms                 -> 'timeout'+
+   S = shoulder width; rest line = shoulder y + 0.8 S; hands matched frame-to-frame by nearest wrist.
+   On end: clipFeatures() mirrors the clip if the image-right hand did the moving (left-handed signer).
 ```
 
 ### 3.5 Error and fallback map
 
 ```
-FAILURE                         DETECTED BY                        WHAT THE USER SEES / SYSTEM DOES
-------------------------------  ---------------------------------  -------------------------------------------------
-Gemini 429 / 5xx / > 2.5 s      server wait_for + named excepts    502 -> client ruleBasedEnglish(), chip "offline"
-ElevenLabs 429/402/5xx          /api/tts non-200 -> 429/502        cached MP3 if text matches; else speak-local on hearing side
-ElevenLabs concurrency (~2)     client queue                       VoiceOut serializes; never 2 requests at once
-LiveKit disconnect              RoomEvent.Reconnecting/Disconnected banner; resend last 3 captions on Reconnected
-Captions lost while offline     data packets are not buffered      resend history on ParticipantConnected
-TTS echo into hearing STT       ctrl {type:'tts', on}              hearing STT ignores transcripts; headphones on stage
-Autoplay blocked                AudioContext 'suspended'           Join button resumes it; "Enable audio" banner
-No camera / denied              getUserMedia rejects               banner + retry; captions-only mode
-Hands out of frame              wrist x/y near 0 or 1              "Move back" hint
-Low light / closed fist misses  hands.length == 0 while signing    tracking-quality dot turns amber
-Model file missing / wrong F    loadOnnx() meta check throws       automatic switch to kNN classifier
-Venue Wi-Fi down                fetch errors everywhere            phone hotspot; recorded backup video
-API key leaked                  -                                  keys only in server/.env; rotate if pushed
-DB down / not configured        asyncpg error                      /api/events still 204; stats page "no data"
+FAILURE                           DETECTED BY                         WHAT HAPPENS
+--------------------------------  ----------------------------------  ---------------------------------------------
+Kaggle download slow/blocked      ETA > 90 min                        demo-signs-only fetch (Task 0.2 fallback)
+GISLR aspect ratio unknown        estimate_aspect output              --aspect flag; x-stretch augmentation absorbs the rest
+Model files missing               loadOnnx + Knn.load reject          banner; call still works; ?dev simulator
+Gemini 429 / 5xx / > 2.5 s        server timeout + named excepts      502 -> offline rules English (still auto-spoken)
+Auto-speak says a wrong sentence  the signer                          "That was wrong": strike-through + apology phrase
+ElevenLabs 429/402/5xx            /api/tts non-200                    cached MP3 if text matches; else hearing laptop's speechSynthesis
+LiveKit disconnect                Reconnecting/Disconnected events    banner; resend last 3 captions on reconnect
+TTS echo into hearing captions    ctrl {tts on/off}                   transcripts dropped; headphones on stage
+Presage sidecar not running       connect() times out (1.5 s)         MediaPipe brows; then the "?" button
+Presage key check needs internet  'status' hints from sidecar         same fallback; hint shown next to "brows:"
+Chrome blocks localhost socket    connect() fails                     run the web app from localhost on the signer laptop
+Hands out of frame / low light    edge landmarks / no hands           "Move back" hint; tracking dot turns grey
+Venue Wi-Fi down                  fetch errors                        phone hotspot; recorded backup video
+Key pushed to GitHub              —                                   keys only in .env; rotate after the event
 ```
 
 ### 3.6 Deployment
 
 ```
-            GoDaddy Registry domain (e.g. signline.co)
-                 |  A @   -> VULTR_IP
-                 |  A www -> VULTR_IP
-                 v
-   +--------------------- Vultr VM (Ubuntu 24.04) ---------------------+
-   |  Caddy :443 (auto HTTPS)                                          |
-   |    /api/*  -> reverse_proxy 127.0.0.1:8000 (flush_interval -1)    |
-   |    /*      -> /srv/signline/web/dist (SPA, models, tts-cache)     |
-   |  systemd: uvicorn app.main:app --port 8000                        |
-   +-------------------------------------------------------------------+
-        |                |                 |                 |
-   LiveKit Cloud     Gemini API       ElevenLabs        Tiger Cloud (Postgres, sslmode=require)
+   Vultr VM (Ubuntu 24.04), hostname <ip-with-dashes>.sslip.io (domain optional, Task 4.1)
+     Caddy :443 auto-HTTPS:  /api/* -> 127.0.0.1:8000 (flush_interval -1)   /* -> /srv/signline/web (SPA)
+     systemd: uvicorn app.main:app
+   -> LiveKit Cloud · Gemini · ElevenLabs · Tiger Cloud
+   Signer laptop also runs: presage/sidecar.mjs on 127.0.0.1:8788 (optional)
+   Dev: npm run dev (localhost:5173, proxies /api -> localhost:8000)
+```
 
-Local dev: web = `npm run dev` (localhost:5173, proxies /api -> localhost:8000); server = uvicorn on :8000.
-Second laptop in dev: its own `npm run dev` with VITE_API_PROXY=http://<laptop-A-LAN-IP>:8000.
+### 3.7 Training pipeline and evaluation
+
+```
+gislr-all (250 signs, 21 Kaggle signers) --pretrain--> backbone (hold out every 5th signer -> top-1 over 250)
+                                                         | conv weights
+gislr-demo (16 signs, ≤300 clips each) + our clips ×3 --finetune, new head (21 labels)-->
+   folds: hold out ONE of our signers + a fixed set of Kaggle signers
+   report: our held-out signer acc (mean) · Kaggle held-out acc · temperature · tau (90% precision) · coverage
+   final model: all data -> sign.onnx (single file) -> parity check vs PyTorch (< 1e-3) -> sign_meta.json
 ```
 
 ---
@@ -276,119 +229,143 @@ Second laptop in dev: its own `npm run dev` with VITE_API_PROXY=http://<laptop-A
 
 ```
 signline/
-  .gitignore                      .env*, node_modules, .venv, data/, __pycache__, web/dist
-  README.md                       what it is, how to run, credits (datasets, AI tools, ElevenLabs)
-  docs/plans/2026-10-17-signline-plan.md   this file
-  web/                            Vite + React + TS (person A, B)
-    vite.config.ts                dev proxy /api -> :8000, vitest config
-    public/
-      mediapipe/wasm/             copied from node_modules (offline-safe)
-      models/                     hand_landmarker.task, pose_landmarker_lite.task, face_landmarker.task,
-                                  sign.onnx, sign_meta.json, knn.f32, knn.json, letters.f32, letters.json
-      ort/                        onnxruntime-web wasm files (offline-safe)
-      tts-cache/                  index.json + demo-sentence MP3s
-    scripts/build-dataset.ts      raw sessions -> features (X.f32, meta.json) + kNN/letter templates
-    src/
-      vocab.ts                    sign lists, letters, IDLE, WH set (single source of truth)
-      config.ts                   PAUSE_MS, USE_FACE, DEV flag
-      lib/types.ts                Pt, Frame, Clip, Session, Caption, Ctrl, Role
-      lib/landmarks.ts            createTracker(): MediaPipe init + detect(video, t) -> Frame
-      lib/features.ts             anchors, orderHands, mirrorFrame, frameFeatures, resample, clipFeatures
-      lib/segmenter.ts            Segmenter state machine
-      lib/classifier.ts           Pred/Alt types, softmax, decide() (pure, unit-tested)
-      lib/onnx.ts                 loadOnnx(): onnxruntime-web session for the trained CNN
-      lib/knn.ts                  Knn classifier (baseline + per-user calibration)
-      lib/letters.ts              letterFeatures, LetterKnn, LetterDecoder
-      lib/nmm.ts                  headshake(), Nmm (brows + headshake -> tags)
-      lib/gloss.ts                GlossBuffer, ruleBasedEnglish
-      lib/api.ts                  typed fetch wrappers for /api/*
-      lib/call.ts                 joinCall(): LiveKit connect/publish/captions/ctrl
-      lib/voice.ts                VoiceOut: TTS queue -> WebAudio -> LiveKit track, cache, fallback
-      lib/stt.ts                  startWebSpeech(), startScribe()
-      lib/metrics.ts              logSign/logUtterance -> sendBeacon('/api/events')
-      lib/signerPipeline.ts       per-frame loop for the signer
-      pages/Bench.tsx             FPS + live readouts for tuning thresholds
-      pages/Recorder.tsx          data collection (signs + letters)
-      pages/Call.tsx              the app
-      pages/Stats.tsx             Tiger Data dashboard
-      components/CaptionLane.tsx, Chips.tsx, Consent.tsx
-      App.tsx                     hash routes: #/ (call), #/record, #/bench, #/stats
-    src/**/*.test.ts              vitest unit tests next to each lib file
-  ml/                             person B
-    requirements.txt              torch, numpy, onnx, onnxruntime, scikit-learn, matplotlib
-    train.py                      LOSO eval, temperature + threshold fit, ONNX export
-    eval_report.py                confusion matrix, per-class F1, coverage curve, metrics.json
-  server/                         person C
+  AGENTS.md                       rules for Claude Code + Codex (Task 0.4)
+  CLAUDE.md                       one line: @AGENTS.md
+  .gitignore                      .env*, node_modules, .venv, data/, __pycache__, web/dist, ml/out
+  README.md                       run instructions, credits (Kaggle GISLR/PopSign CC BY 4.0, AI tools, ElevenLabs)
+  plan.md   this file — the spec agents follow
+  web/                            Track A (call/UI) + Track B (recognition)
+    tsconfig.app.json             + "resolveJsonModule": true
+    vite.config.ts                dev proxy /api -> :8000, vitest
+    public/mediapipe/wasm/ public/ort/      runtime files copied locally (offline-safe)
+    public/models/                hand/pose/face .task files; sign.onnx, sign_meta.json, knn.*, letters.*
+    public/tts-cache/             demo MP3s + index.json
+    scripts/build-dataset.ts      our recordings -> data/processed + starter kNN/letter templates
+    scripts/export-fixtures.ts    parity fixtures for ml/tests
+    src/vocab.json                THE vocabulary (browser + Python read it)
+    src/vocab.ts                  typed view of vocab.json
+    src/config.ts                 PAUSE_MS, AUTO_SPEAK_MIN_CONFIDENCE, USE_FACE, DEV
+    src/lib/types.ts              Frame, Caption (+retracted), Ctrl (+asl) …            [contract]
+    src/lib/landmarks.ts          MediaPipe Hand(numHands 2)+Pose(+Face blendshapes)
+    src/lib/features.ts           anchors, canonicalize, clipFeatures (T=32, F=174)    [contract, = ml/features.py]
+    src/lib/segmenter.ts          IDLE/ACTIVE/COOLDOWN, any-hand speed
+    src/lib/classifier.ts         Pred, softmax, decide()
+    src/lib/onnx.ts               loadOnnx()
+    src/lib/knn.ts                kNN fallback + "teach my sign"
+    src/lib/letters.ts            letterHand, letterFeatures, LetterKnn, LetterDecoder
+    src/lib/gloss.ts              GlossBuffer, ruleBasedEnglish
+    src/lib/nmm.ts                brows (Presage | MediaPipe) + headshake -> tags
+    src/lib/presage.ts            PresageLink: frames -> local sidecar -> face scores
+    src/lib/signerPipeline.ts     per-frame loop: start/pause with the ASL switch
+    src/lib/api.ts call.ts voice.ts stt.ts metrics.ts
+    src/pages/Call.tsx Recorder.tsx Bench.tsx Stats.tsx
+    src/components/CaptionLane.tsx Chips.tsx Consent.tsx
+    src/App.tsx                   hash routes: #/ #/record #/bench #/stats
+  ml/                             Track B (MSI)
     requirements.txt
-    .env.example
-    app/__init__.py
-    app/main.py                   routes: health, token, gloss, tts, voices, scribe-token, events, stats
-    app/gloss.py                  Gemini prompt + schema + translate()
-    app/db.py                     asyncpg pool, insert_events(), stats()
-    sql/schema.sql                hypertables + continuous aggregates
-    scripts/eval_gloss.py         latency + output check over 12 test glosses
-    scripts/cache_tts.py          pre-generate demo MP3s into web/public/tts-cache
-    tests/test_api.py, tests/test_gloss.py
-    deploy/Caddyfile, deploy/signline.service
-  data/                           NOT in git: raw/ (session JSON), processed/ (X.f32, meta.json)
+    features.py                   Python twin of features.ts                             [contract]
+    gislr_to_features.py          Kaggle zip -> data/gislr-* (+ --estimate-aspect-from)
+    train.py                      pretrain | finetune -> ONNX + meta + kNN
+    eval_report.py                confusion matrix, per-class F1, coverage curve
+    tests/test_parity.py, tests/fixtures/parity.json
+  server/                         Track C
+    app/main.py gloss.py db.py · sql/schema.sql · scripts/eval_gloss.py cache_tts.py · tests/ · deploy/
+  presage/                        optional sidecar (signer laptop): package.json, sidecar.mjs
+  data/                           NOT in git: asl-signs.zip, raw/, processed/, gislr-demo/, gislr-all/
 ```
 
 ---
 
-## 5. Roles, tracks and timeline
+## 5. Team, machines, agents, timeline
 
-| Person | Owns | Good fit for |
-|---|---|---|
-| **A — Call & UI** | `call.ts`, `voice.ts`, `stt.ts`, `Call.tsx`, captions, banners | React/TS experience |
-| **B — ML** | `landmarks.ts`, `features.ts`, `segmenter.ts`, `letters.ts`, Recorder, Bench, `ml/` | Python + some TS |
-| **C — Backend & sponsors** | `server/`, Gemini prompt, Vultr, domain, Tiger Data, `Stats.tsx` | Python; a confident beginner can do this |
-| **D — Product, ASL & pitch** | vocab verification, consent, recording sessions, demo script, Devpost, video, slides, Deaf outreach, testing | Beginner-friendly and critical |
+### 5.1 Who does what
+
+| Track | Machine | Owns | Demo role |
+|---|---|---|---|
+| **B — Recognition & ML** | **Kev's MSI (RTX 3060)** | Kaggle data, `features`/`segmenter`/`letters`/`signerPipeline`, `ml/`, Recorder, Bench, Presage sidecar | **Signer laptop** (pending the Bench check in Task 1.B1) |
+| **A — Call & UI** | Mac 1 | `call.ts`, `voice.ts`, `stt.ts`, `Call.tsx`, captions, consent | **Hearing laptop** |
+| **C — Server, sponsors & pitch** | Mac 2 | `server/`, Gemini prompt, Vultr, Tiger Data, `Stats.tsx`, Devpost, slides, video | Presenter; drives the stats tab |
+
+Two people instead of three: the Mac person takes A + C; Kev keeps B and records the backup video.
+Everyone: learn the signs (Task 0.3), record (Task 1.D1), rehearse.
+
+### 5.2 Building with Claude Code and Codex
+
+- **One spec.** This file is `plan.md` at the repo root. `AGENTS.md` tells both tools to treat it as the spec. Codex reads `AGENTS.md` directly; Claude Code reads `CLAUDE.md`, which imports it with `@AGENTS.md`.
+- **One task per prompt.** Paste this, changing the task number:
+  ```
+  Do Task 1.B2 from plan.md exactly as written. Follow AGENTS.md.
+  Run the checks the task lists and paste their output. Then commit with the task's commit message.
+  ```
+- **One agent per track at a time.** Two agents editing the same files will collide. If you want a second agent on the same machine, give it another track's files or use a separate git worktree.
+- **Review before you push.** Read the diff of anything marked [contract] in §4. Run the tests yourself if the agent didn't paste output.
+- **Debugging prompt:** "Here is the console error / failing test: … Reproduce it with a test first, then fix it. Don't change unrelated files."
+- **Things agents must not do:** touch `.env`, print keys, `git push --force`, delete `data/`, "simplify" the parity-checked feature code.
+- **Use them where they're strongest:** pasting and wiring the plan's code, chasing type errors, writing glue. Keep humans on the parts agents can't see: camera lighting, how a sign looks, how the demo feels.
+
+### 5.3 Timeline
 
 ```
-Sat 10 ---- 12 -------------- 17 ---------------- 23 ------ Sun 02 ..sleep.. 07 ------------- 13 ----- 14:30 ---- 17:00
-    | P0 Setup | P1 Foundations | P2 Recognize+Voice | P3 Golden |  (stagger,   | P4 Harden +   | P5 Freeze, rehearse,
-    |  H0-H2   |   H2-H7        |   H7-H13           |  path     |   >=4 h each)|  sponsors     |  video, Devpost
-    |          | A call+captions| A voice track, STT |  H13-H16  |              |  H21-H27      |  H27-H31
-    |          | B tracker+rec  | B train + segment  |  2-laptop |              |  09:00 one    |  freeze 14:30
-    |          | C api+deploy   | C gloss+tts tuned  |  e2e run  |              |  person at    |  submit by 16:30
-    |          | D vocab+record | D record+script    |  commit   |              |  pitch class  |
+Sat 10 ─── P0 Setup ─── P1 Foundations ─── 17 ─── P2 Recognize + voice ─── 23 ─── P3 Golden path ─── Sun 02
+           Kev: Kaggle download starts FIRST (long pole), CUDA PyTorch
+                          A call+captions | B features/segmenter/recorder/parity/converter | C api+deploy+schema
+                          everyone: record ME YOU NAME WHAT _idle + K E V (≈ 25 min each)
+                                           B pretrain (250) → finetune | A ASL switch + autospeak (simulator) | C gloss+tts
+                                                                             all: two-laptop run, tag golden-path
+Sun 02-07 sleep in shifts (≥ 4 h each) ── 07 P4 Harden + sponsors (Presage, Tiger, Vultr) ── 13 P5 freeze, video, Devpost ── 17:00 submit
 ```
 
 **Checkpoints (stop and check together):**
-- **CP1 — Sat 17:00:** two laptops in a LiveKit call with typed captions; Recorder saves clips; `/api/gloss` and `/api/tts` work from curl.
-- **CP2 — Sat 23:00:** Tier-1 signs recognized live with kNN or CNN; Speak plays the voice in the call.
-- **CP3 — Sun 02:00 ("golden path"):** the full demo script works end to end once. Tag the commit `golden-path`. Everything after this is optional and must not break it.
-- **CP4 — Sun 13:00:** deployed URL works on both laptops; backup video recorded.
+- **CP1 — Sat 17:00:** two-laptop call with typed captions · Recorder saves clips · parity test green · Kaggle demo subset converted · `/api/gloss` + `/api/tts` work with curl.
+- **CP2 — Sat 23:00:** fine-tuned model recognizes the 20 signs live on Bench · ASL switch + auto-speak works end to end with the simulator.
+- **CP3 — Sun 02:00 (golden path):** the full demo script works live. `git tag golden-path`. Nothing after this may break it.
+- **CP4 — Sun 13:00:** deployed URL works on both laptops (or the local fallback is rehearsed) · backup video recorded.
 
 ---
 
 ## 6. Phases and tasks
 
-Conventions: `[A]`…`[D]` = owner. Each code task follows **test → see it fail → code → see it pass → commit**. Commands assume macOS/Linux or Git Bash on Windows. Commit after every green step: `git add -A && git commit -m "<what>"`.
+Conventions: `[A]` `[B]` `[C]` = track owner. Each code task: test → see it fail → code → see it pass → commit (`git add -A && git commit -m "<message>"`). Commands are bash. On the MSI use Git Bash or WSL, and activate venvs with `.venv\Scripts\activate` instead of `source .venv/bin/activate`.
 
-### Phase 0 — Setup (Sat 10:00–12:00, H0–H2)
+### Phase 0 — Setup (Sat 10:00–12:00)
 
-#### Task 0.1 [C] Accounts and keys (≈ 45 min, do in parallel tabs)
-- [ ] **LiveKit Cloud** (free Build plan, no card): create project → Settings → Keys → copy `LIVEKIT_URL` (`wss://…livekit.cloud`), `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`.
-- [ ] **Google AI Studio**: create a new Google Cloud project just for this → create `GEMINI_API_KEY` → open aistudio.google.com/rate-limit and screenshot the limits for `gemini-3.5-flash-lite`. Limits are per *project*, so a second key in the same project does not help. Optional (Q9): link billing for Tier 1; claim MLH's $10/month Google credit from the MLH Gemini page.
-- [ ] **ElevenLabs**: each teammate makes a free account for development (10k credits each). Keep one "demo" account untouched until rehearsal. Copy `ELEVENLABS_API_KEY` from the demo account. If you stay on the free plan, any public video using the voice needs "elevenlabs.io" in its title.
-- [ ] **Tiger Data**: sign up through the MLH quickstart link (30-day $1,000 trial, no card) → create a service → copy the connection string as `DATABASE_URL` (keep `?sslmode=require`).
-- [ ] **Vultr**: sign up with the MLH promo code ($100 credit) → deploy *now* an Ubuntu 24.04 Cloud Compute instance (1 vCPU / 1–2 GB, region New Jersey or Atlanta) so any deposit or verification surprise shows up early. Note `VULTR_IP`.
-- [ ] **GitHub**: one public repo `signline`, everyone added.
-- [ ] Put all keys in a shared password manager or a private message to C. Not in Slack/Discord channels, not in the repo.
+#### Task 0.1 [C] Accounts and keys (≈ 45 min)
+- [ ] **LiveKit Cloud** (free, no card) → project → Settings → Keys: `LIVEKIT_URL` (`wss://…livekit.cloud`), `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`.
+- [ ] **Google AI Studio** → new Cloud project just for this → `GEMINI_API_KEY`. Open aistudio.google.com/rate-limit and screenshot the limits for `gemini-3.5-flash-lite` (limits are per project). Link billing for Tier 1 (costs ≈ $0.20) and claim MLH's $10/month Google credit. `gemini-2.0-flash` is shut down, so old tutorials will fail.
+- [ ] **ElevenLabs**: each teammate makes a free account for development. Keep one "demo" account untouched until rehearsal. On the free plan, a public video using the voice needs "elevenlabs.io" in its title; Starter removes that.
+- [ ] **Tiger Data** via the MLH quickstart link (30-day trial, no card) → service → `DATABASE_URL` (keep `?sslmode=require`).
+- [ ] **Vultr** with the MLH promo code → deploy an Ubuntu 24.04 VM now (1 vCPU / 1–2 GB, New Jersey or Atlanta) so any account verification shows up early. Note `VULTR_IP`.
+- [ ] **Presage** (for Task 4.3): create an account at physiology.presagetech.com through the MLH Presage page; copy the API key to Kev.
+- [ ] **GitHub**: public repo `signline`, everyone added. Keys go to C through a private message, never into the repo or a public channel.
 
-#### Task 0.2 [D] Organizer questions (≈ 15 min)
-- [ ] Ask Q1–Q6 from §1 at the organizer desk or in Discord. Write the answers at the top of this file under §1.
+#### Task 0.2 [B, MSI] Start the Kaggle download first, then CUDA PyTorch (≈ 30 min hands-on; the download runs in the background)
+- [ ] On kaggle.com: open the **"Google - Isolated Sign Language Recognition"** competition (`kaggle.com/competitions/asl-signs`), click **Late Submission / Join** and accept the rules (required before download). On the **Data** tab, note the license (expected CC BY 4.0) for the README.
+- [ ] kaggle.com → Settings → **Create New Token** → save `kaggle.json` to `~/.kaggle/kaggle.json` (Windows: `C:\Users\<you>\.kaggle\kaggle.json`).
+- [ ] Start the download (≈ 40 GB). Plugging into ethernet helps:
+```bash
+mkdir -p data && python -m pip install kaggle && kaggle competitions download -c asl-signs -p data
+```
+Expected: a progress bar, ending with `data/asl-signs.zip`. **Do not unzip it.** The converter reads straight from the zip.
+- [ ] **If the ETA is over ~90 minutes**, use the fallback instead: create a Kaggle **Notebook** on the competition page (the data is already attached, usually at `/kaggle/input/asl-signs`), upload `ml/features.py` + `ml/gislr_to_features.py` (Task 1.B6), run
+`python gislr_to_features.py --dir /kaggle/input/asl-signs --csv /kaggle/input/asl-signs/train.csv --signs all --out gislr-all --workers 4`
+and download the `gislr-all` folder (≈ 2 GB of features instead of 40 GB).
+- [ ] While it downloads, set up CUDA PyTorch: create `ml/.venv`, then use the selector at **pytorch.org/get-started/locally** (your OS, Pip, CUDA) and run the command it gives you. Then:
+```bash
+python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.get_device_name(0))"
+```
+Expected: `… True NVIDIA GeForce RTX 3060 …`. If you see `False`, update the NVIDIA driver and use the selector's CUDA build, not the default CPU wheel.
+- [ ] Then `pip install -r ml/requirements.txt` (after Task 1.B5 creates it). The torch line there is already satisfied.
 
-#### Task 0.3 [D] Lock the vocabulary (≈ 45 min)
-- [ ] For each Tier-1 sign and each letter, open its Lifeprint (lifeprint.com) or Handspeak page, watch the video, and write a one-line description in `web/src/vocab.ts` comments (Task 0.4 creates the file).
-- [ ] Pick the demo name (Q10) and the letter list.
-- [ ] Teach the whole team the 16 signs together for 10 minutes so everyone records the same form.
+#### Task 0.3 [All] Learn the signs (≈ 30 min, together)
+- [ ] For the **16 Kaggle signs**, learn each one from its **PopSign video** (signdata.cc.gatech.edu → PopSign v1.0 → game signs). The model learned from those recordings, so sign it the way they do. Cross-check on Lifeprint or Handspeak.
+- [ ] For **ME, YOU, NAME, WHAT**, use Lifeprint / Handspeak, and agree on one form each.
+- [ ] Practise fingerspelling **K, E, V** slowly at chest height, palm toward the camera.
+- [ ] Kev runs the demo script (§2) five times out loud. The goal is consistent, slightly slow signs with a clear pause and hands lowered between sentences.
 
-#### Task 0.4 [A] Repo scaffold (≈ 30 min)
+#### Task 0.4 [A] Repo scaffold + agent rules (≈ 40 min)
 - [ ] Run:
 ```bash
-git clone https://github.com/<your-org>/signline && cd signline
+git clone https://github.com/Azrkiel/banana-brownies-ghh2026 && cd banana-brownies-ghh2026
 printf '.env*\n!.env.example\nnode_modules/\n.venv/\n__pycache__/\ndata/\nweb/dist/\nml/out/\n' > .gitignore
 npm create vite@latest web -- --template react-ts
 cd web
@@ -403,7 +380,7 @@ curl -L -o public/models/pose_landmarker_lite.task https://storage.googleapis.co
 curl -L -o public/models/face_landmarker.task https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task
 ls -la public/models
 ```
-Expected: three `.task` files, each larger than 1 MB. (Files are copied locally so the demo does not depend on a CDN.)
+Expected: three `.task` files, each over 1 MB.
 - [ ] Replace `web/vite.config.ts`:
 ```ts
 import { defineConfig } from 'vitest/config';
@@ -415,34 +392,86 @@ export default defineConfig({
   test: { environment: 'node', include: ['src/**/*.test.ts'] },
 });
 ```
-- [ ] In `web/package.json` → `"scripts"`, add `"test": "vitest run"` and `"dataset": "tsx scripts/build-dataset.ts"`.
-- [ ] In `web/src/main.tsx`, remove the `<StrictMode>` wrapper (render `<App />` directly). In development StrictMode runs every effect twice, which opens the camera twice and leaks a second MediaPipe tracker.
-- [ ] Keep the template's TypeScript settings (`erasableSyntaxOnly`, `noUnusedLocals`). All code in this plan type-checks under them; that is why classes declare their fields explicitly instead of using `constructor(private x)`.
+- [ ] In `web/package.json` → `"scripts"`, add `"test": "vitest run"`, `"dataset": "tsx scripts/build-dataset.ts"`, `"fixtures": "tsx scripts/export-fixtures.ts"`.
+- [ ] In `web/tsconfig.app.json` → `"compilerOptions"`, add `"resolveJsonModule": true`. Keep the template's other settings (`erasableSyntaxOnly`, `noUnusedLocals`); all code here passes under them.
+- [ ] In `web/src/main.tsx`, remove the `<StrictMode>` wrapper (render `<App />` directly). In development StrictMode runs effects twice, which opens the camera twice.
+- [ ] Create `web/src/vocab.json`:
+```json
+{
+  "gislr": ["hello", "bye", "thankyou", "please", "yes", "no", "hungry", "pizza", "water", "where", "go", "now", "later", "wait", "tomorrow", "store"],
+  "own": ["ME", "YOU", "NAME", "WHAT"],
+  "idle": "_idle",
+  "letters": ["K", "E", "V"],
+  "wh": ["WHAT", "WHERE", "WHO", "WHY", "HOW"]
+}
+```
 - [ ] Create `web/src/vocab.ts`:
 ```ts
-// Single source of truth for labels. Person D: add a one-line form description per sign (Lifeprint/Handspeak).
-export const IDLE = '_idle';
-export const SIGNS_TIER1 = [
-  'HELLO', 'NICE', 'MEET', 'YOU', 'ME', 'MY', 'NAME', 'WHAT',
-  'DEAF', 'HEARING', 'YES', 'NO', 'PLEASE', 'SLOW', 'AGAIN', 'THANK-YOU',
-] as const;
-export const SIGNS_TIER2 = ['UNDERSTAND', 'HELP', 'WHERE', 'WHO', 'HOW', 'LEARN', 'SIGN', 'GO', 'TOMORROW', 'STORE', 'BYE'] as const;
-export const LETTERS = ['L', 'I', 'V', 'K', 'O', 'F', 'Y', 'B', 'C', 'D'] as const; // demo-name letters + spares
-export const WH_SIGNS = new Set(['WHAT', 'WHERE', 'WHO', 'HOW']);
-export const RECORD_LABELS = [...SIGNS_TIER1, IDLE] as string[]; // add ...SIGNS_TIER2 when Tier 1 is solid
+// Single source of truth for labels: vocab.json (Python training reads the same file).
+import vocab from './vocab.json';
+
+export const IDLE: string = vocab.idle;                                  // '_idle'
+export const GISLR_SIGNS: string[] = vocab.gislr.map((s) => s.toUpperCase()); // from the Kaggle dataset, no recording needed
+export const OWN_SIGNS: string[] = vocab.own;                            // not in the Kaggle set: we record these
+export const DEMO_SIGNS: string[] = [...GISLR_SIGNS, ...OWN_SIGNS];
+export const LETTERS: string[] = vocab.letters;                          // spell mode knows only these
+export const WH_SIGNS = new Set<string>(vocab.wh);
+export const RECORD_LABELS: string[] = [...OWN_SIGNS, IDLE, ...GISLR_SIGNS]; // own + idle required; GISLR signs optional (adaptation)
 ```
-- [ ] `npm run dev` → open http://localhost:5173 → Vite page loads. Commit: `scaffold web`.
+- [ ] Create `AGENTS.md` at the repo root:
+```markdown
+# SignLine — rules for coding agents (Claude Code and Codex read this file)
+
+SignLine is a two-person video call: a signer's ASL (a small vocabulary + fingerspelled names) becomes spoken
+English; the hearing person's speech becomes captions. Built at Girls Hoo Hack 2026 (deadline Sun Oct 18, 17:00 EDT).
+
+**The spec is `plan.md`.** Each task there has the exact code, tests and expected
+output. When asked to do "Task X", read that task, do exactly it, run its checks, show the output, then commit with
+its commit message. Don't start other tasks.
+
+## Layout
+- `web/` Vite + React + TypeScript (browser: MediaPipe, ONNX classifier, LiveKit call, UI)
+- `server/` FastAPI (holds every API key; LiveKit tokens, Gemini, ElevenLabs, Tiger Data)
+- `ml/` Python: Kaggle GISLR conversion, training, ONNX export (GPU box: the MSI with the RTX 3060)
+- `presage/` optional Node sidecar for Presage face analysis (runs on the signer laptop)
+- `data/` never committed (Kaggle zip, recordings, features)
+
+## Commands
+- web: `cd web && npm run dev` · `npm test` · `npx tsc -b` · `npm run fixtures` (after changing features.ts)
+- server: `cd server && source .venv/bin/activate && pytest -q` · `uvicorn app.main:app --reload --port 8000`
+- ml: `pytest ml/tests` · `python ml/gislr_to_features.py ...` · `python ml/train.py pretrain|finetune ...`
+
+## Rules
+1. Secrets: keys live only in `server/.env` (gitignored) and the Presage key in the sidecar's environment. Never put
+   a key in `web/`, in a `VITE_*` variable, in a commit, or in printed output.
+2. Shared contracts — change only when the task says so, and tell the team in chat:
+   `web/src/lib/types.ts`, `web/src/vocab.json`, `server/app/main.py` routes, `server/sql/schema.sql`,
+   and the feature code. `web/src/lib/features.ts` and `ml/features.py` must stay identical in behavior:
+   after touching either, run `cd web && npm run fixtures` then `pytest ml/tests/test_parity.py`.
+3. TypeScript runs with the Vite template's `erasableSyntaxOnly` and `noUnusedLocals`: no constructor parameter
+   properties (`constructor(private x)`), no `enum`, no `namespace`, no unused imports.
+4. Stay in your track's files (see the plan's file map). Small commits; `git pull --rebase` before every push.
+5. Before saying a task is done: run its tests/commands and paste the result. If something can't be verified
+   (needs a camera, a key, two laptops), say so instead of claiming it works.
+6. No new dependencies unless the task lists them.
+7. Product rules (they are judged): UI text says "Deaf", "hard of hearing", "signer" — never "mute", "deaf-mute",
+   "hearing-impaired". Never claim the app "translates ASL" or "replaces interpreters". Auto-speak only voices
+   sentences whose signs were all recognized confidently; anything unsure waits for the signer.
+8. Credit: Kaggle GISLR / PopSign data (CC BY 4.0) in the README and Devpost; AI tools used (Claude Code, Codex).
+```
+- [ ] Create `CLAUDE.md` at the repo root containing exactly one line: `@AGENTS.md`
+- [ ] `npm run dev` → http://localhost:5173 shows the Vite page. Commit: `scaffold web + agent rules`.
 
 #### Task 0.5 [C] Server scaffold (≈ 20 min)
 - [ ] Run:
 ```bash
 mkdir -p server/app server/tests server/sql server/scripts server/deploy && cd server
-python3 -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install fastapi "uvicorn[standard]" httpx livekit-api google-genai asyncpg python-dotenv pytest pyjwt
 pip freeze > requirements.txt
 touch app/__init__.py
 ```
-- [ ] Create `server/.env.example` (copy to `server/.env` and fill in real values; `.env` is ignored by git):
+- [ ] Create `server/.env.example`, then copy it to `server/.env` and fill in real values:
 ```
 LIVEKIT_URL=wss://YOUR-PROJECT.livekit.cloud
 LIVEKIT_API_KEY=
@@ -457,9 +486,7 @@ DATABASE_URL=
 
 ---
 
-### Phase 1 — Foundations (Sat 12:00–17:00, H2–H7)
-
-Four tracks run in parallel. Shared contract first.
+### Phase 1 — Foundations (Sat 12:00–17:00)
 
 #### Task 1.0 [A] Shared types (≈ 10 min, before anything else in A/B)
 - [ ] Create `web/src/lib/types.ts`:
@@ -476,24 +503,26 @@ export type Frame = {
 };
 export type ClipKind = 'sign' | 'letter';
 export type Clip = { kind: ClipKind; label: string; frames: Frame[] };
-export type Session = { version: 1; signer: string; leftHanded: boolean; recordedAt: string; clips: Clip[] };
+export type Session = { version: 1; signer: string; recordedAt: string; clips: Clip[] };
 export type Role = 'signer' | 'hearing';
 export type Caption = {
   id: string; speaker: string; role: Role;
   kind: 'english' | 'speech'; text: string; final: boolean; ts: number;
+  retracted?: boolean;  // signer marked a spoken sentence as a recognition error
 };
 export type Ctrl =
   | { type: 'signing'; on: boolean }
   | { type: 'tts'; on: boolean }
   | { type: 'clarify' }
   | { type: 'attention' }
-  | { type: 'speak-local'; text: string };
+  | { type: 'speak-local'; text: string }
+  | { type: 'asl'; on: boolean };
 ```
 - [ ] Commit: `shared types`.
 
-#### Track C — Backend (C)
+#### Track C — Backend
 
-##### Task 1.C1 Health + LiveKit token (≈ 40 min)
+##### Task 1.C1 Health, LiveKit token, gloss/tts/events routes (≈ 40 min)
 - [ ] Write the failing tests `server/tests/test_api.py`:
 ```python
 import asyncio
@@ -547,8 +576,8 @@ def test_events_without_db_is_204(monkeypatch):
     r = client.post("/api/events", json={"signs": [], "utterances": []})
     assert r.status_code == 204
 ```
-- [ ] Run `cd server && pytest -q` → expected: errors, `ModuleNotFoundError: No module named 'app.main'`.
-- [ ] Create `server/app/gloss.py` (full file; Task 1.C2 tests it):
+- [ ] `cd server && pytest -q` → expected: `ModuleNotFoundError: No module named 'app.main'`.
+- [ ] Create `server/app/gloss.py`:
 ```python
 """ASL gloss -> English with Gemini (JSON schema output)."""
 from __future__ import annotations
@@ -593,23 +622,24 @@ Input: the recognized signs in order (uppercase ASL glosses) with the recognizer
 
 Rules:
 - ASL word order differs from English. Time signs come first (TOMORROW ME GO STORE = "I'm going to the store tomorrow."). Topic-comment order is common. ASL leaves out is/am/are and articles; add them.
-- ME = I/me. MY = my. YOU = you. A token like fs-LIV is a fingerspelled name: write it in Title Case ("Liv").
-- A WH-sign (WHAT, WHERE, WHO, HOW) at the end makes a question: YOU NAME WHAT = "What's your name?"
+- ME = I/me. YOU = you. THANKYOU = thank you. A token like fs-KEV is a fingerspelled name: write it in Title Case ("Kev").
+- A WH-sign (WHAT, WHERE, WHO, WHY, HOW) at the end makes a question: YOU NAME WHAT = "What's your name?"
 - Tag Q-YN = raised eyebrows = yes/no question. Tag Q-WH = WH-question. Tag NEG = headshake = negate the main verb.
 - If a low-confidence sign has an alternative that fits the sentence much better, you may use the alternative. Put every English word you are unsure about in "uncertain".
 - Never add facts, names, places, feelings, or intensity that the signs do not contain. Prefer a short sentence over a guess.
-- A single greeting stays short: HELLO = "Hello!", THANK-YOU = "Thank you!"
-- confidence = your 0-1 estimate that the English says what the signer meant.
+- A single greeting stays short: HELLO = "Hello!", THANKYOU = "Thank you!", BYE = "Bye!"
+- confidence = your 0-1 estimate that the English says what the signer meant. Use below 0.6 when the signs do not form a sensible sentence.
 
 Examples:
-HELLO NICE MEET YOU -> {"english":"Hello, nice to meet you!","sentence_type":"statement","confidence":0.95,"uncertain":[]}
-MY NAME fs-LIV -> {"english":"My name is Liv.","sentence_type":"statement","confidence":0.95,"uncertain":[]}
-YOU NAME WHAT [Q-WH] -> {"english":"What's your name?","sentence_type":"wh_question","confidence":0.95,"uncertain":[]}
-YOU HEARING [Q-YN] -> {"english":"Are you hearing?","sentence_type":"yes_no_question","confidence":0.9,"uncertain":[]}
-ME DEAF -> {"english":"I'm Deaf.","sentence_type":"statement","confidence":0.95,"uncertain":[]}
-AGAIN PLEASE SLOW -> {"english":"Could you say that again, slowly please?","sentence_type":"yes_no_question","confidence":0.85,"uncertain":[]}
+HELLO ME NAME fs-KEV -> {"english":"Hello! My name is Kev.","sentence_type":"statement","confidence":0.95,"uncertain":[]}
+YOU NAME WHAT -> {"english":"What's your name?","sentence_type":"wh_question","confidence":0.95,"uncertain":[]}
+ME HUNGRY -> {"english":"I'm hungry.","sentence_type":"statement","confidence":0.95,"uncertain":[]}
+YOU HUNGRY [Q-YN] -> {"english":"Are you hungry?","sentence_type":"yes_no_question","confidence":0.9,"uncertain":[]}
+ME HUNGRY [NEG] -> {"english":"I'm not hungry.","sentence_type":"statement","confidence":0.9,"uncertain":[]}
+PIZZA WHERE -> {"english":"Where can we get pizza?","sentence_type":"wh_question","confidence":0.85,"uncertain":["can we get"]}
+GO NOW -> {"english":"Let's go now!","sentence_type":"statement","confidence":0.85,"uncertain":[]}
 TOMORROW ME GO STORE -> {"english":"I'm going to the store tomorrow.","sentence_type":"statement","confidence":0.9,"uncertain":[]}
-ME UNDERSTAND [NEG] -> {"english":"I don't understand.","sentence_type":"statement","confidence":0.9,"uncertain":[]}"""
+WATER STORE BYE -> {"english":"Water, store, bye?","sentence_type":"statement","confidence":0.3,"uncertain":["water","store"]}"""
 
 _client: genai.Client | None = None
 
@@ -646,7 +676,6 @@ async def translate(r: GlossRequest) -> GlossResult:
     )
     return GlossResult.model_validate_json(resp.text)
 ```
-> `gemini-3.5-flash-lite` already defaults to minimal thinking, so no thinking config is set. Old tutorials using `gemini-2.0-flash` will fail: that model is shut down.
 - [ ] Create `server/app/db.py`:
 ```python
 """Tiger Data (TimescaleDB) writer + stats. Everything is a no-op when DATABASE_URL is unset."""
@@ -892,13 +921,13 @@ async def events(e: Events):
 async def stats():
     return await db.stats()
 ```
-- [ ] Run `pytest -q` → expected `6 passed`.
-- [ ] Run the server: `uvicorn app.main:app --reload --port 8000`, then in another terminal:
+- [ ] `pytest -q` → expected `6 passed`.
+- [ ] Run `uvicorn app.main:app --reload --port 8000`, then:
 ```bash
 curl -s localhost:8000/api/health
-curl -s -X POST localhost:8000/api/token -H 'content-type: application/json' -d '{"room":"demo-room","name":"Liv","role":"signer"}' | head -c 120
+curl -s -X POST localhost:8000/api/token -H 'content-type: application/json' -d '{"room":"demo-room","name":"Kev","role":"signer"}' | head -c 120
 ```
-Expected: health shows `"LIVEKIT_URL":true …`; token response starts with `{"token":"eyJ`.
+Expected: health shows the configured keys as `true`; the token response starts with `{"token":"eyJ`.
 - [ ] Commit: `api: health, token, gloss, tts, voices, events`.
 
 ##### Task 1.C2 Gemini prompt check (≈ 30 min)
@@ -918,7 +947,7 @@ def test_render_lists_alts_tags_and_context():
     assert "FACE TAGS: Q-WH" in text
     assert "Hi, I'm Priya" in text
 ```
-- [ ] `pytest -q` → passes (render already exists; if it fails, fix render, not the test).
+- [ ] `pytest -q` → passes. (If it fails, fix `render`, not the test.)
 - [ ] Create `server/scripts/eval_gloss.py`:
 ```python
 """Run 12 glosses through Gemini; print English + latency. Usage: PYTHONPATH=. python scripts/eval_gloss.py"""
@@ -931,11 +960,10 @@ load_dotenv()
 from app.gloss import GlossRequest, translate  # noqa: E402
 
 CASES = [
-    (["HELLO", "NICE", "MEET", "YOU"], []), (["MY", "NAME", "fs-LIV"], []),
-    (["YOU", "NAME", "WHAT"], ["Q-WH"]), (["YOU", "HEARING"], ["Q-YN"]), (["ME", "DEAF"], []),
-    (["AGAIN", "PLEASE", "SLOW"], []), (["THANK-YOU"], []), (["TOMORROW", "ME", "GO", "STORE"], []),
-    (["ME", "UNDERSTAND"], ["NEG"]), (["WHERE", "YOU", "LEARN", "SIGN"], ["Q-WH"]),
-    (["HELP", "PLEASE"], []), (["YES"], []),
+    (["HELLO", "ME", "NAME", "fs-KEV"], []), (["YOU", "NAME", "WHAT"], ["Q-WH"]), (["ME", "HUNGRY"], []),
+    (["YOU", "HUNGRY"], ["Q-YN"]), (["ME", "HUNGRY"], ["NEG"]), (["PIZZA", "WHERE"], ["Q-WH"]), (["GO", "NOW"], []),
+    (["TOMORROW", "ME", "GO", "STORE"], []), (["PLEASE", "WAIT"], []), (["THANKYOU", "BYE"], []), (["YES"], []),
+    (["LATER", "WATER"], []),
 ]
 
 
@@ -954,8 +982,8 @@ async def main() -> None:
 
 asyncio.run(main())
 ```
-- [ ] Run `PYTHONPATH=. python scripts/eval_gloss.py`. Expected: 12 sensible sentences, p50 under ~1000 ms. If any output adds content that isn't in the signs, add that case as another example line in `SYSTEM` and rerun. Save the printout; the p50 goes on the metrics slide.
-- [ ] If you get `429` / `RESOURCE_EXHAUSTED`: check AI Studio limits; turn on Tier-1 billing (Q9). If you get `404 model not found`: confirm the model string at ai.google.dev/gemini-api/docs/models and update `GEMINI_MODEL` in `.env`.
+- [ ] `PYTHONPATH=. python scripts/eval_gloss.py` → 12 sensible sentences, p50 under ~1000 ms. The last case (`LATER WATER`) should come back with low confidence, because auto-speak relies on that. If an output invents content, add that case as another example in `SYSTEM` and rerun. Save the p50 for the slides.
+- [ ] `429`/`RESOURCE_EXHAUSTED` → check AI Studio limits / enable Tier 1. `404 model not found` → confirm the model name at ai.google.dev/gemini-api/docs/models and update `GEMINI_MODEL`.
 - [ ] Commit: `gloss prompt + eval`.
 
 ##### Task 1.C3 TTS check (≈ 20 min)
@@ -964,24 +992,21 @@ asyncio.run(main())
 curl -s localhost:8000/api/voices | python3 -m json.tool | head -20
 VOICE=$(curl -s localhost:8000/api/voices | python3 -c "import sys,json;print(json.load(sys.stdin)[0]['id'])")
 time curl -s -X POST localhost:8000/api/tts -H 'content-type: application/json' \
-  -d "{\"text\":\"Hello, nice to meet you!\",\"voice_id\":\"$VOICE\"}" -o /tmp/hello.mp3
-ls -la /tmp/hello.mp3
+  -d "{\"text\":\"Hello! My name is Kev.\",\"voice_id\":\"$VOICE\"}" -o /tmp/hello.mp3
 ```
-Expected: a list of voices; an MP3 of roughly 20–40 KB in well under 2 s. Play it.
-- [ ] D picks 4–6 voices for the picker with the signers (Q13: the Deaf user chooses their voice).
-- [ ] Commit nothing new (no code). Write the chosen voice IDs in `README.md`.
+Expected: a voice list, and an MP3 (~20–40 KB) in well under 2 s. Play it. Kev picks the demo voice and writes its ID in `README.md`.
 
-##### Task 1.C4 Early Vultr deploy of the skeleton (≈ 60 min, de-risks Sunday)
-- [ ] SSH in (`ssh root@VULTR_IP`) and run:
+##### Task 1.C4 Early Vultr deploy of the skeleton (≈ 60 min)
+- [ ] `ssh root@VULTR_IP`, then:
 ```bash
 apt update && apt install -y python3-venv git caddy ufw
 ufw allow OpenSSH && ufw allow 80 && ufw allow 443 && ufw --force enable
-mkdir -p /srv/signline && cd /srv/signline
-git clone https://github.com/<your-org>/signline.git repo
+mkdir -p /srv/signline/web && cd /srv/signline
+git clone https://github.com/Azrkiel/banana-brownies-ghh2026.git repo
 cd repo/server && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-nano .env      # paste the same keys as your local server/.env
+nano .env      # same keys as your local server/.env
 ```
-- [ ] Create `server/deploy/signline.service` in the repo (commit it) and install it:
+- [ ] Create `server/deploy/signline.service` (commit it) and install it:
 ```ini
 [Unit]
 Description=SignLine API
@@ -999,7 +1024,7 @@ WantedBy=multi-user.target
 cp /srv/signline/repo/server/deploy/signline.service /etc/systemd/system/
 systemctl daemon-reload && systemctl enable --now signline && systemctl status signline --no-pager
 ```
-- [ ] Create `server/deploy/Caddyfile` in the repo. Until the domain exists, use the free `sslip.io` hostname for your IP (dots in the IP become dashes, e.g. `149-28-1-2.sslip.io`):
+- [ ] Create `server/deploy/Caddyfile`, using your IP with dashes plus `.sslip.io` (free HTTPS hostname, no domain needed):
 ```
 149-28-1-2.sslip.io {
 	encode zstd gzip
@@ -1015,14 +1040,11 @@ systemctl daemon-reload && systemctl enable --now signline && systemctl status s
 	}
 }
 ```
-`flush_interval -1` lets the TTS audio stream through without buffering. Then:
 ```bash
-mkdir -p /srv/signline/web
 cp /srv/signline/repo/server/deploy/Caddyfile /etc/caddy/Caddyfile && systemctl reload caddy
 curl -s https://149-28-1-2.sslip.io/api/health
 ```
-Expected: `{"ok":true,…}` over HTTPS (Caddy fetches the certificate automatically; the first request can take ~20 s).
-- [ ] Commit: `deploy files`.
+Expected: `{"ok":true,…}` over HTTPS (the first request can take ~20 s while the certificate is issued). `flush_interval -1` keeps TTS audio streaming. Commit: `deploy files`.
 
 ##### Task 1.C5 Tiger Data schema (≈ 30 min)
 - [ ] Create `server/sql/schema.sql`:
@@ -1072,14 +1094,12 @@ SELECT add_continuous_aggregate_policy('latency_1m',
   start_offset => INTERVAL '2 hours', end_offset => INTERVAL '1 minute',
   schedule_interval => INTERVAL '1 minute');
 ```
-- [ ] Apply it: `psql "$DATABASE_URL" -f sql/schema.sql` (or paste into the Tiger Cloud SQL editor). Expected: `CREATE TABLE` ×2, `CREATE MATERIALIZED VIEW`, `ALTER MATERIALIZED VIEW`, one row with a job id.
-- [ ] If `WITH (tsdb.hypertable …)` errors with "unrecognized parameter", your TimescaleDB is older: remove those two `WITH (...)` clauses, rerun, then run `SELECT create_hypertable('sign_events', 'ts'); SELECT create_hypertable('utterance_events', 'ts');`.
-- [ ] Put `DATABASE_URL` in local and Vultr `.env`, restart, and check `curl -s localhost:8000/api/stats` → `{"configured":true,"summary":{"utterances":0,…}`.
-- [ ] Commit: `tiger data schema`.
+- [ ] `psql "$DATABASE_URL" -f sql/schema.sql` (or paste into the Tiger Cloud SQL editor). Expected: `CREATE TABLE` ×2, `CREATE MATERIALIZED VIEW`, `ALTER MATERIALIZED VIEW`, one job id. If `WITH (tsdb.hypertable …)` errors, remove those two `WITH (...)` clauses, rerun, then `SELECT create_hypertable('sign_events','ts'); SELECT create_hypertable('utterance_events','ts');`.
+- [ ] Add `DATABASE_URL` to local and Vultr `.env`, restart; `curl -s localhost:8000/api/stats` → `{"configured":true,…}`. Commit: `tiger data schema`.
 
-#### Track A — Call skeleton (A)
+#### Track A — Call skeleton
 
-##### Task 1.A1 API client + LiveKit call module (≈ 60 min)
+##### Task 1.A1 API client, LiveKit call module, caption lane, routes (≈ 60 min)
 - [ ] Create `web/src/lib/api.ts`:
 ```ts
 import type { Role } from './types';
@@ -1221,14 +1241,15 @@ export function CaptionLane({ captions, me }: { captions: Caption[]; me: string 
     <div className="lane" aria-live="polite">
       {captions.slice(-8).map((c) => (
         <p key={c.id} className={`cap${c.final ? '' : ' interim'}${c.speaker === me ? ' mine' : ''}`}>
-          <b>{c.speaker}:</b> {c.text}
+          <b>{c.speaker}:</b>{' '}
+          {c.retracted ? <><s>{c.text}</s> <em>(recognition error — {c.speaker} took this back)</em></> : c.text}
         </p>
       ))}
     </div>
   );
 }
 ```
-- [ ] Create a first `web/src/pages/Call.tsx` (Phase 3 replaces it with the full version) that proves video + captions between two laptops:
+- [ ] Create `web/src/pages/Call.tsx` (a first version that proves video + captions between two laptops; Task 2.A3 replaces it):
 ```tsx
 import { useRef, useState } from 'react';
 import { joinCall, type Call as CallT } from '../lib/call';
@@ -1285,12 +1306,15 @@ export default function Call() {
   );
 }
 ```
-- [ ] Create `web/src/App.tsx` (routes are filled in as pages appear):
+- [ ] Create `web/src/App.tsx`:
 ```tsx
 import { useEffect, useState, type ReactElement } from 'react';
 import Call from './pages/Call';
 
-const routes: Record<string, () => ReactElement> = { '': () => <Call /> };
+const routes: Record<string, () => ReactElement> = {
+  '': () => <Call />,
+  // later tasks add routes here
+};
 
 export default function App() {
   const [hash, setHash] = useState(location.hash.replace('#/', ''));
@@ -1303,13 +1327,13 @@ export default function App() {
   return <Page />;
 }
 ```
-- [ ] Add to `web/src/index.css`: `.mirror{transform:scaleX(-1)} .lane{font-size:1.4rem;max-width:40rem} .cap.interim{opacity:.55} .cap.mine{color:#2563eb}` (mirror only the local preview, never the published track).
-- [ ] Test on two laptops: laptop A runs server + `npm run dev`; laptop B runs `VITE_API_PROXY=http://<laptop-A-LAN-IP>:8000 npm run dev`. Both open `http://localhost:5173`, join `demo-room`. Expected: each sees the other's video; typed captions appear on both. (Laptop A's server must listen on the LAN: `uvicorn app.main:app --host 0.0.0.0 --port 8000`.)
+- [ ] Add to `web/src/index.css`: `.mirror{transform:scaleX(-1)} .lane{font-size:1.4rem;max-width:40rem} .cap.interim{opacity:.55} .cap.mine{color:#2563eb}`. Mirror only the local preview, never the published track.
+- [ ] Two-laptop test: laptop 1 runs the server with `uvicorn app.main:app --host 0.0.0.0 --port 8000` plus `npm run dev`. Laptop 2 runs `VITE_API_PROXY=http://<laptop-1-LAN-IP>:8000 npm run dev`. Both open http://localhost:5173 and join `demo-room`. Expected: each sees the other's video, and typed captions appear on both screens.
 - [ ] Commit: `call skeleton with captions`.
 
-#### Track B — Landmarks and data (B)
+#### Track B — Landmarks, features, data (Kev, MSI)
 
-##### Task 1.B1 Tracker + benchmark (≈ 60 min) — decides Hand+Pose vs Holistic
+##### Task 1.B1 Tracker + benchmark (≈ 45 min) — also picks the signer laptop
 - [ ] Create `web/src/lib/landmarks.ts`:
 ```ts
 import { FaceLandmarker, FilesetResolver, HandLandmarker, PoseLandmarker } from '@mediapipe/tasks-vision';
@@ -1363,7 +1387,7 @@ export async function createTracker(opts: { withFace: boolean }): Promise<Tracke
   };
 }
 ```
-- [ ] Create `web/src/pages/Bench.tsx` (FPS + live readouts; Task 2.B5 adds segmenter and classifier readouts, Task 4.3 adds eyebrow readouts):
+- [ ] Create `web/src/pages/Bench.tsx`:
 ```tsx
 import { useEffect, useRef, useState } from 'react';
 import { createTracker } from '../lib/landmarks';
@@ -1406,19 +1430,36 @@ export default function Bench() {
   );
 }
 ```
-- [ ] Add the route in `App.tsx`: `import Bench from './pages/Bench';` and `'bench': () => <Bench />`.
-- [ ] Open `http://localhost:5173/#/bench` **on the signer laptop**, plugged in, other tabs closed. Expected: FPS ≥ 20 with the face model on. Record the number in README.
-  - FPS ≥ 20 with face → keep Hand+Pose+Face (this plan's default).
-  - FPS 12–20 → uncheck face (eyebrow tags become the manual "?" button only).
-  - FPS < 12 → lower capture to 480×360 in every `getUserMedia` call; if still < 12, use the other laptop as signer.
-- [ ] Hold up only your **right** hand and confirm `hands 1`; then both hands → `hands 2`. (We never use MediaPipe's left/right label; `orderHands` in 1.B2 decides.)
+- [ ] Add the route:
+<!-- edit: web/src/App.tsx -->
+**Edit 1 — find:**
+```tsx
+import Call from './pages/Call';
+```
+**Replace with:**
+```tsx
+import Call from './pages/Call';
+import Bench from './pages/Bench';
+```
+<!-- edit: web/src/App.tsx -->
+**Edit 2 — find:**
+```tsx
+  // later tasks add routes here
+```
+**Replace with:**
+```tsx
+  bench: () => <Bench />,
+  // later tasks add routes here
+```
+- [ ] Open http://localhost:5173/#/bench **on each laptop** (plugged in, other tabs closed) and note the FPS with the face model on. The signer laptop is the one with ≥ 20 FPS and the best webcam image (default: the MSI). FPS 12–20 → set `USE_FACE = false` in `config.ts` later (eyebrows then come from Presage or the "?" button). Below 12 → use 480×360 capture.
+- [ ] Hold up only your right hand → `hands 1`; then both → `hands 2`. MediaPipe's left/right labels are never used; handedness is handled per sign in Task 1.B2.
 - [ ] Commit: `tracker + bench`.
 
-##### Task 1.B2 Features (≈ 60 min, TDD)
+##### Task 1.B2 Features with canonical handedness (≈ 60 min, TDD)
 - [ ] Write the failing test `web/src/lib/features.test.ts`:
 ```ts
 import { describe, expect, it } from 'vitest';
-import { clipFeatures, FEAT_PER_FRAME, frameFeatures, anchors, mirrorFrame, orderHands, resample, T } from './features';
+import { canonicalize, clipFeatures, FEAT_PER_FRAME, frameFeatures, anchors, mirrorFrame, orderHands, resample, T } from './features';
 import type { Frame, Pt } from './types';
 
 const P = (x: number, y: number): Pt => ({ x, y, z: 0 });
@@ -1445,6 +1486,19 @@ describe('features', () => {
     const b = frame([hand(0.45, 0.4), hand(0.6, 0.45)], 0.07, 1.25);
     const fa = frameFeatures(a, anchors(a, null)!); const fb = frameFeatures(b, anchors(b, null)!);
     fa.forEach((v, i) => expect(fb[i]).toBeCloseTo(v, 5));
+  });
+  it('mirrors a clip whose image-right hand does the moving (left-handed signer)', () => {
+    const still = hand(0.3, 0.45);
+    const clip = Array.from({ length: 10 }, (_, i) => frame([still, hand(0.65, 0.3 + 0.02 * i)]));
+    const c = canonicalize(clip);
+    expect(c[0].hands[0][0].x).toBeCloseTo(1 - clip[0].hands[0][0].x, 6);
+    const rightHanded = Array.from({ length: 10 }, (_, i) => frame([hand(0.35, 0.3 + 0.02 * i), hand(0.7, 0.45)]));
+    expect(canonicalize(rightHanded)).toBe(rightHanded);
+  });
+  it('gives the same features for a sign and its mirror image', () => {
+    const clip = Array.from({ length: 12 }, (_, i) => frame([hand(0.35 + 0.01 * i, 0.3 + 0.02 * i)]));
+    const a = clipFeatures(clip), b = clipFeatures(clip.map(mirrorFrame));
+    a.forEach((v, i) => expect(b[i]).toBeCloseTo(v, 5));
   });
   it('puts the image-left hand first (dominant after canonical mirroring)', () => {
     const left = hand(0.3, 0.4); const right = hand(0.7, 0.4);
@@ -1474,11 +1528,12 @@ describe('features', () => {
   });
 });
 ```
-- [ ] `npm test` → expected: fails, `Cannot find module './features'`.
+- [ ] `npm test` → fails (`Cannot find module './features'`).
 - [ ] Create `web/src/lib/features.ts`:
 ```ts
 import type { Frame, Pt } from './types';
 
+// KEEP IN SYNC with ml/features.py — `pytest ml/tests/test_parity.py` fails if they drift.
 export const T = 32;                                 // frames per sign after resampling (~1 s at 30 fps)
 export const FEAT_PER_FRAME = 2 * (42 + 42) + 4 + 2; // 174
 // layout: [dom global 42][dom local 42][non-dom global 42][non-dom local 42][face 4][presence 2]
@@ -1504,7 +1559,7 @@ export function anchors(f: Frame, prev: Anchors | null): Anchors | null {
   return { c, s, nose: xy(f.pose[NOSE], asp), mouth: [(m1[0] + m2[0]) / 2, (m1[1] + m2[1]) / 2], restY: c[1] + 0.8 * s };
 }
 
-/** Dominant hand first. After mirrorFrame() for left-handed signers, the signer's dominant hand is image-left. */
+/** Image-left hand first. After canonicalize(), that is the active (dominant) hand. */
 export function orderHands(hands: Pt[][]): [Pt[] | null, Pt[] | null] {
   if (hands.length === 0) return [null, null];
   if (hands.length === 1) return [hands[0], null];
@@ -1515,6 +1570,32 @@ export function orderHands(hands: Pt[][]): [Pt[] | null, Pt[] | null] {
 export function mirrorFrame(f: Frame): Frame {
   const m = (p: Pt): Pt => ({ x: 1 - p.x, y: p.y, z: p.z });
   return { ...f, pose: f.pose ? f.pose.map(m) : null, hands: f.hands.map((h) => h.map(m)) };
+}
+
+/** Normalized x of the shoulder midpoint (0.5 when pose is missing). */
+export function bodyCenterX(f: Frame): number {
+  return f.pose && f.pose.length >= 13 ? (f.pose[SH_L].x + f.pose[SH_R].x) / 2 : 0.5;
+}
+
+/** Per-clip handedness. If the image-right hand moved more than the image-left hand, mirror the whole clip,
+ *  so the active hand is always image-left. Handles left-handed signers and datasets with unknown mirroring. */
+export function canonicalize(frames: Frame[]): Frame[] {
+  let left = 0, right = 0;
+  let pl: Pt | null = null, pr: Pt | null = null;
+  for (const f of frames) {
+    let l: Pt | null = null, r: Pt | null = null;
+    if (f.hands.length >= 2) {
+      const [a, b] = orderHands(f.hands);
+      l = a![0]; r = b![0];
+    } else if (f.hands.length === 1) {
+      const w = f.hands[0][0];
+      if (w.x <= bodyCenterX(f)) l = w; else r = w;
+    }
+    if (l && pl) left += Math.hypot(l.x - pl.x, l.y - pl.y);
+    if (r && pr) right += Math.hypot(r.x - pr.x, r.y - pr.y);
+    pl = l; pr = r;
+  }
+  return right > left ? frames.map(mirrorFrame) : frames;
 }
 
 function pushHand(out: number[], hand: Pt[] | null, a: Anchors, asp: number) {
@@ -1552,8 +1633,9 @@ export function resample(seq: number[][], n: number): number[][] {
   return out;
 }
 
-/** Frames must already be mirrored for left-handed signers. Returns Float32Array(T * FEAT_PER_FRAME). */
-export function clipFeatures(frames: Frame[]): Float32Array {
+/** Raw frames of one sign -> Float32Array(T * FEAT_PER_FRAME). Same steps as ml/features.py clip_features(). */
+export function clipFeatures(raw: Frame[]): Float32Array {
+  const frames = canonicalize(raw);
   let first = frames.findIndex((f) => f.hands.length > 0);
   let last = frames.length - 1 - [...frames].reverse().findIndex((f) => f.hands.length > 0);
   if (first === -1) { first = 0; last = frames.length - 1; }
@@ -1569,10 +1651,10 @@ export function clipFeatures(frames: Frame[]): Float32Array {
   return out;
 }
 ```
-- [ ] `npm test` → expected: `7 passed`.
-- [ ] Commit: `landmark features`.
+- [ ] `npm test` → expected `9 passed`. The two new tests prove a left-handed signer and a mirrored dataset give the same features as a right-handed one, so no "left-handed" setting is needed.
+- [ ] Commit: `landmark features with canonical handedness`.
 
-##### Task 1.B3 Segmenter (≈ 60 min, TDD)
+##### Task 1.B3 Segmenter (≈ 50 min, TDD)
 - [ ] Write the failing test `web/src/lib/segmenter.test.ts`:
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -1615,16 +1697,20 @@ describe('Segmenter', () => {
     const ev = run(new Segmenter(), [...moving(15), ...Array.from({ length: 12 }, () => fr(null))]);
     expect(endReason(ev)).toBe('lost');
   });
+  it('works when the moving hand is on the image-right side (left-handed signer)', () => {
+    const lefty = (n: number) => Array.from({ length: n }, (_, i) => fr(hand(0.62 + (i % 2 ? 0.03 : -0.03), 0.4)));
+    const ev = run(new Segmenter(), [...lefty(15), ...Array.from({ length: 30 }, () => fr(hand(0.62, 0.4)))]);
+    expect(ev.map((e) => e.kind)).toEqual(['start', 'end']);
+  });
   it('can start again after cooldown', () => {
     const ev = run(new Segmenter(), [...moving(15), ...still(30), ...moving(15), ...still(30)]);
     expect(ev.filter((e) => e.kind === 'end')).toHaveLength(2);
   });
 });
 ```
-- [ ] `npm test` → fails (`Cannot find module './segmenter'`).
-- [ ] Create `web/src/lib/segmenter.ts`:
+- [ ] `npm test` → fails. Create `web/src/lib/segmenter.ts`:
 ```ts
-import { anchors, orderHands, type Anchors } from './features';
+import { anchors, type Anchors } from './features';
 import type { Frame } from './types';
 
 export type SegReason = 'still' | 'lowered' | 'lost' | 'timeout';
@@ -1648,26 +1734,28 @@ export const DEFAULT_SEG: SegConfig = {
 };
 
 const TRACKED = [0, 4, 8, 12]; // wrist, thumb tip, index tip, middle tip
+type HandPts = [number, number][];
 
+/** Cuts the landmark stream into one-sign segments. Uses whichever hand moves, so it works for either handedness. */
 export class Segmenter {
   state: 'IDLE' | 'ACTIVE' | 'COOLDOWN' = 'IDLE';
   speed = 0;
   anchors: Anchors | null = null;
+  private cfg: SegConfig;
   private ring: Frame[] = [];
   private buf: Frame[] = [];
-  private prev: { t: number; pts: [number, number][] } | null = null;
+  private prev: { t: number; hands: HandPts[] } | null = null;
   private fast = 0; private slow = 0; private lost = 0;
   private startT = 0; private coolUntil = 0;
 
-  private cfg: SegConfig;
-  constructor(cfg: SegConfig = DEFAULT_SEG) { this.cfg = cfg; } // explicit field: Vite's template forbids parameter properties (erasableSyntaxOnly)
+  constructor(cfg: SegConfig = DEFAULT_SEG) { this.cfg = cfg; } // explicit field: Vite's template forbids parameter properties
 
   push(f: Frame): SegEvent | null {
     this.anchors = anchors(f, this.anchors);
     const a = this.anchors;
-    const [dom] = orderHands(f.hands);
-    this.updateSpeed(f, dom, a);
-    const high = !!(dom && a && dom[0].y < a.restY);
+    this.updateSpeed(f, a);
+    const hands = f.hands.length > 0;
+    const high = !!a && f.hands.some((h) => h[0].y < a.restY); // any hand above the rest line
 
     if (this.state === 'COOLDOWN') {
       if (f.t < this.coolUntil) return null;
@@ -1676,7 +1764,7 @@ export class Segmenter {
     if (this.state === 'IDLE') {
       this.ring.push(f);
       if (this.ring.length > this.cfg.preroll) this.ring.shift();
-      this.fast = dom && high && this.speed > this.cfg.onSpeed ? this.fast + 1 : 0;
+      this.fast = hands && high && this.speed > this.cfg.onSpeed ? this.fast + 1 : 0;
       if (this.fast < this.cfg.onFrames) return null;
       this.state = 'ACTIVE';
       this.buf = [...this.ring];
@@ -1686,11 +1774,11 @@ export class Segmenter {
 
     // ACTIVE
     this.buf.push(f);
-    this.lost = dom ? 0 : this.lost + 1;
+    this.lost = hands ? 0 : this.lost + 1;
     this.slow = this.speed < this.cfg.onSpeed * this.cfg.offRatio ? this.slow + 1 : 0;
     const reason: SegReason | null =
       this.lost >= this.cfg.lostFrames ? 'lost'
-      : dom && a && !high ? 'lowered'
+      : hands && a && !high ? 'lowered'
       : this.slow >= this.cfg.offFrames ? 'still'
       : f.t - this.startT > this.cfg.maxMs ? 'timeout'
       : null;
@@ -1704,29 +1792,36 @@ export class Segmenter {
     return { kind: 'end', t: f.t, frames, reason };
   }
 
-  private updateSpeed(f: Frame, dom: Frame['hands'][number] | null, a: Anchors | null) {
-    if (!dom || !a) { this.prev = null; this.speed *= 1 - this.cfg.alpha; return; }
+  /** Speed of the fastest hand, in shoulder widths per second. Hands are matched to the previous frame by nearest wrist. */
+  private updateSpeed(f: Frame, a: Anchors | null) {
+    if (!f.hands.length || !a) { this.prev = null; this.speed *= 1 - this.cfg.alpha; return; }
     const asp = f.w / f.h;
-    const pts = TRACKED.map((i) => [dom[i].x * asp, dom[i].y] as [number, number]);
-    if (this.prev && f.t > this.prev.t) {
+    const cur: HandPts[] = f.hands.map((h) => TRACKED.map((i) => [h[i].x * asp, h[i].y] as [number, number]));
+    if (this.prev && this.prev.hands.length && f.t > this.prev.t) {
       const dt = (f.t - this.prev.t) / 1000;
-      const d = pts.reduce((sum, p, i) => sum + Math.hypot(p[0] - this.prev!.pts[i][0], p[1] - this.prev!.pts[i][1]), 0) / pts.length;
-      const inst = d / a.s / dt;
-      this.speed = this.cfg.alpha * inst + (1 - this.cfg.alpha) * this.speed;
+      let fastest = 0;
+      for (const c of cur) {
+        let nearest = Infinity;
+        for (const p of this.prev.hands) {
+          const d = c.reduce((sum, q, i) => sum + Math.hypot(q[0] - p[i][0], q[1] - p[i][1]), 0) / c.length;
+          nearest = Math.min(nearest, d);
+        }
+        fastest = Math.max(fastest, nearest);
+      }
+      this.speed = this.cfg.alpha * (fastest / a.s / dt) + (1 - this.cfg.alpha) * this.speed;
     }
-    this.prev = { t: f.t, pts };
+    this.prev = { t: f.t, hands: cur };
   }
 }
 ```
-- [ ] `npm test` → expected: all segmenter tests pass. If "still" ends too early or late in real use, tune `onSpeed`/`offFrames` on the Bench page (Task 2.B5), **not** in the tests.
+- [ ] `npm test` → all segmenter tests pass. Tune thresholds later on the Bench page (Task 2.B5), never by editing tests.
 - [ ] Commit: `segmenter`.
 
-##### Task 1.B4 Recorder page (≈ 75 min)
+##### Task 1.B4 Recorder page (≈ 50 min)
 - [ ] Create `web/src/pages/Recorder.tsx`:
 ```tsx
 import { useEffect, useRef, useState } from 'react';
 import { createTracker, type Tracker } from '../lib/landmarks';
-import { mirrorFrame } from '../lib/features';
 import { Segmenter } from '../lib/segmenter';
 import { LETTERS, RECORD_LABELS } from '../vocab';
 import type { Clip, ClipKind, Frame, Session } from '../lib/types';
@@ -1746,15 +1841,14 @@ export default function Recorder() {
   const tracker = useRef<Tracker | null>(null);
   const seg = useRef(new Segmenter());
   const [signer, setSigner] = useState('');
-  const [leftHanded, setLeftHanded] = useState(false);
   const [kind, setKind] = useState<ClipKind>('sign');
   const [label, setLabel] = useState(RECORD_LABELS[0]);
   const [armed, setArmed] = useState(false);
   const [clips, setClips] = useState<Clip[]>([]);
   const [msg, setMsg] = useState('');
   const letterBuf = useRef<Frame[] | null>(null);
-  const state = useRef({ armed, kind, label, leftHanded });
-  state.current = { armed, kind, label, leftHanded };
+  const state = useRef({ armed, kind, label });
+  state.current = { armed, kind, label };
 
   useEffect(() => {
     let raf = 0; let stop = false;
@@ -1764,8 +1858,7 @@ export default function Recorder() {
       tracker.current = await createTracker({ withFace: false });
       const loop = () => {
         if (stop) return;
-        const raw = tracker.current!.detect(video.current!, performance.now());
-        const f = state.current.leftHanded ? mirrorFrame(raw) : raw;
+        const f = tracker.current!.detect(video.current!, performance.now()); // raw: handedness is normalized later, per clip
         const s = state.current;
         if (s.armed && s.kind === 'sign') {
           const ev = seg.current.push(f);
@@ -1792,14 +1885,13 @@ export default function Recorder() {
   }
 
   const count = (l: string) => clips.filter((c) => c.label === l).length;
-  const labels = kind === 'sign' ? RECORD_LABELS : (LETTERS as readonly string[]);
-  const session = (): Session => ({ version: 1, signer, leftHanded, recordedAt: new Date().toISOString(), clips });
+  const labels = kind === 'sign' ? RECORD_LABELS : LETTERS;
+  const session = (): Session => ({ version: 1, signer, recordedAt: new Date().toISOString(), clips });
 
   return (
     <main>
       <p><b>Consent:</b> we store hand/body landmark coordinates only (no video). Data is used to train this project's model and is not published.</p>
       <input placeholder="signer id (e.g. liv)" value={signer} onChange={(e) => setSigner(e.target.value.toLowerCase())} />
-      <label><input type="checkbox" checked={leftHanded} onChange={(e) => setLeftHanded(e.target.checked)} /> I sign left-handed</label>
       <select value={kind} onChange={(e) => { setKind(e.target.value as ClipKind); setLabel(e.target.value === 'sign' ? RECORD_LABELS[0] : LETTERS[0]); }}>
         <option value="sign">Signs</option><option value="letter">Letters</option>
       </select>
@@ -1817,33 +1909,471 @@ export default function Recorder() {
   );
 }
 ```
-- [ ] Add route `'record': () => <Recorder />` in `App.tsx`.
-- [ ] Try it: Start recording `HELLO`, sign HELLO, drop your hands, repeat 3×. Expected: the count goes up by one per repetition. Download → a JSON file under ~100 KB per clip.
+- [ ] Add the route:
+<!-- edit: web/src/App.tsx -->
+**Edit 1 — find:**
+```tsx
+import Bench from './pages/Bench';
+```
+**Replace with:**
+```tsx
+import Bench from './pages/Bench';
+import Recorder from './pages/Recorder';
+```
+<!-- edit: web/src/App.tsx -->
+**Edit 2 — find:**
+```tsx
+  // later tasks add routes here
+```
+**Replace with:**
+```tsx
+  record: () => <Recorder />,
+  // later tasks add routes here
+```
+- [ ] Try it: Start recording `ME`, sign it, drop your hands, repeat 3×. The count goes up once per repetition. Download → a JSON file.
 - [ ] Commit: `recorder`.
 
-#### Track D — Recording sessions (D leads, everyone records) — start ≈ 14:30
+##### Task 1.B5 Python twin of the features + parity test (≈ 40 min)
+- [ ] Create `ml/requirements.txt`, then `pip install -r ml/requirements.txt` in the CUDA venv from Task 0.2:
+```text
+torch
+numpy
+onnx
+onnxscript
+onnxruntime
+scikit-learn
+matplotlib
+pandas
+pyarrow
+pytest
+kaggle
+```
+- [ ] Create `web/scripts/export-fixtures.ts`:
+```ts
+/* Writes ml/tests/fixtures/parity.json: synthetic clips + the features TypeScript computes for them.
+   Usage (from web/): npm run fixtures   — then: pytest ml/tests/test_parity.py */
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { clipFeatures, FEAT_PER_FRAME, T } from '../src/lib/features';
+import type { Frame, Pt } from '../src/lib/types';
 
-##### Task 1.D1 Record Tier-1 data (≈ 20 min per person, on their own laptop)
-- [ ] Protocol per person, on `#/record`:
-  - For each Tier-1 sign: **10 reps** — 5 close (elbows visible), 5 farther (waist visible); half with a window/light in front, half with it to the side; drop hands to your lap between reps.
-  - `_idle`: **15 reps** of scratching your face, adjusting glasses, waving someone off, typing in the air, reaching for a cup, a half-started sign.
-  - Letters (spell mode): each letter **3 holds**, tilting the wrist slightly between holds.
-  - Download every ~50 clips (a refresh loses unsaved clips).
-- [ ] Put all session files in a shared folder (Google Drive), then into everyone's local `data/raw/` (git-ignored).
-- [ ] Target by 17:00: ≥ 3 signers × Tier 1 complete. If a Deaf or fluent signer joins (Q6), they sign a consent note, and their session is the most valuable one — prioritize it.
-- [ ] D, in parallel: write the consent note (`docs/consent.md`), the demo script card, and start the Devpost draft (title, one-liner, team background — "Learning" is a judging criterion, so write what each person knew before and learned).
+let seed = 42;
+const rand = () => { seed = (seed * 1664525 + 1013904223) % 4294967296; return seed / 4294967296; };
+const P = (x: number, y: number): Pt => ({ x: +x.toFixed(4), y: +y.toFixed(4), z: +((rand() - 0.5) * 0.1).toFixed(4) });
+const pose = (dx: number): Pt[] => {
+  const p = Array.from({ length: 17 }, () => P(0.5 + dx + (rand() - 0.5) * 0.05, 0.3 + (rand() - 0.5) * 0.05));
+  p[11] = P(0.4 + dx, 0.6); p[12] = P(0.6 + dx, 0.6);
+  return p;
+};
+const hand = (cx: number, cy: number): Pt[] => Array.from({ length: 21 }, (_, i) => P(cx + 0.012 * (i % 5) + rand() * 0.004, cy - 0.015 * Math.floor(i / 5) + rand() * 0.004));
 
-**▶ CP1 — Sat 17:00:** two-laptop call with typed captions · Recorder working · `/api/gloss` and `/api/tts` work with curl · Vultr serves `/api/health` over HTTPS · ≥ 3 signers recorded.
+function clip(n: number, opts: { two?: boolean; lefty?: boolean; dropPose?: number[]; dropHands?: number[]; w?: number; h?: number }): Frame[] {
+  return Array.from({ length: n }, (_, i) => {
+    const moving = hand(opts.lefty ? 0.62 + 0.01 * i : 0.35 + 0.01 * i, 0.32 + 0.012 * i);
+    const still = hand(opts.lefty ? 0.33 : 0.66, 0.5);
+    const hands = opts.dropHands?.includes(i) ? [] : opts.two ? [still, moving] : [moving];
+    return { t: i * 33, w: opts.w ?? 640, h: opts.h ?? 480, pose: opts.dropPose?.includes(i) ? null : pose(0), hands, brow: null };
+  });
+}
+
+const cases = [
+  { name: 'one hand', frames: clip(24, {}) },
+  { name: 'two hands', frames: clip(30, { two: true }) },
+  { name: 'left-handed two hands', frames: clip(28, { two: true, lefty: true }) },
+  { name: 'left-handed one hand', frames: clip(20, { lefty: true }) },
+  { name: 'missing pose and hands', frames: clip(26, { dropPose: [0, 1, 7], dropHands: [0, 1, 12, 25] }) },
+  { name: 'portrait aspect', frames: clip(40, { two: true, w: 0.75, h: 1 }) },
+  { name: 'single frame', frames: clip(1, {}) },
+].map((c) => ({ ...c, features: Array.from(clipFeatures(c.frames)) }));
+
+mkdirSync('../ml/tests/fixtures', { recursive: true });
+writeFileSync('../ml/tests/fixtures/parity.json', JSON.stringify({ T, F: FEAT_PER_FRAME, cases }));
+console.log(`wrote ${cases.length} parity cases`);
+```
+- [ ] `cd web && npm run fixtures` → `wrote 7 parity cases`.
+- [ ] Write the failing test `ml/tests/test_parity.py`:
+```python
+"""The browser (features.ts) and training (features.py) must compute identical features.
+Regenerate the fixture after changing features.ts:  cd web && npm run fixtures"""
+import json
+import sys
+from pathlib import Path
+
+import numpy as np
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from features import FEAT_PER_FRAME, T, clip_features  # noqa: E402
+
+FIXTURE = Path(__file__).parent / "fixtures" / "parity.json"
+
+
+def test_python_features_match_typescript():
+    data = json.loads(FIXTURE.read_text())
+    assert data["T"] == T and data["F"] == FEAT_PER_FRAME
+    for i, case in enumerate(data["cases"]):
+        frames = [{"w": f["w"], "h": f["h"],
+                   "pose": [[p["x"], p["y"], p["z"]] for p in f["pose"]] if f["pose"] else None,
+                   "hands": [[[p["x"], p["y"], p["z"]] for p in h] for h in f["hands"]]} for f in case["frames"]]
+        got = clip_features(frames).reshape(-1)
+        want = np.asarray(case["features"], dtype=np.float32)
+        diff = float(np.abs(got - want).max())
+        assert diff < 1e-4, f"case {i} ({case['name']}): max diff {diff}"
+```
+- [ ] `pytest ml/tests/test_parity.py` → fails (`No module named 'features'`).
+- [ ] Create `ml/features.py`:
+```python
+"""Python port of web/src/lib/features.ts. KEEP IN SYNC — tests/test_parity.py checks both give the same numbers.
+
+A frame is a dict: {"w": float, "h": float, "pose": [[x, y, z], ...] or None, "hands": [[[x, y, z] x 21], ...]}
+(pose holds landmarks 0..16; hands are unlabeled, 0..2 of them).
+"""
+from __future__ import annotations
+
+import math
+
+import numpy as np
+
+T = 32
+FEAT_PER_FRAME = 2 * (42 + 42) + 4 + 2  # 174
+NOSE, MOUTH_L, MOUTH_R, SH_L, SH_R = 0, 9, 10, 11, 12
+
+
+def _xy(p, asp):
+    return (p[0] * asp, p[1])
+
+
+def anchors(f, prev):
+    pose = f.get("pose")
+    if not pose or len(pose) < 13:
+        return prev
+    asp = f["w"] / f["h"]
+    l, r = _xy(pose[SH_L], asp), _xy(pose[SH_R], asp)
+    s = math.hypot(l[0] - r[0], l[1] - r[1])
+    if s < 1e-3:
+        return prev
+    m1, m2 = _xy(pose[MOUTH_L], asp), _xy(pose[MOUTH_R], asp)
+    c = ((l[0] + r[0]) / 2, (l[1] + r[1]) / 2)
+    return {"c": c, "s": s, "nose": _xy(pose[NOSE], asp), "mouth": ((m1[0] + m2[0]) / 2, (m1[1] + m2[1]) / 2),
+            "restY": c[1] + 0.8 * s}
+
+
+def order_hands(hands):
+    if len(hands) == 0:
+        return None, None
+    if len(hands) == 1:
+        return hands[0], None
+    a, b = hands[0], hands[1]
+    return (a, b) if a[0][0] <= b[0][0] else (b, a)
+
+
+def mirror_frame(f):
+    m = lambda p: [1 - p[0], p[1], p[2]]  # noqa: E731
+    pose = f.get("pose")
+    return {**f, "pose": [m(p) for p in pose] if pose else None, "hands": [[m(p) for p in h] for h in f["hands"]]}
+
+
+def body_center_x(f):
+    pose = f.get("pose")
+    return (pose[SH_L][0] + pose[SH_R][0]) / 2 if pose and len(pose) >= 13 else 0.5
+
+
+def canonicalize(frames):
+    left = right = 0.0
+    pl = pr = None
+    for f in frames:
+        l = r = None
+        if len(f["hands"]) >= 2:
+            a, b = order_hands(f["hands"])
+            l, r = a[0], b[0]
+        elif len(f["hands"]) == 1:
+            w = f["hands"][0][0]
+            if w[0] <= body_center_x(f):
+                l = w
+            else:
+                r = w
+        if l is not None and pl is not None:
+            left += math.hypot(l[0] - pl[0], l[1] - pl[1])
+        if r is not None and pr is not None:
+            right += math.hypot(r[0] - pr[0], r[1] - pr[1])
+        pl, pr = l, r
+    return [mirror_frame(f) for f in frames] if right > left else frames
+
+
+def _push_hand(out, hand, a, asp):
+    if hand is None:
+        out.extend([0.0] * 84)
+        return
+    pts = [_xy(p, asp) for p in hand]
+    for p in pts:
+        out.extend(((p[0] - a["c"][0]) / a["s"], (p[1] - a["c"][1]) / a["s"]))
+    w = pts[0]
+    scale = math.hypot(pts[9][0] - w[0], pts[9][1] - w[1]) or 1e-3
+    for p in pts:
+        out.extend(((p[0] - w[0]) / scale, (p[1] - w[1]) / scale))
+
+
+def frame_features(f, a):
+    asp = f["w"] / f["h"]
+    dom, non = order_hands(f["hands"])
+    out: list[float] = []
+    _push_hand(out, dom, a, asp)
+    _push_hand(out, non, a, asp)
+    if dom is not None:
+        tip = _xy(dom[8], asp)
+        out.extend(((tip[0] - a["nose"][0]) / a["s"], (tip[1] - a["nose"][1]) / a["s"],
+                    (tip[0] - a["mouth"][0]) / a["s"], (tip[1] - a["mouth"][1]) / a["s"]))
+    else:
+        out.extend([0.0] * 4)
+    out.extend((1.0 if dom is not None else 0.0, 1.0 if non is not None else 0.0))
+    return out
+
+
+def resample(seq: np.ndarray, n: int) -> np.ndarray:
+    if len(seq) == 0:
+        return np.zeros((0, seq.shape[1] if seq.ndim == 2 else 0))
+    if len(seq) == 1:
+        return np.repeat(seq, n, axis=0)
+    pos = np.arange(n) * (len(seq) - 1) / (n - 1)
+    lo = np.floor(pos).astype(int)
+    hi = np.minimum(lo + 1, len(seq) - 1)
+    w = (pos - lo)[:, None]
+    return seq[lo] * (1 - w) + seq[hi] * w
+
+
+def clip_features(raw_frames) -> np.ndarray:
+    """Same steps as clipFeatures() in features.ts. Returns float32 array of shape (T, FEAT_PER_FRAME)."""
+    frames = canonicalize(raw_frames)
+    with_hands = [i for i, f in enumerate(frames) if f["hands"]]
+    first, last = (with_hands[0], with_hands[-1]) if with_hands else (0, len(frames) - 1)
+    a = None
+    for f in frames:
+        a = anchors(f, a)
+        if a:
+            break
+    seq = []
+    for f in frames[first:last + 1]:
+        a = anchors(f, a)
+        seq.append(frame_features(f, a) if a else [0.0] * FEAT_PER_FRAME)
+    if not seq:
+        return np.zeros((T, FEAT_PER_FRAME), np.float32)
+    return resample(np.asarray(seq, dtype=np.float64), T).astype(np.float32)
+```
+- [ ] `pytest ml/tests/test_parity.py` → `1 passed`. This test is what keeps training and the browser computing the same numbers. Commit the fixture too: `python features + parity test`.
+
+##### Task 1.B6 Convert the Kaggle data (≈ 30 min of code; conversion runs in the background)
+- [ ] Create `ml/gislr_to_features.py`:
+```python
+"""Convert the Kaggle "Google - Isolated Sign Language Recognition" data (competition asl-signs) into our features.
+
+Reads straight from the downloaded zip (no need to extract ~57 GB), or from a folder of .parquet files.
+  python ml/gislr_to_features.py --zip data/asl-signs.zip --signs demo --out data/gislr-demo
+  python ml/gislr_to_features.py --zip data/asl-signs.zip --signs all  --out data/gislr-all
+  python ml/gislr_to_features.py --dir /kaggle/input/asl-signs --csv /kaggle/input/asl-signs/train.csv --signs all --out gislr-all
+      (inside a Kaggle notebook, where the competition data is already mounted — no 40 GB download)
+Estimate the video aspect ratio from our own recordings (prints a number for --aspect):
+  python ml/gislr_to_features.py --zip data/asl-signs.zip --estimate-aspect-from data/raw
+
+Each parquet file is one sign: rows (frame, row_id, type, landmark_index, x, y, z); type is face / left_hand /
+pose / right_hand; missing landmarks are NaN. Data: CC BY 4.0 (check the competition's Data tab) — credit it.
+"""
+from __future__ import annotations
+
+import argparse
+import io
+import json
+import sys
+import zipfile
+from multiprocessing import Pool
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from features import FEAT_PER_FRAME, T, clip_features  # noqa: E402
+
+ROOT = Path(__file__).resolve().parents[1]
+_zip: zipfile.ZipFile | None = None
+_src: dict = {}
+
+
+def _init(src: dict) -> None:
+    global _zip, _src
+    _src = src
+    _zip = zipfile.ZipFile(src["zip"]) if src.get("zip") else None
+
+
+def _read(path: str) -> pd.DataFrame:
+    if _zip is not None:
+        return pd.read_parquet(io.BytesIO(_zip.read(path)), columns=["frame", "type", "landmark_index", "x", "y", "z"])
+    d = Path(_src["dir"])  # a Kaggle notebook mount (keeps train_landmark_files/<id>/) or a flat folder of files
+    full = d / path if (d / path).exists() else d / Path(path).name
+    return pd.read_parquet(full, columns=["frame", "type", "landmark_index", "x", "y", "z"])
+
+
+def _block(df: pd.DataFrame, kind: str, n: int, nframes: int) -> np.ndarray | None:
+    sub = df[df["type"] == kind].sort_values(["frame", "landmark_index"])
+    if len(sub) != n * nframes:
+        return None
+    return sub[["x", "y", "z"]].to_numpy(np.float64).reshape(nframes, n, 3)
+
+
+def to_frames(df: pd.DataFrame, aspect: float) -> list[dict]:
+    """One parquet -> our frame dicts (pose 0..16, unlabeled hands, w/h = aspect)."""
+    nframes = df["frame"].nunique()
+    pose, left, right = (_block(df, "pose", 33, nframes), _block(df, "left_hand", 21, nframes),
+                         _block(df, "right_hand", 21, nframes))
+    if pose is None or left is None or right is None:
+        raise ValueError("unexpected row layout")
+    frames = []
+    for i in range(nframes):
+        hands = [h[i].tolist() for h in (left, right) if not np.isnan(h[i]).any()]
+        p = pose[i, :17]
+        frames.append({"w": aspect, "h": 1.0, "pose": None if np.isnan(p).any() else p.tolist(), "hands": hands})
+    return frames
+
+
+def _convert(job):
+    path, label, signer, aspect = job
+    try:
+        return clip_features(to_frames(_read(path), aspect)), label, signer
+    except Exception as e:  # a corrupt or odd file must not kill a 40-minute run
+        return None, f"{path}: {e}", signer
+
+
+def _demo_signs() -> list[str]:
+    return json.loads((ROOT / "web" / "src" / "vocab.json").read_text())["gislr"]
+
+
+def _load_csv(args) -> pd.DataFrame:
+    if args.csv:
+        return pd.read_csv(args.csv)
+    with zipfile.ZipFile(args.zip) as z:
+        return pd.read_csv(io.BytesIO(z.read("train.csv")))
+
+
+def estimate_aspect(args, csv: pd.DataFrame) -> None:
+    """GISLR does not store the video size. Compare shoulder width / shoulder-to-nose height with our own videos."""
+    def ratio(f, asp):
+        p = f.get("pose")
+        if not p:
+            return None
+        dx = abs(p[11][0] - p[12][0]) * asp
+        dy = (p[11][1] + p[12][1]) / 2 - p[0][1]
+        return dx / dy if dy > 1e-3 else None
+
+    own = []
+    for fn in Path(args.estimate_aspect_from).glob("*.json"):
+        for clip in json.loads(fn.read_text())["clips"]:
+            for f in clip["frames"][::5]:
+                fr = {"pose": [[q["x"], q["y"], q["z"]] for q in f["pose"]] if f["pose"] else None}
+                r = ratio(fr, f["w"] / f["h"])
+                if r:
+                    own.append(r)
+    _init({"zip": args.zip, "dir": args.dir})
+    gis = []
+    for path in csv.sample(min(300, len(csv)), random_state=0)["path"]:
+        for f in to_frames(_read(path), 1.0)[::5]:
+            r = ratio(f, 1.0)
+            if r:
+                gis.append(r)
+    if not own or not gis:
+        sys.exit("need recordings in --estimate-aspect-from and readable GISLR files")
+    est = float(np.median(own) / np.median(gis))
+    print(f"own videos: median ratio {np.median(own):.3f} ({len(own)} frames); GISLR at aspect 1: {np.median(gis):.3f}")
+    print(f"estimated GISLR aspect (w/h): {est:.3f}   -> pass --aspect {est:.2f}")
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--zip")
+    ap.add_argument("--dir")
+    ap.add_argument("--csv")
+    ap.add_argument("--signs", default="demo", help="demo | all | comma list of GISLR sign names")
+    ap.add_argument("--out", default="data/gislr-demo")
+    ap.add_argument("--aspect", type=float, default=0.75, help="video width/height; PopSign videos are portrait")
+    ap.add_argument("--max-per-sign", type=int, default=0, help="0 = all")
+    ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument("--estimate-aspect-from")
+    args = ap.parse_args()
+    if not args.zip and not (args.dir and args.csv):
+        sys.exit("give --zip, or --dir with --csv")
+
+    csv = _load_csv(args)
+    if args.estimate_aspect_from:
+        estimate_aspect(args, csv)
+        return
+    signs = _demo_signs() if args.signs == "demo" else sorted(csv["sign"].unique()) if args.signs == "all" \
+        else [s.strip() for s in args.signs.split(",")]
+    missing = sorted(set(signs) - set(csv["sign"]))
+    if missing:
+        sys.exit(f"not in the dataset: {missing}")
+    rows = csv[csv["sign"].isin(signs)]
+    if args.max_per_sign:
+        rows = rows.groupby("sign", group_keys=False).apply(lambda g: g.sample(min(len(g), args.max_per_sign), random_state=0))
+    labels = sorted({s.upper() for s in signs})
+    jobs = [(r.path, r.sign.upper(), str(r.participant_id), args.aspect) for r in rows.itertuples()]
+    print(f"{len(jobs)} clips, {len(labels)} signs, {rows.participant_id.nunique()} signers")
+
+    X, y, signers, errors = [], [], [], []
+    with Pool(args.workers, initializer=_init, initargs=({"zip": args.zip, "dir": args.dir},)) as pool:
+        for i, (feat, label, signer) in enumerate(pool.imap(_convert, jobs, chunksize=64)):
+            if feat is None:
+                errors.append(label)
+            else:
+                X.append(feat)
+                y.append(labels.index(label))
+                signers.append(signer)
+            if (i + 1) % 2000 == 0:
+                print(f"  {i + 1}/{len(jobs)}")
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
+    np.asarray(X, dtype="<f4").tofile(out / "X.f32")
+    (out / "meta.json").write_text(json.dumps({
+        "n": len(X), "T": T, "F": FEAT_PER_FRAME, "labels": labels, "y": y, "signers": signers,
+        "source": "gislr", "aspect": args.aspect}))
+    print(f"wrote {len(X)} clips to {out}  ({len(errors)} skipped)")
+    for e in errors[:5]:
+        print("  skipped", e)
+
+
+if __name__ == "__main__":
+    main()
+```
+- [ ] As soon as the zip has finished downloading, convert the **demo signs** first (minutes), then **all 250 signs** for pretraining (≈ 15–30 min on 8 cores):
+```bash
+python ml/gislr_to_features.py --zip data/asl-signs.zip --signs demo --out data/gislr-demo --workers 8
+python ml/gislr_to_features.py --zip data/asl-signs.zip --signs all  --out data/gislr-all  --workers 8
+```
+Expected: `… clips, 16 signs, 21 signers` then `wrote … clips to data/gislr-demo (N skipped)`, where N is a small fraction.
+- [ ] After the first recordings exist (Task 1.D1), check the video aspect ratio, which the Kaggle data doesn't store:
+```bash
+python ml/gislr_to_features.py --zip data/asl-signs.zip --estimate-aspect-from data/raw
+```
+If the estimate differs from 0.75 by more than ~0.1, rerun both conversions with `--aspect <estimate>`. Training also randomly stretches x by ±10%, so small mismatches don't matter.
+- [ ] Commit (code only; `data/` is ignored): `kaggle converter`.
+
+#### Recording session (everyone, from ≈ 15:00)
+
+##### Task 1.D1 Record our signs, idle and letters (≈ 25 min per person, on the signer laptop if possible)
+- [ ] On `#/record`, each person records:
+  - **ME, YOU, NAME, WHAT:** 12 reps each. Do 6 close (elbows in frame) and 6 farther (waist in frame), with half facing the window and half side-lit. Drop your hands to your lap between reps.
+  - **`_idle`:** 20 reps of scratching your face, adjusting glasses, waving someone off, typing in the air, reaching for a cup, half-started signs.
+  - **Letters K, E, V** (switch to Letters): 4 holds each, tilting the wrist a little between holds.
+  - Optional but helpful: 5 reps of each Kaggle sign (adapts the model to your webcams).
+- [ ] Download every ~50 clips (a refresh loses unsaved clips). Put all session files into the MSI's `data/raw/`. They are git-ignored and never pushed.
+- [ ] Kev records on the **actual demo laptop**, in demo lighting if possible.
+
+**▶ CP1 — Sat 17:00:** call with typed captions · Recorder works · parity green · `data/gislr-demo` exists · `/api/gloss` + `/api/tts` work · Vultr `/api/health` over HTTPS · ≥ 3 people recorded.
 
 ---
 
-### Phase 2 — Recognize and speak (Sat 17:00–23:00, H7–H13)
+### Phase 2 — Recognize and speak (Sat 17:00–23:00)
 
-Person A builds the whole signer/hearing UI against a **gloss simulator** (type `HELLO NICE MEET YOU` instead of signing), so the voice, captions and Gemini flow are finished before the recognizer is. Person B makes recognition real. Phase 3 plugs one into the other.
+Track A builds the whole call screen against a **gloss simulator**: open `?dev`, switch ASL on, and type `HELLO ME NAME fs-KEV`. That way voice, captions, Gemini and auto-speak are finished before recognition is. Track B makes recognition real on the MSI. Phase 3 plugs them together.
 
-#### Track B — Recognition (B)
+#### Track B — Recognition (Kev)
 
-##### Task 2.B1 Classifier plumbing: `decide`, ONNX loader, kNN (≈ 45 min, TDD)
+##### Task 2.B1 Classifier plumbing: decide(), ONNX loader, kNN (≈ 40 min, TDD)
 - [ ] Write the failing test `web/src/lib/classifier.test.ts`:
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -1886,8 +2416,7 @@ describe('Knn', () => {
   });
 });
 ```
-- [ ] `npm test` → fails (`Cannot find module './classifier'`).
-- [ ] Create `web/src/lib/classifier.ts` (pure logic, no ONNX import, so unit tests run in Node):
+- [ ] `npm test` → fails. Create `web/src/lib/classifier.ts` (pure logic, no ONNX import, so tests run in Node):
 ```ts
 import { IDLE } from '../vocab';
 
@@ -1985,13 +2514,14 @@ export class Knn implements SignClassifier {
   }
 }
 ```
-- [ ] `npm test` → all green. Commit: `classifier + knn`.
+- [ ] `npm test` → green. Commit: `classifier + knn`.
 
-##### Task 2.B2 Letters: features, kNN, debounced decoder (≈ 60 min, TDD)
+##### Task 2.B2 Letters: spelling hand, features, kNN, debounced decoder (≈ 50 min, TDD)
 - [ ] Write the failing test `web/src/lib/letters.test.ts`:
 ```ts
 import { describe, expect, it } from 'vitest';
-import { LETTER_F, LetterDecoder, letterFeatures } from './letters';
+import { LETTER_F, LetterDecoder, letterFeatures, letterHand } from './letters';
+import type { Frame } from './types';
 import type { Pt } from './types';
 
 const hand = (): Pt[] => Array.from({ length: 21 }, (_, i) => ({ x: 0.5 + 0.01 * (i % 4) + 0.002 * i, y: 0.5 - 0.012 * Math.floor(i / 4), z: 0 }));
@@ -2008,6 +2538,22 @@ describe('letterFeatures', () => {
     const a = letterFeatures(hand(), 1), b = letterFeatures(rotate(hand(), 30, 1.4), 1);
     expect(a).toHaveLength(LETTER_F);
     for (let i = 0; i < 42; i++) expect(b[i]).toBeCloseTo(a[i], 4);
+  });
+});
+
+describe('letterHand', () => {
+  const frame = (hands: Pt[][]): Frame => ({ t: 0, w: 640, h: 480, pose: null, hands, brow: null });
+  it('mirrors a hand on the image-right side so letters look right-handed', () => {
+    const h = hand().map((p) => ({ ...p, x: p.x + 0.2 }));
+    expect(letterHand(frame([h]))![0].x).toBeCloseTo(1 - h[0].x, 6);
+    const l = hand().map((p) => ({ ...p, x: p.x - 0.2 }));
+    expect(letterHand(frame([l]))).toBe(l);
+  });
+  it('picks the higher hand when two are visible', () => {
+    const low = hand().map((p) => ({ ...p, x: p.x - 0.2, y: p.y + 0.3 }));
+    const high = hand().map((p) => ({ ...p, x: p.x - 0.2 }));
+    expect(letterHand(frame([low, high]))).toBe(high);
+    expect(letterHand(frame([]))).toBeNull();
   });
 });
 
@@ -2034,12 +2580,21 @@ describe('LetterDecoder', () => {
 ```
 - [ ] `npm test` → fails. Create `web/src/lib/letters.ts`:
 ```ts
-import type { Pt } from './types';
+import { bodyCenterX } from './features';
+import type { Frame, Pt } from './types';
 
 export const LETTER_F = 48;
 export const NONE = '_none';
 
-/** Handshape of one hand, invariant to position, size and in-plane rotation. Mirror the frame first for left-handed signers. */
+/** The spelling hand: the higher hand if two are visible, mirrored when it is on the image-right side of the body
+ *  (a left hand), so letters always look right-handed. Used by the recorder data, training and live spell mode. */
+export function letterHand(f: Frame): Pt[] | null {
+  if (!f.hands.length) return null;
+  const hand = f.hands.reduce((best, h) => (h[0].y < best[0].y ? h : best));
+  return hand[0].x > bodyCenterX(f) ? hand.map((p) => ({ x: 1 - p.x, y: p.y, z: p.z })) : hand;
+}
+
+/** Handshape of one hand, invariant to position, size and in-plane rotation. */
 export function letterFeatures(hand: Pt[], aspect: number): Float32Array {
   const pts = hand.map((p) => [p.x * aspect, p.y] as [number, number]);
   const w = pts[0];
@@ -2125,17 +2680,18 @@ export class LetterDecoder {
   reset() { this.ema = {}; this.streak = 0; this.cand = null; this.last = null; this.released = true; }
 }
 ```
-- [ ] `npm test` → all green. Commit: `fingerspelling letters`.
+- [ ] `npm test` → green. Commit: `fingerspelling letters`.
 
-##### Task 2.B3 Dataset builder (≈ 45 min)
+##### Task 2.B3 Build our dataset (≈ 30 min)
 - [ ] Create `web/scripts/build-dataset.ts`:
 ```ts
 /* Usage (from web/): npm run dataset -- ../data/raw ../data/processed
-   Reads recorder sessions; writes training tensors + browser kNN/letter templates. */
+   Reads OUR recorder sessions; writes training tensors (same layout as ml/gislr_to_features.py)
+   plus starter kNN and letter templates for the browser. */
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { clipFeatures, FEAT_PER_FRAME, orderHands, T } from '../src/lib/features';
-import { LETTER_F, letterFeatures } from '../src/lib/letters';
+import { clipFeatures, FEAT_PER_FRAME, T } from '../src/lib/features';
+import { LETTER_F, letterFeatures, letterHand } from '../src/lib/letters';
 import { IDLE } from '../src/vocab';
 import type { Session } from '../src/lib/types';
 
@@ -2178,8 +2734,8 @@ writeFileSync(join(pubDir, 'knn.json'), JSON.stringify({ labels: pick.map((i) =>
 // ---- letters: every 3rd frame of each 2 s hold
 const L: { label: string; x: Float32Array }[] = [];
 for (const c of letterClips) c.frames.forEach((f, j) => {
-  const [dom] = orderHands(f.hands);
-  if (dom && j % 3 === 0) L.push({ label: c.label, x: letterFeatures(dom, f.w / f.h) });
+  const hand = letterHand(f);
+  if (hand && j % 3 === 0) L.push({ label: c.label, x: letterFeatures(hand, f.w / f.h) });
 });
 const dist = (a: Float32Array, b: Float32Array) => { let s = 0; for (let i = 0; i < a.length; i++) s += (a[i] - b[i]) ** 2; return Math.sqrt(s); };
 const nearestSame = L.map((r, i) => Math.min(...L.filter((o, j) => j !== i && o.label === r.label).map((o) => dist(o.x, r.x)))).filter(Number.isFinite).sort((a, b) => a - b);
@@ -2195,26 +2751,24 @@ console.log(`signs: ${signClips.length} clips, ${labels.length} labels`, count(s
 console.log('signers:', count(signClips.map((c) => c.signer)));
 console.log(`letters: ${L.length} templates, maxDist ${maxDist.toFixed(3)}`, count(L.map((r) => r.label)));
 ```
-- [ ] Run `npm run dataset -- ../data/raw ../data/processed`. Expected: a summary with every Tier-1 label at ≥ 30 clips, ≥ 3 signers, and letter counts. Files appear in `data/processed/` and `web/public/models/`.
-- [ ] Commit (the script and the small template files in `public/models` are fine to commit; raw data is not): `dataset builder`.
+- [ ] `npm run dataset -- ../data/raw ../data/processed`. Expected: ME/YOU/NAME/WHAT/_idle each at ≥ 30 clips across ≥ 3 signers; letters K/E/V with a few hundred templates; files in `data/processed/` and `web/public/models/`.
+- [ ] Commit the script and the small `letters.*` files (raw data stays out): `dataset builder`.
 
-##### Task 2.B4 Train, evaluate, export (≈ 60 min)
-- [ ] Create `ml/requirements.txt` and install into a venv (`python3 -m venv .venv && source .venv/bin/activate && pip install -r ml/requirements.txt`):
-```
-torch
-numpy
-onnx
-onnxscript
-onnxruntime
-scikit-learn
-matplotlib
-```
+##### Task 2.B4 Pretrain on Kaggle, fine-tune on the demo vocabulary (≈ 40 min of code; training on the 3060)
 - [ ] Create `ml/train.py`:
 ```python
-"""Train the sign classifier on features built by web/scripts/build-dataset.ts.
-Usage (repo root): python ml/train.py --data data/processed --out web/public/models --epochs 60
-Prints leave-one-signer-out accuracy, fits temperature + accept threshold, exports sign.onnx + sign_meta.json."""
+"""Sign classifier training (runs on CUDA if available — the RTX 3060 — else Apple MPS, else CPU).
+
+1) Pretrain a backbone on the Kaggle data (all 250 signs gives the best backbone; the demo subset also works):
+     python ml/train.py pretrain --gislr data/gislr-all --epochs 40
+2) Finetune on the demo vocabulary: Kaggle clips of the demo signs + our own recordings (own signs and _idle):
+     python ml/train.py finetune --gislr data/gislr-demo --own data/processed --epochs 60
+   Writes web/public/models/{sign.onnx, sign_meta.json, knn.f32, knn.json} and ml/out/oof.npz (for eval_report.py).
+"""
+from __future__ import annotations
+
 import argparse
+import copy
 import json
 import math
 import time
@@ -2227,7 +2781,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+ROOT = Path(__file__).resolve().parents[1]
+OUT = ROOT / "ml" / "out"
 PAIRS = 86  # each frame = 86 (x, y) pairs + 2 presence flags = 174
+IDLE = "_idle"
+DEVICE = torch.device("cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
 
 
 class SignCNN(nn.Module):
@@ -2245,52 +2803,80 @@ class SignCNN(nn.Module):
 
 
 def augment(x: torch.Tensor) -> torch.Tensor:
-    """Online augmentation on features: rotation, temporal crop, second-hand dropout, jitter."""
+    """Batched: rotation ±15°, x-stretch ±10% (aspect mismatch), temporal crop ≤15% per end, hand dropout, jitter."""
     B, T, _ = x.shape
-    ang = (torch.rand(B, 1, 1) * 2 - 1) * math.radians(15)
+    dev = x.device
+    ang = (torch.rand(B, 1, 1, device=dev) * 2 - 1) * math.radians(15)
+    sx = 0.9 + 0.2 * torch.rand(B, 1, 1, device=dev)
     xy = x[..., :PAIRS * 2].reshape(B, T, PAIRS, 2)
+    px, py = xy[..., 0] * sx, xy[..., 1]
     c, s = torch.cos(ang), torch.sin(ang)
-    rot = torch.stack([xy[..., 0] * c - xy[..., 1] * s, xy[..., 0] * s + xy[..., 1] * c], dim=-1)
-    x = torch.cat([rot.reshape(B, T, PAIRS * 2), x[..., PAIRS * 2:]], dim=-1)
-    out = torch.empty_like(x)
+    rot = torch.stack([px * c - py * s, px * s + py * c], dim=-1).reshape(B, T, PAIRS * 2)
+    x = torch.cat([rot, x[..., PAIRS * 2:]], dim=-1)
     cut = max(1, int(0.15 * T))
-    for i in range(B):
-        a = int(torch.randint(0, cut + 1, ()))
-        b = T - int(torch.randint(0, cut + 1, ()))
-        out[i] = F.interpolate(x[i, a:b].T.unsqueeze(0), size=T, mode="linear", align_corners=True)[0].T
-    drop = (torch.rand(B, T, 1) < 0.1).float()
-    out[..., 84:168] *= 1 - drop          # non-dominant hand flickers out
-    out[..., 173:174] *= 1 - drop         # ...and its presence flag
-    noise = torch.randn_like(out) * 0.02
+    a = torch.randint(0, cut + 1, (B, 1), device=dev).float()
+    b = (T - 1 - torch.randint(0, cut + 1, (B, 1), device=dev)).float()
+    pos = a + (b - a) * torch.linspace(0, 1, T, device=dev)[None]
+    lo = pos.floor().long().clamp(0, T - 1)
+    hi = (lo + 1).clamp(max=T - 1)
+    w = (pos - lo.float()).unsqueeze(-1)
+    idx = lambda i: i.unsqueeze(-1).expand(B, T, x.shape[2])  # noqa: E731
+    x = torch.gather(x, 1, idx(lo)) * (1 - w) + torch.gather(x, 1, idx(hi)) * w
+    drop = (torch.rand(B, T, 1, device=dev) < 0.1).float()
+    x = x.clone()
+    x[..., 84:168] *= 1 - drop            # non-dominant hand flickers out
+    x[..., 173:174] *= 1 - drop           # ...and its presence flag
+    noise = torch.randn_like(x) * 0.02
     noise[..., -2:] = 0
-    return out + noise * (out != 0)
+    return x + noise * (x != 0)
 
 
-def train(Xtr, ytr, n_classes, epochs, Xva=None, yva=None, seed=0):
-    torch.manual_seed(seed)
-    model = SignCNN(Xtr.shape[2], n_classes)
-    opt = torch.optim.AdamW(model.parameters(), lr=1e-3, weight_decay=1e-2)
-    sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=epochs)
-    Xt, yt = torch.from_numpy(Xtr), torch.from_numpy(ytr)
-    best = (-1.0, None, epochs)
+def load(d: str | Path, tag: str):
+    d = Path(d)
+    meta = json.loads((d / "meta.json").read_text())
+    X = np.fromfile(d / "X.f32", dtype="<f4").reshape(meta["n"], meta["T"], meta["F"])
+    labels = [str(meta["labels"][i]) for i in meta["y"]]
+    signers = [f"{tag}:{s}" for s in meta["signers"]]
+    return X, np.array(labels, dtype=object), np.array(signers, dtype=object)
+
+
+def run_epochs(model, X, y, epochs, lr, Xva=None, yva=None, repeat=None, batch=128):
+    """Trains in place. Returns (best_val_acc, best_val_logits, best_epoch, best_state)."""
+    model.to(DEVICE)
+    opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=1e-2)
+    sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=max(1, epochs))
+    Xt, yt = torch.from_numpy(X), torch.from_numpy(y)
+    base = np.arange(len(X)) if repeat is None else np.repeat(np.arange(len(X)), repeat)
+    best = (-1.0, None, epochs, None)
     for ep in range(epochs):
         model.train()
-        perm = torch.randperm(len(Xt))
-        for i in range(0, len(Xt), 64):
-            idx = perm[i:i + 64]
-            loss = F.cross_entropy(model(augment(Xt[idx])), yt[idx], label_smoothing=0.1)
+        order = torch.from_numpy(np.random.permutation(base))
+        for i in range(0, len(order), batch):
+            idx = order[i:i + batch]
+            xb, yb = Xt[idx].to(DEVICE), yt[idx].to(DEVICE)
+            loss = F.cross_entropy(model(augment(xb)), yb, label_smoothing=0.1)
             opt.zero_grad()
             loss.backward()
             opt.step()
         sched.step()
-        if Xva is not None:
-            model.eval()
-            with torch.no_grad():
-                logits = model(torch.from_numpy(Xva)).numpy()
+        if Xva is not None and len(Xva):
+            logits = predict(model, Xva)
             acc = float((logits.argmax(1) == yva).mean())
             if acc > best[0]:
-                best = (acc, logits, ep + 1)
-    return model, best
+                best = (acc, logits, ep + 1, copy.deepcopy(model.state_dict()))
+    return best
+
+
+@torch.no_grad()
+def predict(model, X, batch=1024):
+    model.eval()
+    out = [model(torch.from_numpy(X[i:i + batch]).to(DEVICE)).float().cpu().numpy() for i in range(0, len(X), batch)]
+    return np.concatenate(out) if out else np.zeros((0, model.head[-1].out_features), np.float32)
+
+
+def holdout_signers(signers: np.ndarray, every: int = 5) -> set[str]:
+    uniq = sorted(set(signers))
+    return set(uniq[::every]) if len(uniq) > 1 else set()
 
 
 def fit_temperature(logits: np.ndarray, y: np.ndarray) -> float:
@@ -2322,77 +2908,153 @@ def choose_tau(probs, y, idle, margin=0.2, target=0.9):
     return 0.7, float("nan")
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--data", default="data/processed")
-    ap.add_argument("--out", default="web/public/models")
-    ap.add_argument("--epochs", type=int, default=60)
-    args = ap.parse_args()
-    data, out, work = Path(args.data), Path(args.out), Path("ml/out")
-    work.mkdir(parents=True, exist_ok=True)
+def pretrain(args):
+    X, lab, sig = load(args.gislr, "g")
+    labels = sorted({str(v) for v in lab})  # plain str: torch.load(weights_only=True) rejects numpy strings
+    y = np.array([labels.index(v) for v in lab], dtype=np.int64)
+    va = np.isin(sig, list(holdout_signers(sig)))
+    print(f"pretrain on {DEVICE}: {len(X)} clips, {len(labels)} signs, {len(set(sig))} signers ({va.sum()} held out)")
+    model = SignCNN(X.shape[2], len(labels))
+    acc, _, ep, state = run_epochs(model, X[~va], y[~va], args.epochs, 1e-3, X[va], y[va], batch=256)
+    if state is not None:
+        model.load_state_dict(state)
+    print(f"held-out-signer top-1 over {len(labels)} signs: {acc:.3f} (best epoch {ep})")
+    OUT.mkdir(parents=True, exist_ok=True)
+    torch.save({"state": model.state_dict(), "labels": labels, "F": int(X.shape[2]), "heldout_acc": float(acc)}, OUT / "pretrain.pt")
+    print(f"saved {OUT / 'pretrain.pt'}")
 
-    meta = json.loads((data / "meta.json").read_text())
-    n, T, Fd, labels = meta["n"], meta["T"], meta["F"], meta["labels"]
-    X = np.fromfile(data / "X.f32", dtype="<f4").reshape(n, T, Fd)
-    y = np.array(meta["y"], dtype=np.int64)
-    groups = np.array(meta["signers"])
-    C, idle = len(labels), labels.index("_idle")
 
-    oof = np.zeros((n, C), np.float32)
-    mask = np.zeros(n, bool)
-    folds, best_epochs = [], []
-    signers = sorted(set(groups))
-    if len(signers) >= 2:
-        splits = [(s, groups == s) for s in signers]
+def finetune(args):
+    demo = {s.upper() for s in json.loads((ROOT / "web" / "src" / "vocab.json").read_text())["gislr"]}
+    empty = np.array([], dtype=object)
+    Xg, lg, sg = load(args.gislr, "g") if args.gislr else (np.zeros((0, 32, 174), np.float32), empty, empty)
+    keep = np.isin(lg, list(demo))
+    Xg, lg, sg = Xg[keep], lg[keep], sg[keep]
+    if args.gislr_per_sign and len(lg):
+        rng = np.random.default_rng(0)
+        idx = np.concatenate([rng.permutation(np.where(lg == c)[0])[:args.gislr_per_sign] for c in sorted(set(lg))])
+        Xg, lg, sg = Xg[idx], lg[idx], sg[idx]
+    if args.own and (Path(args.own) / "meta.json").exists():
+        Xo, lo, so = load(args.own, "own")
     else:
-        print("WARNING: one signer only -> random 20% split. This accuracy is signer-DEPENDENT and optimistic.")
-        splits = [("random-20%", np.random.default_rng(0).random(n) < 0.2)]
-    for name, va in splits:
-        _, (acc, logits, ep) = train(X[~va], y[~va], C, args.epochs, X[va], y[va])
-        oof[va], mask[va] = logits, True
-        best_epochs.append(ep)
-        folds.append({"held_out": name, "n": int(va.sum()), "acc": acc, "best_epoch": ep})
-        print(f"held-out {name:>12}: acc {acc:.3f}  n={va.sum():4d}  best epoch {ep}")
-    mean_acc = float(np.mean([f["acc"] for f in folds]))
-    print(f"mean held-out-signer accuracy: {mean_acc:.3f}")
+        print("WARNING: no own recordings -> no _idle class and no own signs; expect false positives on fidgeting.")
+        Xo, lo, so = np.zeros((0,) + Xg.shape[1:], np.float32), np.array([], dtype=object), np.array([], dtype=object)
+    labels = sorted({str(v) for v in lg} | {str(v) for v in lo})
+    idle = labels.index(IDLE) if IDLE in labels else -1
+    X = np.concatenate([Xg, Xo]).astype(np.float32)
+    y = np.array([labels.index(v) for v in np.concatenate([lg, lo])], dtype=np.int64)
+    sig = np.concatenate([sg, so])
+    own = np.concatenate([np.zeros(len(Xg), bool), np.ones(len(Xo), bool)])
+    repeat = np.where(own, args.own_weight, 1)
+    gval = np.isin(sig, list(holdout_signers(sg)))          # fixed Kaggle signers held out in every fold
+    own_signers = sorted({str(v) for v in so})
+    folds = own_signers if len(own_signers) >= 2 else [None]
+    print(f"finetune on {DEVICE}: {len(labels)} labels | Kaggle {len(Xg)} clips | own {len(Xo)} clips from {own_signers}")
 
-    temp = fit_temperature(oof[mask], y[mask])
-    z = oof[mask] / temp
-    probs = np.exp(z - z.max(1, keepdims=True))
-    probs /= probs.sum(1, keepdims=True)
-    tau, coverage = choose_tau(probs, y[mask], idle)
+    def new_model():
+        m = SignCNN(X.shape[2], len(labels))
+        init = Path(args.init)
+        if init.exists():
+            ck = torch.load(init, map_location="cpu")
+            m.net.load_state_dict({k[4:]: v for k, v in ck["state"].items() if k.startswith("net.")})
+        return m
+
+    lr = 5e-4 if Path(args.init).exists() else 1e-3
+    print("init:", args.init if Path(args.init).exists() else "random (run pretrain first for better accuracy)")
+    oof_logits, oof_y, own_accs, g_logits, best_eps = [], [], [], None, []
+    for s in folds:
+        va = gval | ((sig == s) if s else np.zeros(len(X), bool))
+        acc, logits, ep, _ = run_epochs(new_model(), X[~va], y[~va], args.epochs, lr, X[va], y[va], repeat[~va])
+        best_eps.append(ep)
+        if logits is None:
+            continue
+        vidx = np.where(va)[0]
+        is_own = sig[vidx] == s if s else np.zeros(len(vidx), bool)
+        if s:
+            oof_logits.append(logits[is_own])
+            oof_y.append(y[vidx][is_own])
+            own_accs.append(float((logits[is_own].argmax(1) == y[vidx][is_own]).mean()))
+            print(f"held-out own signer {s.split(':', 1)[1]:>10}: acc {own_accs[-1]:.3f}  (best epoch {ep})")
+        if g_logits is None and (~is_own).any():
+            g_logits, g_y = logits[~is_own], y[vidx][~is_own]
+    g_acc = float((g_logits.argmax(1) == g_y).mean()) if g_logits is not None else float("nan")
+    print(f"held-out Kaggle signers, demo vocabulary: acc {g_acc:.3f}")
+    own_acc = float(np.mean(own_accs)) if own_accs else float("nan")
+    if own_accs:
+        print(f"mean held-out own-signer accuracy: {own_acc:.3f}")
+
+    parts = [(lg_, yy) for lg_, yy in zip(oof_logits, oof_y)] + ([(g_logits, g_y)] if g_logits is not None else [])
+    if parts:
+        L = np.concatenate([p[0] for p in parts])
+        Y = np.concatenate([p[1] for p in parts])
+        temp = fit_temperature(L, Y)
+        z = L / temp
+        probs = np.exp(z - z.max(1, keepdims=True))
+        probs /= probs.sum(1, keepdims=True)
+        tau, coverage = choose_tau(probs, Y, idle)
+    else:
+        L, Y, temp, tau, coverage = np.zeros((0, len(labels))), np.zeros(0, np.int64), 1.0, 0.7, float("nan")
     print(f"temperature {temp:.2f}  tau {tau}  coverage {coverage:.2f}")
-    np.savez(work / "oof.npz", labels=np.array(labels), y=y, logits=oof, mask=mask, temperature=temp)
+    OUT.mkdir(parents=True, exist_ok=True)
+    np.savez(OUT / "oof.npz", labels=np.array(labels), y=Y, logits=L, mask=np.ones(len(Y), bool), temperature=temp)
 
-    final_epochs = max(20, int(np.median(best_epochs)))
-    model, _ = train(X, y, C, final_epochs)
-    model.eval()
+    final_epochs = max(15, int(np.median(best_eps)))
+    model = new_model()
+    run_epochs(model, X, y, final_epochs, lr, repeat=repeat)
+    model = model.cpu().eval()
+    out = Path(args.out)
+    out.mkdir(parents=True, exist_ok=True)
     onnx_path = out / "sign.onnx"
-    torch.onnx.export(model, torch.zeros(1, T, Fd), onnx_path, input_names=["x"], output_names=["logits"])
+    torch.onnx.export(model, torch.zeros(1, X.shape[1], X.shape[2]), onnx_path, input_names=["x"], output_names=["logits"])
     # Recent PyTorch writes weights to sign.onnx.data; the browser loads one file, so inline them.
     onnx.save_model(onnx.load(str(onnx_path)), str(onnx_path), save_as_external_data=False)
     onnx_path.with_name(onnx_path.name + ".data").unlink(missing_ok=True)
-
     sess = ort.InferenceSession(str(onnx_path))
     with torch.no_grad():
         ref = model(torch.from_numpy(X[:1])).numpy()
-    got = sess.run(["logits"], {"x": X[:1]})[0]
-    diff = float(np.abs(ref - got).max())
+    diff = float(np.abs(ref - sess.run(["logits"], {"x": X[:1]})[0]).max())
     assert diff < 1e-3, f"ONNX output differs from PyTorch by {diff}"
     print(f"exported {onnx_path} (max |torch - onnx| = {diff:.2e})")
 
+    # kNN fallback templates for the browser: up to 12 per label, our own clips first
+    pick = []
+    for c in range(len(labels)):
+        idx = np.where(y == c)[0]
+        pick.extend(sorted(idx, key=lambda i: not own[i])[:12])
+    X[pick].astype("<f4").tofile(out / "knn.f32")
+    (out / "knn.json").write_text(json.dumps({"labels": [labels[y[i]] for i in pick], "T": X.shape[1], "F": X.shape[2]}))
+
     version = time.strftime("cnn-%m%d-%H%M")
     (out / "sign_meta.json").write_text(json.dumps({
-        "labels": labels, "T": T, "F": Fd, "temperature": temp, "tau": tau, "margin": 0.2,
-        "version": version, "heldout_signer_accuracy": mean_acc, "folds": folds}, indent=2))
-    print(f"wrote sign_meta.json ({version})")
+        "labels": labels, "T": X.shape[1], "F": X.shape[2], "temperature": temp, "tau": tau, "margin": 0.2,
+        "version": version, "heldout_own_signer_accuracy": own_acc, "heldout_kaggle_signer_accuracy": g_acc,
+        "kaggle_clips": int(len(Xg)), "own_clips": int(len(Xo))}, indent=2))
+    print(f"wrote sign_meta.json + knn templates ({version})")
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    p = sub.add_parser("pretrain")
+    p.add_argument("--gislr", default="data/gislr-all")
+    p.add_argument("--epochs", type=int, default=40)
+    f = sub.add_parser("finetune")
+    f.add_argument("--gislr", default="data/gislr-demo")
+    f.add_argument("--own", default="data/processed")
+    f.add_argument("--init", default=str(OUT / "pretrain.pt"))
+    f.add_argument("--out", default=str(ROOT / "web" / "public" / "models"))
+    f.add_argument("--epochs", type=int, default=60)
+    f.add_argument("--gislr-per-sign", type=int, default=300)
+    f.add_argument("--own-weight", type=int, default=3, help="how many times each own clip appears per epoch")
+    args = ap.parse_args()
+    torch.manual_seed(0)
+    np.random.seed(0)
+    pretrain(args) if args.cmd == "pretrain" else finetune(args)
 
 
 if __name__ == "__main__":
     main()
 ```
-- [ ] Run `python ml/train.py`. Expected (on a laptop CPU, ~1,000 clips): a few minutes; one line per held-out signer, a mean, temperature/tau, then `exported web/public/models/sign.onnx (max |torch - onnx| = …e-06)`. Warnings about torchvision ops are harmless. Only `sign.onnx` and `sign_meta.json` should be in `web/public/models` (no `sign.onnx.data`).
-- [ ] **Target for Tier 1:** mean held-out-signer accuracy ≥ 0.75. Below that, open the confusion matrix (next step) before recording more: usually one or two pairs cause most errors (ME/MY, NAME/NICE). Fix by re-recording those signs more distinctly or dropping one from the demo.
 - [ ] Create `ml/eval_report.py`:
 ```python
 """Charts for the slide deck from ml/out/oof.npz. Usage (repo root): python ml/eval_report.py"""
@@ -2468,33 +3130,83 @@ metrics = {
 (out / "metrics.json").write_text(json.dumps(metrics, indent=2))
 print(json.dumps(metrics, indent=2))
 ```
-- [ ] Run `python ml/eval_report.py` → three PNGs + `metrics.json` in `ml/out/`. Send the confusion matrix to the team chat.
-- [ ] Commit `ml/` code and `web/public/models/sign.onnx` + `sign_meta.json` (small files): `trained model v1`.
+- [ ] **Pretrain** on all 250 Kaggle signs (start it as soon as `data/gislr-all` exists; it can run while you do other tasks):
+```bash
+python ml/train.py pretrain --gislr data/gislr-all --epochs 40
+```
+Expected: `pretrain on cuda: … clips, 250 signs, 21 signers (… held out)`, then `held-out-signer top-1 over 250 signs: …` and `saved ml/out/pretrain.pt`. For reference, the Kaggle winners reached ~89% with far bigger models; anything above ~0.5 makes a useful backbone. If `data/gislr-all` isn't ready, pretrain on `data/gislr-demo` instead.
+- [ ] **Fine-tune** after Task 2.B3:
+```bash
+python ml/train.py finetune --gislr data/gislr-demo --own data/processed --epochs 60
+python ml/eval_report.py
+```
+Expected: one line per held-out signer of ours, `held-out Kaggle signers, demo vocabulary: acc …`, temperature/tau, `exported …/sign.onnx (max |torch - onnx| = …e-06)`, and `wrote sign_meta.json + knn templates`. `web/public/models/` should contain `sign.onnx` (one file, ~1 MB, no `.data` file), `sign_meta.json`, `knn.f32`, `knn.json`.
+- [ ] **Targets:** Kaggle held-out ≥ 0.80 and our held-out signer ≥ 0.75 over the 21 labels. Below that, open `ml/out/confusion.png`. Usually one pair causes most errors: re-record it more distinctly, or drop one of the pair from `vocab.json`.
+- [ ] Commit `ml/` code plus `web/public/models/sign.onnx`, `sign_meta.json`, `knn.*`: `trained model v1`.
 
 ##### Task 2.B5 Tune live on the Bench page (≈ 30 min)
-- [ ] Extend `Bench.tsx`'s loop to show the segmenter and classifier live. Add near the other refs, and inside `loop()` after `detect`:
+- [ ] Replace `web/src/pages/Bench.tsx`:
 ```tsx
-// imports to add:
+import { useEffect, useRef, useState } from 'react';
+import { createTracker } from '../lib/landmarks';
 import { clipFeatures } from '../lib/features';
 import { Segmenter } from '../lib/segmenter';
 import type { SignClassifier } from '../lib/classifier';
 import { loadOnnx } from '../lib/onnx';
 import { Knn } from '../lib/knn';
-// inside the async IIFE, after createTracker:
-const seg = new Segmenter();
-const model: SignClassifier = await loadOnnx().catch(() => Knn.load());
-let last = '';
-// inside loop(), after `const f = tracker.detect(...)`:
-const ev = seg.push(f);
-if (ev?.kind === 'end') void model.predict(clipFeatures(ev.frames)).then((p) => {
-  last = `${p.label} ${(p.p * 100).toFixed(0)}% ${p.accepted ? '✓' : '✗'} (${ev.reason}, ${ev.frames.length} frames, ${p.ms.toFixed(1)} ms, ${p.source})`;
-});
-// and append to the setInfo string:  ` · ${seg.state} speed ${seg.speed.toFixed(2)} · ${last}`
+
+/** #/bench — FPS, tracking, segmenter state and live predictions, for tuning thresholds on the real laptop. */
+export default function Bench() {
+  const video = useRef<HTMLVideoElement>(null);
+  const [withFace, setWithFace] = useState(true);
+  const [info, setInfo] = useState('loading…');
+
+  useEffect(() => {
+    let raf = 0; let stop = false;
+    (async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, frameRate: 30 } });
+      video.current!.srcObject = stream;
+      await video.current!.play();
+      const tracker = await createTracker({ withFace });
+      const seg = new Segmenter();
+      const model: SignClassifier | null = await loadOnnx().catch(() => Knn.load()).catch(() => null); // null before any training
+      let last = '';
+      let frames = 0; let t0 = performance.now(); let detectMs = 0;
+      const loop = () => {
+        if (stop) return;
+        const a = performance.now();
+        const f = tracker.detect(video.current!, a);
+        detectMs += performance.now() - a; frames++;
+        const ev = seg.push(f);
+        if (ev?.kind === 'end' && model) void model.predict(clipFeatures(ev.frames)).then((p) => {
+          last = `${p.label} ${(p.p * 100).toFixed(0)}% ${p.accepted ? '✓' : '✗'} (${ev.reason}, ${ev.frames.length} frames, ${p.ms.toFixed(1)} ms, ${p.source})`;
+        });
+        if (performance.now() - t0 > 1000) {
+          setInfo(`FPS ${frames} · detect ${(detectMs / frames).toFixed(1)} ms · hands ${f.hands.length} · pose ${f.pose ? 'yes' : 'no'}`
+            + ` · brow ${f.brow ? f.brow.raise.toFixed(2) + '/' + f.brow.furrow.toFixed(2) : '-'}`
+            + ` · ${seg.state} speed ${seg.speed.toFixed(2)} · ${model ? last || 'sign something' : 'no model yet'}`);
+          frames = 0; detectMs = 0; t0 = performance.now();
+        }
+        raf = requestAnimationFrame(loop);
+      };
+      loop();
+    })();
+    return () => { stop = true; cancelAnimationFrame(raf); };
+  }, [withFace]);
+
+  return (
+    <main>
+      <label><input type="checkbox" checked={withFace} onChange={(e) => setWithFace(e.target.checked)} /> face model</label>
+      <p>{info}</p>
+      <video ref={video} muted playsInline className="mirror" width={480} />
+    </main>
+  );
+}
 ```
-- [ ] Sign each Tier-1 sign 3×. If signs get cut off early → raise `offFrames` to 10. If idle fidgets start segments → raise `onSpeed` to 1.0. Change only `DEFAULT_SEG` values, rerun `npm test` (the tests use the defaults; keep them passing), then **re-record nothing** — clips were cut with the old settings, so if you change `onSpeed`/`offFrames` by a lot, rebuild the dataset only after recording new clips with the new settings.
+- [ ] On the signer laptop, sign each demo sign 3×. Signs cut off early → raise `offFrames` to 10. Fidgets starting segments → raise `onSpeed` to 1.0. Change only `DEFAULT_SEG`; keep `npm test` green.
 - [ ] Commit: `bench live readout + tuned segmenter`.
 
-#### Track A — Voice, captions, full call screen (A)
+#### Track A — Voice, captions, the ASL switch
 
 ##### Task 2.A1 Voice output into the call (≈ 45 min)
 - [ ] Create `web/src/lib/voice.ts`:
@@ -2549,7 +3261,7 @@ export class VoiceOut {
   }
 }
 ```
-- [ ] Create `server/scripts/cache_tts.py` (pre-generates the demo sentences; the strings **must** equal the rule-based outputs in Task 2.C1 and your demo name):
+- [ ] Create `server/scripts/cache_tts.py`:
 ```python
 """Pre-generate demo MP3s. Usage (from server/): PYTHONPATH=. python scripts/cache_tts.py VOICE_ID"""
 import hashlib
@@ -2562,10 +3274,10 @@ import httpx
 from dotenv import load_dotenv
 
 load_dotenv()
-SENTENCES = [
-    "Hello!", "Hello, nice to meet you!", "Nice to meet you!", "My name is Liv.", "What's your name?",
-    "I'm Deaf.", "Are you hearing?", "Are you Deaf?", "Could you say that again, slowly please?",
-    "Slower, please.", "Thank you!", "Yes.", "No.",
+SENTENCES = [  # must equal ruleBasedEnglish() outputs in web/src/lib/gloss.ts (+ the retract phrase in Call.tsx)
+    "Hello!", "Hello! My name is Kev.", "My name is Kev.", "What's your name?", "I'm hungry.", "Are you hungry?",
+    "I'm not hungry.", "Where can we get pizza?", "Let's go now!", "Please wait.", "I'm going to the store tomorrow.",
+    "Thank you!", "Bye!", "Thank you! Bye!", "Yes.", "No.", "Wait.", "Later.", "Sorry, that came out wrong.",
 ]
 voice = sys.argv[1]
 out = Path(__file__).resolve().parents[2] / "web" / "public" / "tts-cache"
@@ -2587,7 +3299,7 @@ for text in SENTENCES:
     print("cached:", text)
 index_path.write_text(json.dumps(index, indent=2))
 ```
-- [ ] Run it once for the demo voice → `web/public/tts-cache/` has 13 MP3s + `index.json`. Commit: `voice out + tts cache`.
+- [ ] Run once for the demo voice (`PYTHONPATH=. python scripts/cache_tts.py VOICE_ID`) → `web/public/tts-cache/` holds 19 MP3s + `index.json`. Commit: `voice out + tts cache`.
 
 ##### Task 2.A2 Speech-to-text, metrics, small components (≈ 40 min)
 - [ ] Create `web/src/lib/stt.ts`:
@@ -2668,9 +3380,9 @@ export function Consent({ onAccept }: { onAccept(): void }) {
       <ul>
         <li>Your camera video goes only to the person you call.</li>
         <li>Hand and body positions are computed on this laptop. Your video is never recorded or uploaded for recognition.</li>
-        <li>The recognized signs (words like HELLO) go to Google Gemini to become an English sentence. On the free tier Google may use them to improve its products.</li>
-        <li>Nothing is spoken until you press Speak (unless you turn on auto-speak). The sentence goes to ElevenLabs to become a voice.</li>
-        <li>We log timing numbers and recognized words, never video or audio, to measure speed and accuracy.</li>
+        <li>When you switch <b>ASL → voice</b> on, signs it recognizes confidently are turned into English by Google Gemini and spoken by ElevenLabs automatically. Anything it is unsure about waits for you to check it. Switch it off any time.</li>
+        <li>If something comes out wrong, press <b>That was wrong</b>: the caption is crossed out on both screens.</li>
+        <li>Gemini's free tier may use the recognized words (like HELLO) to improve Google products. We log timing numbers and recognized words, never video or audio.</li>
         <li>This is a student prototype for casual conversation. It knows a small vocabulary and makes mistakes. Don't use it for medical, legal, or emergency conversations.</li>
       </ul>
       <button onClick={onAccept}>I understand — continue</button>
@@ -2678,16 +3390,17 @@ export function Consent({ onAccept }: { onAccept(): void }) {
   );
 }
 ```
-- [ ] `npm run build` → compiles with no type errors (after Task 2.C1 adds `gloss.ts`; do 2.C1 first if `Chips.tsx` complains). Commit: `stt, metrics, chips, consent`.
+- [ ] Commit: `stt, metrics, chips, consent` (`npx tsc -b` passes once Task 2.C1's `gloss.ts` exists).
 
-##### Task 2.A3 The full call screen with a gloss simulator (≈ 2 h)
+##### Task 2.A3 The call screen with the ASL → voice switch (≈ 2 h)
 - [ ] Create `web/src/config.ts`:
 ```ts
-export const PAUSE_MS = 1100;   // no new sign for this long -> sentence is done
-export const USE_FACE = true;   // set from the Bench benchmark (Task 1.B1)
+export const PAUSE_MS = 1100;                  // no new sign for this long -> the sentence is done
+export const AUTO_SPEAK_MIN_CONFIDENCE = 0.6;  // Gemini's own confidence needed to speak without a tap
+export const USE_FACE = true;                  // set from the Bench benchmark (Task 1.B1)
 export const DEV = new URLSearchParams(location.search).has('dev'); // ?dev shows the gloss simulator
 ```
-- [ ] Replace `web/src/pages/Call.tsx` with the full screen:
+- [ ] Replace `web/src/pages/Call.tsx`:
 ```tsx
 import { useEffect, useRef, useState } from 'react';
 import { joinCall, type Call as CallT, type CallStatus } from '../lib/call';
@@ -2699,7 +3412,7 @@ import { startWebSpeech, type Stt } from '../lib/stt';
 import { getVoices, translateGloss, type GlossResult, type VoiceInfo } from '../lib/api';
 import { GlossBuffer, ruleBasedEnglish, type Tag, type Token } from '../lib/gloss';
 import { logUtterance } from '../lib/metrics';
-import { DEV, PAUSE_MS } from '../config';
+import { AUTO_SPEAK_MIN_CONFIDENCE, DEV, PAUSE_MS } from '../config';
 import { WH_SIGNS } from '../vocab';
 import type { Caption, Ctrl, Role } from '../lib/types';
 
@@ -2707,14 +3420,15 @@ type Preview = {
   tokens: Token[]; tags: Tag[]; english: string; source: 'gemini' | 'rules';
   result: GlossResult | null; waitMs: number; glossMs: number; edited: boolean;
 };
-type Form = { room: string; name: string; role: Role; voiceId: string; leftHanded: boolean; autoSpeak: boolean };
+type Form = { room: string; name: string; role: Role; voiceId: string };
+const RETRACT_PHRASE = 'Sorry, that came out wrong.';
 
 const readConsent = () => { try { return localStorage.getItem('consent') === '1'; } catch { return false; } };
 const saveConsent = () => { try { localStorage.setItem('consent', '1'); } catch { /* private window */ } };
 
 export default function Call() {
   const [consented, setConsented] = useState(readConsent);
-  const [form, setForm] = useState<Form>({ room: 'demo-room', name: '', role: 'signer', voiceId: '', leftHanded: false, autoSpeak: false });
+  const [form, setForm] = useState<Form>({ room: 'demo-room', name: '', role: 'signer', voiceId: '' });
   const [voices, setVoices] = useState<VoiceInfo[]>([]);
   const [joined, setJoined] = useState(false);
   const [status, setStatus] = useState<CallStatus | 'idle'>('idle');
@@ -2723,9 +3437,11 @@ export default function Call() {
   const [captions, setCaptions] = useState<Caption[]>([]);
   const [chips, setChips] = useState<Token[]>([]);
   const [preview, setPreview] = useState<Preview | null>(null);
+  const [aslOn, setAslOn] = useState(false);       // the one switch: on = read signs + speak confident sentences
   const [question, setQuestion] = useState(false); // manual yes/no-question toggle (fallback for eyebrow reading)
   const [peer, setPeer] = useState<string | null>(null);
   const [peerSigning, setPeerSigning] = useState(false);
+  const [peerAsl, setPeerAsl] = useState(false);
   const [hud, setHud] = useState('');
   const [sim, setSim] = useState('');
 
@@ -2735,8 +3451,10 @@ export default function Call() {
   const voice = useRef<VoiceOut | null>(null);
   const stt = useRef<Stt | null>(null);
   const buf = useRef(new GlossBuffer());
-  const idle = useRef(true);                         // Phase 3: the recognizer updates this
-  const tagsFor = useRef<(sinceT: number, hasWh: boolean) => Tag[]>(() => []); // Phase 4: eyebrows/headshake
+  const idle = useRef(true);                                      // Phase 3: the recognizer updates this
+  const onAslChange = useRef<(on: boolean) => void>(() => {});    // Phase 3: starts/pauses the recognizer
+  const tagsFor = useRef<(sinceT: number, hasWh: boolean) => Tag[]>(() => []); // Task 4.3: eyebrows/headshake
+  const lastSpoken = useRef<Caption | null>(null);
   const ttsUntil = useRef(0);
   const sttId = useRef(crypto.randomUUID());
   const translating = useRef(false);
@@ -2744,6 +3462,7 @@ export default function Call() {
   const previewRef = useRef(preview); previewRef.current = preview;
   const captionsRef = useRef(captions); captionsRef.current = captions;
   const questionRef = useRef(question); questionRef.current = question;
+  const aslRef = useRef(aslOn); aslRef.current = aslOn;
 
   useEffect(() => {
     getVoices()
@@ -2758,7 +3477,7 @@ export default function Call() {
     return () => clearInterval(id);
   }, [joined]);
 
-  // Keyboard: Enter = speak preview, Escape = discard preview.
+  // Keyboard: Enter = speak a held sentence, Escape = discard it.
   useEffect(() => {
     const on = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).tagName === 'INPUT') return;
@@ -2771,11 +3490,12 @@ export default function Call() {
 
   function showFlash(text: string) { setFlash(text); setTimeout(() => setFlash(''), 3000); }
 
-  function caption(c: Pick<Caption, 'id' | 'kind' | 'text' | 'final'>) {
+  function caption(c: Pick<Caption, 'id' | 'kind' | 'text' | 'final'>): Caption {
     const f = formRef.current;
     const full: Caption = { ...c, speaker: f.name, role: f.role, ts: Date.now() };
     setCaptions((l) => upsertCaption(l, full));
     void call.current?.sendCaption(full);
+    return full;
   }
 
   function resendRecent() {
@@ -2785,8 +3505,9 @@ export default function Call() {
 
   function onCtrl(m: Ctrl) {
     if (m.type === 'signing') setPeerSigning(m.on);
+    if (m.type === 'asl') setPeerAsl(m.on);
     if (m.type === 'tts') ttsUntil.current = m.on ? Number.POSITIVE_INFINITY : performance.now() + 300;
-    if (m.type === 'clarify') showFlash("They didn't catch that — repeat it or fix a word.");
+    if (m.type === 'clarify') showFlash("They didn't catch that — sign it again.");
     if (m.type === 'attention') showFlash('Your partner wants your attention');
     if (m.type === 'speak-local') speechSynthesis.speak(new SpeechSynthesisUtterance(m.text));
   }
@@ -2820,7 +3541,7 @@ export default function Call() {
       });
       if (f.role === 'hearing') startListening();
       setJoined(true);
-      // Phase 3 (Task 3.2) adds: if (f.role === 'signer') await startSigner();
+      // Phase 3 (Task 3.2) adds: if (f.role === 'signer') await prepareSigner();
     } catch (e) {
       setBanner(e instanceof DOMException && e.name === 'NotAllowedError'
         ? 'Camera blocked — allow it in the address bar, then press Join again.'
@@ -2828,7 +3549,19 @@ export default function Call() {
     }
   }
 
-  function addToken(tok: Token) { buf.current.add(tok); setChips([...buf.current.tokens]); }
+  function setAsl(on: boolean) {
+    setAslOn(on);
+    aslRef.current = on;
+    void call.current?.sendCtrl({ type: 'asl', on });
+    if (!on) { buf.current.take(); setChips([]); idle.current = true; }
+    onAslChange.current(on);
+  }
+
+  function addToken(tok: Token) {
+    if (!aslRef.current) return;
+    buf.current.add(tok);
+    setChips([...buf.current.tokens]);
+  }
 
   function maybeFlush() {
     if (previewRef.current || translating.current) return;
@@ -2854,9 +3587,11 @@ export default function Call() {
     } catch {
       p = { tokens, tags, english: ruleBasedEnglish(tokens.map((t) => t.gloss), tags), source: 'rules', result: null, waitMs, glossMs: performance.now() - t0, edited };
     }
-    setPreview(p);
-    const sure = tokens.every((t) => t.accepted) && !!p.result && p.result.confidence >= 0.7 && p.result.uncertain.length === 0;
-    if (formRef.current.autoSpeak && sure) speak(p);
+    // Auto-speak: every sign was recognized confidently and the translation is confident (or the offline rules made it).
+    const sure = tokens.every((t) => t.accepted)
+      && (p.source === 'rules' || (p.result !== null && p.result.confidence >= AUTO_SPEAK_MIN_CONFIDENCE));
+    if (aslRef.current && sure) speak(p);
+    else setPreview(p); // unsure: hold it, the signer taps Speak or fixes a chip
   }
 
   function editPreview(id: string, gloss: string) {
@@ -2875,30 +3610,44 @@ export default function Call() {
     if (tokens.length) void translate(tokens, p.tags, p.waitMs, true);
   }
 
-  function speak(p: Preview) {
-    const f = formRef.current;
-    setPreview(null);
-    caption({ id: crypto.randomUUID(), kind: 'english', text: p.english, final: true });
+  function say(text: string, onStart: (ttfb: number) => void) {
     void call.current?.sendCtrl({ type: 'tts', on: true });
-    void voice.current?.speak(p.english, f.voiceId, {
-      onStart: (ttfb) => {
-        logUtterance({
-          n_signs: p.tokens.length, gloss_seq: p.tokens.map((t) => t.gloss).join(' '), english: p.english,
-          sentence_type: p.result?.sentence_type ?? 'statement', source: p.source, edited: p.edited,
-          gloss_ms: p.glossMs, tts_ttfb_ms: ttfb, end_to_end_ms: p.waitMs + p.glossMs + ttfb, // machine time, excludes the human confirm
-        });
-        setHud(`pause ${p.waitMs.toFixed(0)} · gloss ${p.glossMs.toFixed(0)} · voice ${ttfb.toFixed(0)} ms · ${p.source}`);
-      },
+    void voice.current?.speak(text, formRef.current.voiceId, {
+      onStart,
       onEnd: () => void call.current?.sendCtrl({ type: 'tts', on: false }),
       onFail: () => {
-        void call.current?.sendCtrl({ type: 'speak-local', text: p.english });
+        void call.current?.sendCtrl({ type: 'speak-local', text });
         void call.current?.sendCtrl({ type: 'tts', on: false });
         setBanner('Voice service failed — their laptop is reading it with the backup voice.');
       },
     });
   }
 
-  function simulate() { // ?dev only: type glosses instead of signing
+  function speak(p: Preview) {
+    setPreview(null);
+    lastSpoken.current = caption({ id: crypto.randomUUID(), kind: 'english', text: p.english, final: true });
+    say(p.english, (ttfb) => {
+      logUtterance({
+        n_signs: p.tokens.length, gloss_seq: p.tokens.map((t) => t.gloss).join(' '), english: p.english,
+        sentence_type: p.result?.sentence_type ?? 'statement', source: p.source, edited: p.edited,
+        gloss_ms: p.glossMs, tts_ttfb_ms: ttfb, end_to_end_ms: p.waitMs + p.glossMs + ttfb, // machine time only
+      });
+      setHud(`pause ${p.waitMs.toFixed(0)} · gloss ${p.glossMs.toFixed(0)} · voice ${ttfb.toFixed(0)} ms · ${p.source}`);
+    });
+  }
+
+  /** Auto-speak got it wrong: strike the caption on both screens and say a short apology. */
+  function retract() {
+    const c = lastSpoken.current;
+    if (!c || c.retracted) return;
+    const r: Caption = { ...c, retracted: true };
+    lastSpoken.current = r;
+    setCaptions((l) => upsertCaption(l, r));
+    void call.current?.sendCaption(r);
+    say(RETRACT_PHRASE, () => {});
+  }
+
+  function simulate() { // ?dev only: type glosses instead of signing (needs ASL on)
     sim.trim().split(/\s+/).forEach((g) => addToken({ id: crypto.randomUUID(), gloss: g.toUpperCase().replace(/^FS-/, 'fs-'), p: 0.95, alts: [], accepted: true, t: performance.now() }));
     setSim('');
   }
@@ -2921,13 +3670,9 @@ export default function Call() {
             <option value="signer">I'm signing</option><option value="hearing">I'm speaking</option>
           </select>
           {isSigner && (
-            <>
-              <select value={form.voiceId} onChange={(e) => setForm({ ...form, voiceId: e.target.value })}>
-                {voices.map((v) => <option key={v.id} value={v.id}>{v.name} {Object.values(v.labels).slice(0, 2).join(' · ')}</option>)}
-              </select>
-              <label><input type="checkbox" checked={form.leftHanded} onChange={(e) => setForm({ ...form, leftHanded: e.target.checked })} /> I sign left-handed</label>
-              <label><input type="checkbox" checked={form.autoSpeak} onChange={(e) => setForm({ ...form, autoSpeak: e.target.checked })} /> Speak automatically when sure</label>
-            </>
+            <select value={form.voiceId} onChange={(e) => setForm({ ...form, voiceId: e.target.value })}>
+              {voices.map((v) => <option key={v.id} value={v.id}>{v.name} {Object.values(v.labels).slice(0, 2).join(' · ')}</option>)}
+            </select>
           )}
           <button onClick={join} disabled={!form.name}>Join</button>
         </section>
@@ -2937,6 +3682,7 @@ export default function Call() {
         <div className="tile">
           <video ref={remote} autoPlay playsInline />
           {peerSigning && <span className="badge">{peer ?? 'They'} is signing…</span>}
+          {!isSigner && peerAsl && !peerSigning && <span className="badge quiet">ASL voice on</span>}
           <span className="name">{peer ?? 'Waiting for the other person…'}</span>
         </div>
         <div className="tile self">
@@ -2947,6 +3693,7 @@ export default function Call() {
 
       {isSigner && preview && (
         <section className={`preview ${preview.source}`}>
+          <p className="hold">Not sure about this one — check it before it's spoken.</p>
           <Chips tokens={preview.tokens} onChoose={editPreview} onRemove={removeFromPreview} />
           <p className="english">{preview.english}{preview.source === 'rules' && <small> (offline translation)</small>}</p>
           <button onClick={() => speak(preview)}>Speak (Enter)</button>
@@ -2958,10 +3705,16 @@ export default function Call() {
 
       {joined && (
         <section className="actions">
+          {isSigner && (
+            <button className={`asl ${aslOn ? 'on' : ''}`} aria-pressed={aslOn} onClick={() => setAsl(!aslOn)}>
+              ASL → voice: {aslOn ? 'ON' : 'OFF'}
+            </button>
+          )}
+          {isSigner && <button onClick={retract} disabled={!lastSpoken.current || lastSpoken.current.retracted}>That was wrong</button>}
           {isSigner && <button aria-pressed={question} onClick={() => setQuestion(!question)}>? question</button>}
           {!isSigner && <button onClick={() => call.current?.sendCtrl({ type: 'clarify' })}>I didn't catch that</button>}
           <button onClick={() => call.current?.sendCtrl({ type: 'attention' })}>Get attention</button>
-          {DEV && isSigner && <input placeholder="simulate: HELLO NICE MEET YOU" value={sim} onChange={(e) => setSim(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && simulate()} />}
+          {DEV && isSigner && aslOn && <input placeholder="simulate: HELLO ME NAME fs-KEV" value={sim} onChange={(e) => setSim(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && simulate()} />}
           {hud && <small className="hud">{hud}</small>}
         </section>
       )}
@@ -2977,21 +3730,24 @@ export default function Call() {
 .stage { display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; }
 .tile { position: relative; } .tile video { width: 100%; border-radius: 12px; background: #111; }
 .badge { position: absolute; top: .5rem; left: .5rem; background: #16a34a; color: #fff; padding: .25rem .6rem; border-radius: 999px; }
+.badge.quiet { background: #334155; }
 .name { position: absolute; bottom: .5rem; left: .5rem; color: #fff; text-shadow: 0 0 4px #000; }
 .chips { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0; }
 .chip { border-radius: 999px; padding: .2rem .4rem; background: #dcfce7; } .chip.unsure { background: #fef3c7; }
 .chip button { border: 0; background: transparent; font-weight: 600; cursor: pointer; } .chip .alt { font-weight: 400; text-decoration: underline; }
-.preview { border: 2px solid #2563eb; border-radius: 12px; padding: .75rem; } .preview.rules { border-color: #f59e0b; }
+.preview { border: 2px solid #f59e0b; border-radius: 12px; padding: .75rem; } .hold { margin: 0; color: #92400e; }
 .english { font-size: 1.6rem; margin: .4rem 0; }
 .lane { font-size: 1.5rem; } .hud { color: #6b7280; margin-left: 1rem; }
+.asl { font-size: 1.2rem; padding: .6rem 1rem; border-radius: 999px; } .asl.on { background: #16a34a; color: #fff; }
+.dot.ok { color: #16a34a; } .dot.warn { color: #d97706; } .dot.off { color: #9ca3af; }
 ```
-- [ ] Two-laptop test with `?dev` on the signer: `http://localhost:5173/?dev`. Type `HELLO NICE MEET YOU` → Enter. Expected within ~2 s: preview "Hello, nice to meet you!" → press Enter → the hearing laptop **hears** the voice and sees the caption; the signer HUD shows timings. Then the hearing person talks → captions appear on the signer laptop; the signer's voice does not come back as a caption (headphones on the hearing laptop).
-- [ ] Stop the server for a moment and repeat → preview shows "(offline translation)" from the rule-based fallback.
-- [ ] Commit: `full call screen with simulator`.
+- [ ] Two-laptop test with `?dev` on the signer: join, flip **ASL → voice: ON** (the hearing laptop shows "ASL voice on"), type `HELLO ME NAME fs-KEV` → Enter. Expected within ~2 s, with no tap: the hearing laptop **hears** "Hello! My name is Kev." and both see the caption. Press **That was wrong** → the caption is crossed out on both screens and the apology plays. Type `WATER STORE BYE` → Gemini answers with low confidence → it's **held** ("Not sure about this one") until you press Enter. Flip ASL off → simulator hidden, nothing spoken.
+- [ ] Stop the API server and repeat → "(offline translation)" path, still spoken automatically.
+- [ ] Commit: `call screen with ASL switch + auto-speak`.
 
-#### Track C/D — Rule-based fallback (D writes cases, C reviews)
+#### Track C — Offline English
 
-##### Task 2.C1 Gloss buffer + rule-based English (≈ 40 min, TDD — a good beginner task)
+##### Task 2.C1 Gloss buffer + rule-based English (≈ 30 min, TDD)
 - [ ] Write the failing test `web/src/lib/gloss.test.ts`:
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -2999,19 +3755,20 @@ import { GlossBuffer, ruleBasedEnglish } from './gloss';
 
 describe('ruleBasedEnglish', () => {
   it('handles the demo script', () => {
-    expect(ruleBasedEnglish(['HELLO', 'NICE', 'MEET', 'YOU', 'MY', 'NAME', 'fs-LIV'])).toBe('Hello, nice to meet you! My name is Liv.');
+    expect(ruleBasedEnglish(['HELLO', 'ME', 'NAME', 'fs-KEV'])).toBe('Hello! My name is Kev.');
     expect(ruleBasedEnglish(['YOU', 'NAME', 'WHAT'])).toBe("What's your name?");
-    expect(ruleBasedEnglish(['YOU', 'HEARING'], ['Q-YN'])).toBe('Are you hearing?');
-    expect(ruleBasedEnglish(['ME', 'DEAF'])).toBe("I'm Deaf.");
-    expect(ruleBasedEnglish(['AGAIN', 'PLEASE', 'SLOW'])).toBe('Could you say that again, slowly please?');
-    expect(ruleBasedEnglish(['THANK-YOU'])).toBe('Thank you!');
+    expect(ruleBasedEnglish(['ME', 'HUNGRY', 'YOU', 'HUNGRY'])).toBe("I'm hungry. Are you hungry?");
+    expect(ruleBasedEnglish(['PIZZA', 'WHERE'])).toBe('Where can we get pizza?');
+    expect(ruleBasedEnglish(['GO', 'NOW'])).toBe("Let's go now!");
+    expect(ruleBasedEnglish(['THANKYOU', 'BYE'])).toBe('Thank you! Bye!');
   });
   it('uses the negation tag', () => {
-    expect(ruleBasedEnglish(['ME', 'UNDERSTAND'], ['NEG'])).toBe("I don't understand.");
+    expect(ruleBasedEnglish(['ME', 'HUNGRY'], ['NEG'])).toBe("I'm not hungry.");
   });
   it('falls back to word-by-word with sensible punctuation', () => {
-    expect(ruleBasedEnglish(['TOMORROW', 'ME', 'GO', 'STORE'])).toBe('Tomorrow I go store.');
+    expect(ruleBasedEnglish(['LATER', 'ME', 'GO', 'HOME'])).toBe('Later. I go home.');
     expect(ruleBasedEnglish(['STORE', 'WHERE'])).toBe('Store where?');
+    expect(ruleBasedEnglish(['YOU', 'GO'], ['Q-YN'])).toBe('You go?');
   });
 });
 
@@ -3052,26 +3809,28 @@ export class GlossBuffer {
 const FS = '*FS';
 type Pattern = { seq: string[]; out: (names: string[], tags: Tag[]) => string };
 const RAW_PATTERNS: Pattern[] = [
-  { seq: ['HELLO', 'NICE', 'MEET', 'YOU'], out: () => 'Hello, nice to meet you!' },
-  { seq: ['NICE', 'MEET', 'YOU'], out: () => 'Nice to meet you!' },
-  { seq: ['MY', 'NAME', FS], out: ([n]) => `My name is ${n}.` },
   { seq: ['ME', 'NAME', FS], out: ([n]) => `My name is ${n}.` },
   { seq: ['YOU', 'NAME', 'WHAT'], out: () => "What's your name?" },
-  { seq: ['ME', 'DEAF'], out: () => "I'm Deaf." },
-  { seq: ['ME', 'HEARING'], out: () => "I'm hearing." },
-  { seq: ['YOU', 'DEAF'], out: () => 'Are you Deaf?' },
-  { seq: ['YOU', 'HEARING'], out: () => 'Are you hearing?' },
-  { seq: ['ME', 'UNDERSTAND'], out: (_, t) => (t.includes('NEG') ? "I don't understand." : 'I understand.') },
-  { seq: ['AGAIN', 'PLEASE', 'SLOW'], out: () => 'Could you say that again, slowly please?' },
-  { seq: ['PLEASE', 'SLOW'], out: () => 'Slower, please.' },
-  { seq: ['THANK-YOU'], out: () => 'Thank you!' },
+  { seq: ['ME', 'HUNGRY'], out: (_, t) => (t.includes('NEG') ? "I'm not hungry." : "I'm hungry.") },
+  { seq: ['YOU', 'HUNGRY'], out: () => 'Are you hungry?' },
+  { seq: ['PIZZA', 'WHERE'], out: () => 'Where can we get pizza?' },
+  { seq: ['WATER', 'WHERE'], out: () => 'Where can I get water?' },
+  { seq: ['GO', 'NOW'], out: () => "Let's go now!" },
+  { seq: ['PLEASE', 'WAIT'], out: () => 'Please wait.' },
+  { seq: ['WAIT', 'PLEASE'], out: () => 'Please wait.' },
+  { seq: ['TOMORROW', 'ME', 'GO', 'STORE'], out: () => "I'm going to the store tomorrow." },
+  { seq: ['TOMORROW', 'GO', 'STORE'], out: () => "I'm going to the store tomorrow." },
+  { seq: ['THANKYOU'], out: () => 'Thank you!' },
   { seq: ['HELLO'], out: () => 'Hello!' },
+  { seq: ['BYE'], out: () => 'Bye!' },
   { seq: ['YES'], out: () => 'Yes.' },
   { seq: ['NO'], out: () => 'No.' },
+  { seq: ['WAIT'], out: () => 'Wait.' },
+  { seq: ['LATER'], out: () => 'Later.' },
 ];
 const PATTERNS = [...RAW_PATTERNS].sort((a, b) => b.seq.length - a.seq.length); // longest match wins
 
-const WORDS: Record<string, string> = { ME: 'I', MY: 'my', YOU: 'you', 'THANK-YOU': 'thank you' };
+const WORDS: Record<string, string> = { ME: 'I', YOU: 'you', THANKYOU: 'thank you' };
 const fsName = (g: string) => g.charAt(3) + g.slice(4).toLowerCase(); // fs-LIV -> Liv
 
 function matchAt(glosses: string[], i: number, seq: string[]): string[] | null {
@@ -3107,25 +3866,22 @@ export function ruleBasedEnglish(glosses: string[], tags: Tag[] = []): string {
   return parts.join(' ');
 }
 ```
-- [ ] `npm test` → all green. Commit: `gloss buffer + offline English`.
+- [ ] `npm test` → green. Its sentences must match `cache_tts.py` exactly. Commit: `gloss buffer + offline English`.
 
-#### Track D (evening)
-- [ ] Record Tier 1 with any new signers; if B's held-out accuracy is ≥ 0.75, start Tier 2 (10 reps each, 3+ signers).
-- [ ] Rehearse the demo script with the simulator (`?dev`) so the talk track is ready before recognition is.
-- [ ] Devpost draft: Inspiration, What it does, How we built it (diagram 3.1), Challenges, Accomplishments, What we learned (per person), What's next, Built with.
+#### Track C (evening): slides skeleton, Devpost draft (Inspiration · What it does · How we built it (diagram 3.1) · Challenges · What we learned per person · What's next · Built with), and rehearse the script with the simulator.
 
-**▶ CP2 — Sat 23:00:** CNN (or kNN) recognizes Tier 1 live on the Bench page · simulator drives the whole call: preview → Speak → voice in the call → captions both ways · held-out-signer accuracy and Gemini p50 written in README.
+**▶ CP2 — Sat 23:00:** fine-tuned model recognizes the 20 signs on Bench · simulator drives auto-speak, holds, retraction and offline fallback · accuracies and Gemini p50 written in README.
 
 ---
 
-### Phase 3 — Golden path (Sat 23:00 – Sun 02:00, H13–H16)
+### Phase 3 — Golden path (Sat 23:00 – Sun 02:00)
 
-##### Task 3.1 [B] Signer pipeline (≈ 60 min)
+##### Task 3.1 [B] Signer pipeline with pause/resume (≈ 45 min)
 - [ ] Create `web/src/lib/signerPipeline.ts`:
 ```ts
-import { anchors, clipFeatures, mirrorFrame, orderHands, type Anchors } from './features';
+import { anchors, clipFeatures, type Anchors } from './features';
 import { Segmenter } from './segmenter';
-import { LetterDecoder, letterFeatures, NONE, type LetterKnn } from './letters';
+import { LetterDecoder, letterFeatures, letterHand, NONE, type LetterKnn } from './letters';
 import { logSign } from './metrics';
 import type { Pred, SignClassifier } from './classifier';
 import type { Tracker } from './landmarks';
@@ -3137,39 +3893,56 @@ export type PipelineEvents = {
   onPred(p: Pred, tEnd: number): void;          // every non-idle segment (accepted or not)
   onLetters(spelled: string): void;
   onTracking(q: { fps: number; hands: number; edge: boolean }): void;
-  onFrame?(f: Frame, a: Anchors | null, idle: boolean): void; // Phase 4: eyebrow/headshake reader
+  onFrame?(f: Frame, a: Anchors | null, idle: boolean): void; // eyebrow/headshake reader (Task 4.3)
 };
 
 export type PipelineOptions = {
-  video: HTMLVideoElement; tracker: Tracker; model: SignClassifier; letters: LetterKnn | null;
-  leftHanded: boolean; ev: PipelineEvents;
+  video: HTMLVideoElement; tracker: Tracker; model: SignClassifier; letters: LetterKnn | null; ev: PipelineEvents;
 };
 
-/** Runs every animation frame on the signer's laptop: landmarks -> segment -> classify, or spell mode. */
+/** Runs every animation frame on the signer's laptop while ASL is on: landmarks -> segment -> classify, or spell mode. */
 export class SignerPipeline {
-  readonly seg = new Segmenter();
+  seg = new Segmenter();
   readonly decoder = new LetterDecoder();
   spelling = false;
   spelled = '';
+  /** Task 4.5: while set, finished segments go here instead of to the classifier. */
+  calibrate: ((x: Float32Array) => void) | null = null;
   private raf = 0;
+  private running = false;
   private a: Anchors | null = null;
   private prevWrist: { t: number; x: number; y: number } | null = null;
   private count = 0; private countT = performance.now();
-
   private o: PipelineOptions;
+
   constructor(o: PipelineOptions) { this.o = o; }
 
   get idle() { return this.seg.state !== 'ACTIVE'; }
-  start() { const loop = () => { this.tick(); this.raf = requestAnimationFrame(loop); }; this.raf = requestAnimationFrame(loop); }
-  stop() { cancelAnimationFrame(this.raf); this.o.tracker.close(); }
+  get isRunning() { return this.running; }
+  setModel(m: SignClassifier) { this.o.model = m; }
+
+  start() {
+    if (this.running) return;
+    this.running = true;
+    const loop = () => { if (!this.running) return; this.tick(); this.raf = requestAnimationFrame(loop); };
+    this.raf = requestAnimationFrame(loop);
+  }
+  /** ASL switched off: stop reading signs, keep models loaded so switching back on is instant. */
+  pause() {
+    this.running = false;
+    cancelAnimationFrame(this.raf);
+    if (this.seg.state === 'ACTIVE') this.o.ev.onSigning(false);
+    this.seg = new Segmenter();
+    this.setSpelling(false);
+  }
+  stop() { this.pause(); this.o.tracker.close(); }
   setSpelling(on: boolean) { this.spelling = on; this.spelled = ''; this.decoder.reset(); this.o.ev.onLetters(''); }
   backspace() { this.spelled = this.spelled.slice(0, -1); this.o.ev.onLetters(this.spelled); }
 
   private tick() {
     const v = this.o.video;
     if (v.readyState < 2) return;
-    const raw = this.o.tracker.detect(v, performance.now());
-    const f = this.o.leftHanded ? mirrorFrame(raw) : raw;
+    const f = this.o.tracker.detect(v, performance.now()); // raw frames: clipFeatures() normalizes handedness per sign
     this.a = anchors(f, this.a);
     this.track(f);
     if (this.spelling) { this.spell(f); this.o.ev.onFrame?.(f, this.a, true); return; }
@@ -3180,20 +3953,22 @@ export class SignerPipeline {
   }
 
   private async classify(frames: Frame[], tEnd: number) {
-    const p = await this.o.model.predict(clipFeatures(frames));
+    const x = clipFeatures(frames);
+    if (this.calibrate) { this.calibrate(x); return; }
+    const p = await this.o.model.predict(x);
     logSign({ gloss: p.label, confidence: p.p, accepted: p.accepted, alt1: p.alts[0]?.label, alt1_p: p.alts[0]?.p, classify_ms: p.ms });
-    if (p.label !== IDLE) this.o.ev.onPred(p, tEnd);
+    if (p.label !== IDLE && this.running) this.o.ev.onPred(p, tEnd);
   }
 
   private spell(f: Frame) {
-    const [dom] = orderHands(f.hands);
-    if (!dom || !this.o.letters || !this.a) { this.prevWrist = null; this.decoder.push({ [NONE]: 1 }, 0); return; }
+    const hand = letterHand(f);
+    if (!hand || !this.o.letters || !this.a) { this.prevWrist = null; this.decoder.push({ [NONE]: 1 }, 0); return; }
     const asp = f.w / f.h;
-    const w = { t: f.t, x: dom[0].x * asp, y: dom[0].y };
+    const w = { t: f.t, x: hand[0].x * asp, y: hand[0].y };
     const speed = this.prevWrist && f.t > this.prevWrist.t
       ? Math.hypot(w.x - this.prevWrist.x, w.y - this.prevWrist.y) / this.a.s / ((f.t - this.prevWrist.t) / 1000) : 0;
     this.prevWrist = w;
-    const ch = this.decoder.push(this.o.letters.probs(letterFeatures(dom, asp)), speed);
+    const ch = this.decoder.push(this.o.letters.probs(letterFeatures(hand, asp)), speed);
     if (ch) { this.spelled += ch; this.o.ev.onLetters(this.spelled); }
   }
 
@@ -3207,11 +3982,18 @@ export class SignerPipeline {
   }
 }
 ```
-- [ ] `npm run build` → no type errors. Commit: `signer pipeline`.
+- [ ] `npx tsc -b` → no errors. Commit: `signer pipeline`.
 
-##### Task 3.2 [A+B] Plug the recognizer into the call screen (≈ 45 min)
-- [ ] In `Call.tsx`, add imports:
+##### Task 3.2 [A+B] Connect the recognizer to the ASL switch (≈ 45 min)
+Apply these edits to `web/src/pages/Call.tsx` in order. Each **Find** text appears exactly once.
+<!-- edit: web/src/pages/Call.tsx -->
+**Edit 1 — find:**
 ```tsx
+import type { Caption, Ctrl, Role } from '../lib/types';
+```
+**Replace with:**
+```tsx
+import type { Caption, Ctrl, Role } from '../lib/types';
 import { createTracker } from '../lib/landmarks';
 import { loadOnnx } from '../lib/onnx';
 import { Knn } from '../lib/knn';
@@ -3220,83 +4002,105 @@ import { SignerPipeline } from '../lib/signerPipeline';
 import { setModelVersion } from '../lib/metrics';
 import { USE_FACE } from '../config';
 ```
-- [ ] Add state/refs next to the others:
+<!-- edit: web/src/pages/Call.tsx -->
+**Edit 2 — find:**
 ```tsx
-const pipe = useRef<SignerPipeline | null>(null);
-const [spelled, setSpelled] = useState<string | null>(null); // null = not in spell mode
-const [tracking, setTracking] = useState({ fps: 0, hands: 0, edge: false });
+  const [sim, setSim] = useState('');
 ```
-- [ ] Add this function inside the component:
+**Replace with:**
 ```tsx
-async function startSigner() {
-  const [tracker, model, letters] = await Promise.all([
-    createTracker({ withFace: USE_FACE }),
-    loadOnnx().catch(() => Knn.load()),      // trained CNN if present, else kNN templates
-    LetterKnn.load().catch(() => null),
-  ]);
-  setModelVersion(model.version);
-  pipe.current = new SignerPipeline({
-    video: local.current!, tracker, model, letters, leftHanded: formRef.current.leftHanded,
-    ev: {
-      onSigning: (on) => { idle.current = !on; void call.current?.sendCtrl({ type: 'signing', on }); },
-      onPred: (p, tEnd) => addToken({ id: crypto.randomUUID(), gloss: p.label, p: p.p, alts: p.alts, accepted: p.accepted, t: tEnd }),
-      onLetters: (s) => setSpelled(s),
-      onTracking: setTracking,
-    },
-  });
-  pipe.current.start();
-}
-function finishSpelling() {
-  const name = pipe.current?.spelled ?? '';
-  pipe.current?.setSpelling(false);
-  setSpelled(null);
-  if (name) addToken({ id: crypto.randomUUID(), gloss: `fs-${name}`, p: 1, alts: [], accepted: true, t: performance.now() });
-}
+  const [sim, setSim] = useState('');
+  const pipe = useRef<SignerPipeline | null>(null);
+  const [spelled, setSpelled] = useState<string | null>(null); // null = not in spell mode
+  const [tracking, setTracking] = useState({ fps: 0, hands: 0, edge: false });
 ```
-- [ ] In `join()`, replace the comment line `// Phase 3 (Task 3.2) adds: …` with:
+<!-- edit: web/src/pages/Call.tsx -->
+**Edit 3 — find:**
 ```tsx
-if (f.role === 'signer') await startSigner();
+  function showFlash(text: string) {
 ```
-- [ ] In the `actions` section, add the spell controls and the tracking dot (signer only):
+**Replace with:**
 ```tsx
-{isSigner && (spelled === null
-  ? <button onClick={() => { pipe.current?.setSpelling(true); setSpelled(''); }}>Spell a name</button>
-  : <span className="spell">Spelling: <b>{spelled || '…'}</b>
-      <button onClick={() => pipe.current?.backspace()}>⌫</button>
-      <button onClick={finishSpelling}>Done</button></span>)}
-{isSigner && <span className={`dot ${tracking.edge ? 'warn' : tracking.hands ? 'ok' : 'off'}`}
-  title={`${tracking.fps} fps`}>{tracking.edge ? 'Move back so both hands are visible' : `${tracking.fps} fps`}</span>}
-```
-and CSS: `.dot.ok{color:#16a34a}.dot.warn{color:#d97706}.dot.off{color:#9ca3af}`.
-- [ ] Also stop the pipeline when leaving: in the component, `useEffect(() => () => pipe.current?.stop(), []);`.
-- [ ] Commit: `recognizer wired into call`.
+  useEffect(() => () => pipe.current?.stop(), []);
 
-##### Task 3.3 [All] Golden path run on two laptops (≈ 60 min)
-- [ ] Signer laptop: `http://localhost:5173` (no `?dev`), hearing laptop with headphones. Run the full demo script from §2 **three times**.
-- [ ] For each run, write down: signs that failed, any wrong English, the HUD timings. Expected: ≥ 2 of 3 runs complete without the simulator; machine latency (pause + gloss + voice) ≲ 2.5 s.
-- [ ] Fix only what broke the script (most common: segment thresholds, one confusable sign, spelling speed). No new features tonight.
+  /** Loads MediaPipe + the sign model when the signer joins, so flipping ASL on is instant. */
+  async function prepareSigner() {
+    const [tracker, model, letters] = await Promise.all([
+      createTracker({ withFace: USE_FACE }),
+      loadOnnx().catch(() => Knn.load()),      // trained CNN if present, else kNN templates
+      LetterKnn.load().catch(() => null),
+    ]);
+    setModelVersion(model.version);
+    pipe.current = new SignerPipeline({
+      video: local.current!, tracker, model, letters,
+      ev: {
+        onSigning: (on) => { idle.current = !on; void call.current?.sendCtrl({ type: 'signing', on }); },
+        onPred: (p, tEnd) => addToken({ id: crypto.randomUUID(), gloss: p.label, p: p.p, alts: p.alts, accepted: p.accepted, t: tEnd }),
+        onLetters: (s) => setSpelled(s),
+        onTracking: setTracking,
+      },
+    });
+    onAslChange.current = (on) => {
+      if (on) pipe.current?.start();
+      else { pipe.current?.pause(); setSpelled(null); }
+    };
+  }
+
+  function finishSpelling() {
+    const name = pipe.current?.spelled ?? '';
+    pipe.current?.setSpelling(false);
+    setSpelled(null);
+    if (name) addToken({ id: crypto.randomUUID(), gloss: `fs-${name}`, p: 1, alts: [], accepted: true, t: performance.now() });
+  }
+
+  function showFlash(text: string) {
+```
+<!-- edit: web/src/pages/Call.tsx -->
+**Edit 4 — find:**
+```tsx
+      // Phase 3 (Task 3.2) adds: if (f.role === 'signer') await prepareSigner();
+```
+**Replace with:**
+```tsx
+      if (f.role === 'signer') await prepareSigner().catch((e: Error) => setBanner(`Sign recognition could not start: ${e.message}`));
+```
+<!-- edit: web/src/pages/Call.tsx -->
+**Edit 5 — find:**
+```tsx
+          {DEV && isSigner && aslOn &&
+```
+**Replace with:**
+```tsx
+          {isSigner && aslOn && (spelled === null
+            ? <button onClick={() => { pipe.current?.setSpelling(true); setSpelled(''); }}>Spell a name</button>
+            : <span className="spell">Spelling: <b>{spelled || '…'}</b>
+                <button onClick={() => pipe.current?.backspace()}>⌫</button>
+                <button onClick={finishSpelling}>Done</button></span>)}
+          {isSigner && aslOn && <span className={`dot ${tracking.edge ? 'warn' : tracking.hands ? 'ok' : 'off'}`}
+            title={`${tracking.fps} fps`}>{tracking.edge ? 'Move back so both hands are visible' : `${tracking.fps} fps`}</span>}
+          {DEV && isSigner && aslOn &&
+```
+- [ ] `npx tsc -b` → no errors. Commit: `recognizer on the ASL switch`.
+
+##### Task 3.3 [All] Golden path on two laptops (≈ 60 min)
+- [ ] Signer laptop at http://localhost:5173 (no `?dev`); hearing laptop with headphones. Run the demo script (§2) **three times**.
+- [ ] Log each run: failed signs, wrong English, held sentences, HUD timings. Expected: ≥ 2 of 3 runs complete; machine latency (pause + gloss + voice) ≲ 2.5 s.
+- [ ] Fix only what broke the script (segment thresholds, one confusable sign, letter holds). No new features tonight.
 - [ ] `git tag golden-path && git push --tags`.
 
-**▶ CP3 — Sun 02:00:** full demo script works end to end. **Sleep in shifts (≥ 4 h each).** Whoever is up last pushes everything.
+**▶ CP3 — Sun 02:00.** Sleep in shifts (≥ 4 h each). The last person up pushes everything.
 
 ---
 
-### Phase 4 — Harden and add sponsor depth (Sun 07:00–13:00, H21–H27)
+### Phase 4 — Harden and add sponsor depth (Sun 07:00–13:00)
 
-Rule for this phase: **every change is tested against the golden-path script before it is merged.** If something breaks the script and isn't fixed in 30 minutes, revert it.
+Rule: **every change is tested against the golden-path script before it's merged.** If something breaks the script and isn't fixed within 30 minutes, revert it.
 
-##### Task 4.1 [C] Deploy the web app to Vultr + GoDaddy Registry domain (≈ 60 min)
-- [ ] Redeem the domain (MLH coach / Q5). Pick a short name on a GoDaddy Registry TLD (`.co`, `.us`, `.study`, `.design`…). Note: `.tech` is a different sponsor's prize.
-- [ ] DNS at the registrar: `A @ → VULTR_IP`, `A www → VULTR_IP`. Check with `dig +short signline.co` (expect `VULTR_IP`; can take 5–30 min).
-- [ ] Edit `server/deploy/Caddyfile`: replace the first line `149-28-1-2.sslip.io {` with `signline.co, www.signline.co {` (your domain). Commit, then on the VM: `cd /srv/signline/repo && git pull && cp server/deploy/Caddyfile /etc/caddy/Caddyfile && systemctl reload caddy && systemctl restart signline`.
-- [ ] Build and upload the web app from a laptop:
-```bash
-cd web && npm run build
-scp -r dist/* root@VULTR_IP:/srv/signline/web/
-```
-- [ ] Open `https://signline.co` on both laptops → consent → join → run the golden path once over the deployed site. Expected: identical behavior to localhost.
-- [ ] If Vultr or DNS fails at any point today, the demo runs from laptop A's local server exactly as in Phase 3. Nothing on stage depends on the domain.
-- [ ] Commit: `deploy on vultr + domain`.
+##### Task 4.1 [C] Deploy the web app to Vultr (≈ 30 min; domain optional)
+- [ ] From a laptop: `cd web && npm run build && scp -r dist/* root@VULTR_IP:/srv/signline/web/`. On the VM: `cd /srv/signline/repo && git pull && systemctl restart signline`.
+- [ ] Open `https://<ip-with-dashes>.sslip.io` on both laptops → consent → join → run the golden path once.
+- [ ] Optional, only with 15 spare minutes: redeem the GoDaddy Registry domain through the MLH coach, add `A @ → VULTR_IP`, put the domain on the first line of the `Caddyfile` instead of the sslip.io name, and `systemctl reload caddy`.
+- [ ] If anything about Vultr fails today, the demo runs from laptop 1's local server exactly as in Phase 3. Commit: `deployed`.
 
 ##### Task 4.2 [C] Live stats page (Tiger Data) (≈ 45 min)
 - [ ] Create `web/src/pages/Stats.tsx`:
@@ -3351,15 +4155,39 @@ export default function Stats() {
   );
 }
 ```
-- [ ] Route `'stats': () => <Stats />` in `App.tsx`; CSS: `.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}.kpis b{font-size:2rem;display:block}`.
-- [ ] Run the golden path twice, open `#/stats`. Expected: non-zero sentences, p50/p95 numbers, a line, and a weakest-signs table. If `trend` is empty but `summary` works, run `CALL refresh_continuous_aggregate('latency_1m', NULL, NULL);` once in the SQL editor.
+- [ ] Add the route:
+<!-- edit: web/src/App.tsx -->
+**Edit 1 — find:**
+```tsx
+import Recorder from './pages/Recorder';
+```
+**Replace with:**
+```tsx
+import Recorder from './pages/Recorder';
+import Stats from './pages/Stats';
+```
+<!-- edit: web/src/App.tsx -->
+**Edit 2 — find:**
+```tsx
+  // later tasks add routes here
+```
+**Replace with:**
+```tsx
+  stats: () => <Stats />,
+  // later tasks add routes here
+```
+- [ ] CSS: `.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}.kpis b{font-size:2rem;display:block}`.
+- [ ] Run the golden path twice, then open `#/stats`. Expected: sentence count, p50/p95, a trend line, and the weakest signs. Empty trend → run `CALL refresh_continuous_aggregate('latency_1m', NULL, NULL);` once.
 - [ ] Commit: `tiger data stats page`.
 
-##### Task 4.3 [B] Eyebrows and headshake → question/negation tags (≈ 60 min, TDD)
+##### Task 4.3 [B] Eyebrows + headshake → question/negation, via Presage (≈ 90 min) — Q14
+Presage has no browser SDK, so a tiny local Node process (the "sidecar") receives camera frames from the page and runs Presage's on-device face model. Its expression model reports **"surprise" when the brows go up and "anger" when they go down**. In ASL those are grammar, not emotion: raised brows mark a yes/no question and lowered brows a WH-question. So we use them only as question markers, never to color the voice. If the sidecar isn't running, the same code falls back to MediaPipe's eyebrow blendshapes, then to the "?" button.
 - [ ] Write the failing test `web/src/lib/nmm.test.ts`:
 ```ts
 import { describe, expect, it } from 'vitest';
-import { headshake } from './nmm';
+import { headshake, Nmm } from './nmm';
+import type { Anchors } from './features';
+import type { Frame } from './types';
 
 describe('headshake', () => {
   it('detects two side-to-side cycles', () => {
@@ -3375,11 +4203,96 @@ describe('headshake', () => {
     expect(headshake(xs)).toBe(false);
   });
 });
+
+describe('Nmm', () => {
+  const a: Anchors = { c: [0.5, 0.6], s: 0.2, nose: [0.5, 0.3], mouth: [0.5, 0.38], restY: 0.76 };
+  const frame = (t: number, raise: number, furrow: number, hands = 0): Frame =>
+    ({ t, w: 640, h: 480, pose: null, hands: Array.from({ length: hands }, () => []), brow: { raise, furrow } });
+  const face = (surprise: number, anger: number) => ({ surprise, anger, neutral: 50, talking: false, stable: true });
+
+  it('uses Presage when it is streaming: surprise -> yes/no question, anger -> WH-question', () => {
+    const n = new Nmm();
+    for (let t = 0; t < 1000; t += 100) { n.push(frame(t, 0.1, 0.1), a, true); n.pushPresage(face(5, 5), t); }
+    for (let t = 1000; t < 2000; t += 100) { n.push(frame(t, 0.1, 0.1, 1), a, false); n.pushPresage(face(60, 5), t); }
+    expect(n.tags(1000, false)).toEqual(['Q-YN']);
+    for (let t = 2000; t < 3000; t += 100) { n.push(frame(t, 0.1, 0.1, 1), a, false); n.pushPresage(face(5, 55), t); }
+    expect(n.tags(2000, false)).toEqual(['Q-WH']);
+  });
+  it('falls back to MediaPipe brows without Presage', () => {
+    const n = new Nmm();
+    for (let t = 0; t < 1000; t += 33) n.push(frame(t, 0.1, 0.1), a, true);
+    for (let t = 1000; t < 2000; t += 33) n.push(frame(t, 0.4, 0.1, 1), a, false);
+    expect(n.tags(1000, false)).toEqual(['Q-YN']);
+    expect(n.tags(1000, true)).toEqual(['Q-WH']); // a WH sign always makes a WH-question
+  });
+});
 ```
-- [ ] `npm test` → fails. Create `web/src/lib/nmm.ts`:
+- [ ] `npm test` → fails. Create `web/src/lib/presage.ts`:
+```ts
+/** Face readings from the local Presage sidecar (presage/sidecar.mjs). Percentages 0..100. */
+export type PresageFace = { surprise: number; anger: number; neutral: number; talking: boolean | null; stable: boolean };
+type Msg = ({ type: 'face' } & PresageFace) | { type: 'status'; hint: string };
+
+/** Streams the signer's camera frames to the Presage sidecar and reports its face readings. Optional: if the sidecar
+ *  isn't running, connect() resolves false and eyebrow reading falls back to MediaPipe. */
+export class PresageLink {
+  private ws: WebSocket | null = null;
+  private timer = 0;
+  private canvas = document.createElement('canvas');
+  private url: string;
+
+  constructor(url = 'ws://127.0.0.1:8788') { this.url = url; }
+
+  get connected() { return this.ws?.readyState === WebSocket.OPEN; }
+
+  connect(onFace: (f: PresageFace) => void, onStatus: (hint: string) => void): Promise<boolean> {
+    return new Promise((resolve) => {
+      const ws = new WebSocket(this.url);
+      ws.binaryType = 'arraybuffer';
+      const giveUp = setTimeout(() => { ws.close(); resolve(false); }, 1500);
+      ws.onopen = () => { clearTimeout(giveUp); this.ws = ws; resolve(true); };
+      ws.onerror = () => { clearTimeout(giveUp); resolve(false); };
+      ws.onclose = () => { if (this.ws === ws) { this.ws = null; this.stop(); } };
+      ws.onmessage = (e) => {
+        try {
+          const m = JSON.parse(String(e.data)) as Msg;
+          if (m.type === 'face') onFace(m); else onStatus(m.hint);
+        } catch { /* ignore malformed */ }
+      };
+    });
+  }
+
+  /** Send ~fps frames per second; skips frames when the socket is backed up. */
+  start(video: HTMLVideoElement, fps = 8) {
+    this.stop();
+    const ctx = this.canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+    this.timer = window.setInterval(() => {
+      const ws = this.ws;
+      if (!ws || ws.readyState !== WebSocket.OPEN || ws.bufferedAmount > 2_000_000 || video.readyState < 2) return;
+      const w = video.videoWidth, h = video.videoHeight;
+      if (!w || !h) return;
+      if (this.canvas.width !== w || this.canvas.height !== h) { this.canvas.width = w; this.canvas.height = h; }
+      ctx.drawImage(video, 0, 0, w, h);
+      const rgba = ctx.getImageData(0, 0, w, h).data;
+      const msg = new Uint8Array(8 + rgba.length);
+      const head = new DataView(msg.buffer);
+      head.setUint32(0, w, true);
+      head.setUint32(4, h, true);
+      msg.set(rgba, 8);
+      ws.send(msg);
+    }, 1000 / fps);
+  }
+
+  stop() { window.clearInterval(this.timer); this.timer = 0; }
+  close() { this.stop(); this.ws?.close(); this.ws = null; }
+}
+```
+- [ ] Create `web/src/lib/nmm.ts`:
 ```ts
 import type { Anchors } from './features';
 import type { Tag } from './gloss';
+import type { PresageFace } from './presage';
 import type { Frame } from './types';
 
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
@@ -3399,61 +4312,309 @@ export function headshake(xs: number[], minAmp = 0.08, minCrossings = 3): boolea
   return crossings >= minCrossings;
 }
 
-export type NmmCfg = { raise: number; furrow: number };
-export const DEFAULT_NMM: NmmCfg = { raise: 0.15, furrow: 0.15 };
+export type NmmCfg = {
+  raise: number; furrow: number;               // MediaPipe blendshape deltas above this person's neutral face
+  presageRaise: number; presageFurrow: number; // Presage percentage-point deltas above neutral
+};
+export const DEFAULT_NMM: NmmCfg = { raise: 0.15, furrow: 0.15, presageRaise: 20, presageFurrow: 20 };
 
-/** Non-manual markers: raised brows -> yes/no question, lowered brows -> WH-question, headshake -> negation. */
+type Sample = { t: number; a: number; b: number };
+class Baseline { // running mean of a signal while the face is neutral (hands down, not signing)
+  v = 0; n = 0;
+  add(x: number) { const k = Math.min(this.n++, 300); this.v = (this.v * k + x) / (k + 1); }
+}
+
+/** Non-manual markers -> tags for Gemini. Raised brows = yes/no question, lowered brows = WH-question, headshake = NEG.
+ *  Brow source: Presage's expression model when the sidecar runs (its "surprise" fires on raised brows, "anger" on
+ *  lowered brows; in ASL these are grammar, not emotion), otherwise MediaPipe face blendshapes. */
 export class Nmm {
-  private hist: { t: number; nose: number; raise: number | null; furrow: number | null }[] = [];
-  private base = { raise: 0, furrow: 0 };
-  private baseN = 0;
   private cfg: NmmCfg;
+  private nose: { t: number; x: number }[] = [];
+  private mp: Sample[] = [];
+  private ps: Sample[] = [];
+  private bRaise = new Baseline(); private bFurrow = new Baseline();
+  private bSurprise = new Baseline(); private bAnger = new Baseline();
+  private neutralNow = false;
+
   constructor(cfg: NmmCfg = DEFAULT_NMM) { this.cfg = cfg; }
 
   push(f: Frame, a: Anchors | null, idle: boolean) {
-    if (!a) return;
-    this.hist.push({ t: f.t, nose: (a.nose[0] - a.c[0]) / a.s, raise: f.brow?.raise ?? null, furrow: f.brow?.furrow ?? null });
-    while (this.hist.length && f.t - this.hist[0].t > 8000) this.hist.shift();
-    if (idle && f.brow && f.hands.length === 0) { // neutral face while hands are down = this person's baseline
-      const k = Math.min(this.baseN++, 300);
-      this.base.raise = (this.base.raise * k + f.brow.raise) / (k + 1);
-      this.base.furrow = (this.base.furrow * k + f.brow.furrow) / (k + 1);
+    this.neutralNow = idle && f.hands.length === 0;
+    if (a) this.nose.push({ t: f.t, x: (a.nose[0] - a.c[0]) / a.s });
+    if (f.brow) {
+      this.mp.push({ t: f.t, a: f.brow.raise, b: f.brow.furrow });
+      if (this.neutralNow) { this.bRaise.add(f.brow.raise); this.bFurrow.add(f.brow.furrow); }
     }
+    this.trim(f.t);
   }
 
-  /** Brow deltas right now, for the Bench readout. */
-  delta(): { raise: number; furrow: number } {
-    const last = [...this.hist].reverse().find((h) => h.raise !== null);
-    return last ? { raise: last.raise! - this.base.raise, furrow: last.furrow! - this.base.furrow } : { raise: 0, furrow: 0 };
+  pushPresage(face: PresageFace, t: number) {
+    this.ps.push({ t, a: face.surprise, b: face.anger });
+    if (this.neutralNow) { this.bSurprise.add(face.surprise); this.bAnger.add(face.anger); }
+    this.trim(t);
+  }
+
+  /** Current brow deltas for the Bench readout: [raise, furrow] per source. */
+  delta() {
+    const m = this.mp.at(-1), p = this.ps.at(-1);
+    return {
+      mediapipe: m ? [m.a - this.bRaise.v, m.b - this.bFurrow.v] : null,
+      presage: p ? [p.a - this.bSurprise.v, p.b - this.bAnger.v] : null,
+    };
   }
 
   tags(sinceT: number, hasWh: boolean): Tag[] {
-    const win = this.hist.filter((h) => h.t >= sinceT);
     const tags: Tag[] = [];
-    const brows = win.filter((h) => h.raise !== null);
-    const raise = brows.length >= 5 ? mean(brows.map((h) => h.raise!)) - this.base.raise : 0;
-    const furrow = brows.length >= 5 ? mean(brows.map((h) => h.furrow!)) - this.base.furrow : 0;
-    if (hasWh || furrow > this.cfg.furrow) tags.push('Q-WH');
-    else if (raise > this.cfg.raise) tags.push('Q-YN');
-    const end = win.at(-1)?.t ?? 0;
-    if (headshake(win.filter((h) => h.t >= end - 1500).map((h) => h.nose))) tags.push('NEG');
+    const ps = this.ps.filter((s) => s.t >= sinceT);
+    const mp = this.mp.filter((s) => s.t >= sinceT);
+    let raised = false, furrowed = false;
+    if (ps.length >= 3) {
+      raised = mean(ps.map((s) => s.a)) - this.bSurprise.v > this.cfg.presageRaise;
+      furrowed = mean(ps.map((s) => s.b)) - this.bAnger.v > this.cfg.presageFurrow;
+    } else if (mp.length >= 5) {
+      raised = mean(mp.map((s) => s.a)) - this.bRaise.v > this.cfg.raise;
+      furrowed = mean(mp.map((s) => s.b)) - this.bFurrow.v > this.cfg.furrow;
+    }
+    if (hasWh || furrowed) tags.push('Q-WH');
+    else if (raised) tags.push('Q-YN');
+    const end = this.nose.at(-1)?.t ?? 0;
+    if (headshake(this.nose.filter((n) => n.t >= end - 1500).map((n) => n.x))) tags.push('NEG');
     return tags;
+  }
+
+  private trim(now: number) {
+    for (const arr of [this.nose, this.mp, this.ps] as { t: number }[][]) {
+      while (arr.length && now - arr[0].t > 8000) arr.shift();
+    }
   }
 }
 ```
 - [ ] `npm test` → green.
-- [ ] Wire it in `Call.tsx` → `startSigner()`: add `const nmm = new Nmm();` before `new SignerPipeline(...)`, add `onFrame: (f, a, isIdle) => nmm.push(f, a, isIdle),` to `ev`, and after the pipeline is created: `tagsFor.current = (since, hasWh) => nmm.tags(since, hasWh);` (import `Nmm` from `../lib/nmm`).
-- [ ] Tune on Bench: add `nmm.push(f, seg.anchors, seg.state !== 'ACTIVE')` and show `nmm.delta()` in the readout. Each signer: neutral face 5 s, then raised brows, then lowered brows. Set `DEFAULT_NMM` between the neutral and raised values. If it is unreliable for anyone, keep the manual "? question" button as the primary path and say so in the pitch.
-- [ ] Golden path: `YOU HEARING` with raised brows → "Are you hearing?"; `ME UNDERSTAND` + headshake → "I don't understand." (record UNDERSTAND first if it is still Tier 2).
-- [ ] Commit: `eyebrow + headshake tags`.
+- [ ] Create `presage/package.json` for the sidecar:
+```json
+{
+  "name": "signline-presage-sidecar",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": { "start": "node sidecar.mjs" },
+  "dependencies": {
+    "@smartspectra/node-sdk": "latest",
+    "ws": "^8.18.0"
+  }
+}
+```
+- [ ] Create `presage/sidecar.mjs`:
+```js
+// Presage sidecar: the browser streams the signer's camera frames here; Presage's on-device face model reads them;
+// we send back expression scores. Presage has no browser SDK, so this small local process bridges the two.
+// Run on the SIGNER laptop:   cd presage && npm install && PRESAGE_API_KEY=... npm start
+// Listens on 127.0.0.1 only. Never put the key in the web app.
+import { WebSocketServer } from 'ws';
+import { PixelFormat, SmartSpectraSDK, decodeMetrics, faceMetrics } from '@smartspectra/node-sdk';
 
-##### Task 4.4 [A] Robust captions with ElevenLabs Scribe (≈ 45 min)
-- [ ] `cd web && npm install @elevenlabs/client@^1.28.0` (the code below type-checks against 1.28.0; if a newer major renames things, compare with the Scribe JS SDK page in §12).
-- [ ] Append to `web/src/lib/stt.ts`:
+const PORT = Number(process.env.PRESAGE_PORT ?? 8788);
+const KEY = process.env.PRESAGE_API_KEY;
+if (!KEY) { console.error('Set PRESAGE_API_KEY (from physiology.presagetech.com)'); process.exit(1); }
+
+const NAMES = ['UNSPECIFIED', 'ANGRY', 'CONTEMPT', 'DISGUST', 'FEAR', 'HAPPY', 'NEUTRAL', 'SAD', 'SURPRISE'];
+const nameOf = (t) => (typeof t === 'number' ? NAMES[t] : String(t).replace(/^.*_/, '')) ?? 'UNSPECIFIED';
+
+let client = null;
+const send = (msg) => { if (client?.readyState === 1) client.send(JSON.stringify(msg)); };
+
+// Face analysis only: pulse/breathing readings are unreliable while someone is signing (large arm motion).
+const sdk = new SmartSpectraSDK({ apiKey: KEY, requestedMetrics: [...faceMetrics] });
+sdk.on('metrics', (buf) => {
+  const m = decodeMetrics(buf);
+  if (Buffer.isBuffer(m)) return; // undecodable payload
+  const e = m.face?.expression?.at(-1);
+  if (!e?.scores?.length) return;
+  const s = Object.fromEntries(e.scores.map((x) => [nameOf(x.type), x.confidence])); // 0..100
+  send({ type: 'face', surprise: s.SURPRISE ?? 0, anger: s.ANGRY ?? 0, neutral: s.NEUTRAL ?? 0,
+         talking: m.face?.talking?.at(-1)?.detected ?? null, stable: !!e.stable });
+});
+sdk.on('validationStatus', (code, _ts, hint) => { if (code !== 0) send({ type: 'status', hint: hint || `code ${code}` }); });
+sdk.on('error', (code, message, retryable) => {
+  console.error('Presage error', code, message, retryable ? '(retryable)' : '');
+  send({ type: 'status', hint: `Presage error ${code}: ${message}` });
+});
+sdk.useCustomInput();
+sdk.start();
+
+// Binary message from the browser: [u32 width LE][u32 height LE][RGBA bytes]
+const wss = new WebSocketServer({ host: '127.0.0.1', port: PORT, maxPayload: 16 * 1024 * 1024 });
+wss.on('connection', (ws) => {
+  client?.close();
+  client = ws;
+  console.log('browser connected');
+  ws.on('message', (data, isBinary) => {
+    if (!isBinary || data.length < 8) return;
+    const w = data.readUInt32LE(0), h = data.readUInt32LE(4);
+    if (data.length !== 8 + w * h * 4) return;
+    const tsUs = Math.round(performance.now() * 1000); // monotonic microseconds
+    sdk.sendFrame(data.subarray(8), w, h, w * 4, PixelFormat.kRGBA, tsUs);
+  });
+  ws.on('close', () => { if (client === ws) client = null; });
+});
+console.log(`Presage sidecar on ws://127.0.0.1:${PORT}`);
+
+process.on('SIGINT', async () => { wss.close(); await sdk.stopAsync(); await sdk.destroy(); process.exit(0); });
+```
+- [ ] On the **signer laptop** (Node ≥ 20; Apple Silicon Mac or Windows x64): `cd presage && npm install` (downloads a few hundred MB of native runtimes, so do it early on good Wi-Fi), then start it. On macOS/Git Bash: `PRESAGE_API_KEY=… npm start`. In PowerShell: `$env:PRESAGE_API_KEY="…"; npm start`. Expected: `Presage sidecar on ws://127.0.0.1:8788`. Presage checks the key online, so it needs internet.
+- [ ] Apply these edits to `web/src/pages/Call.tsx`:
+<!-- edit: web/src/pages/Call.tsx -->
+**Edit 1 — find:**
+```tsx
+import { USE_FACE } from '../config';
+```
+**Replace with:**
+```tsx
+import { USE_FACE } from '../config';
+import { Nmm } from '../lib/nmm';
+import { PresageLink } from '../lib/presage';
+```
+<!-- edit: web/src/pages/Call.tsx -->
+**Edit 2 — find:**
+```tsx
+  const [tracking, setTracking] = useState({ fps: 0, hands: 0, edge: false });
+```
+**Replace with:**
+```tsx
+  const [tracking, setTracking] = useState({ fps: 0, hands: 0, edge: false });
+  const [faceSource, setFaceSource] = useState('');
+  const [faceHint, setFaceHint] = useState('');
+```
+<!-- edit: web/src/pages/Call.tsx -->
+**Edit 3 — find:**
+```tsx
+    setModelVersion(model.version);
+    pipe.current = new SignerPipeline({
+```
+**Replace with:**
+```tsx
+    setModelVersion(model.version);
+    const nmm = new Nmm();
+    const presage = new PresageLink();
+    const presageOk = await presage.connect((face) => nmm.pushPresage(face, performance.now()), setFaceHint);
+    setFaceSource(presageOk ? 'Presage' : USE_FACE ? 'MediaPipe' : 'off');
+    tagsFor.current = (since, hasWh) => nmm.tags(since, hasWh);
+    pipe.current = new SignerPipeline({
+```
+<!-- edit: web/src/pages/Call.tsx -->
+**Edit 4 — find:**
+```tsx
+        onTracking: setTracking,
+      },
+    });
+```
+**Replace with:**
+```tsx
+        onTracking: setTracking,
+        onFrame: (f, a, isIdle) => nmm.push(f, a, isIdle),
+      },
+    });
+```
+<!-- edit: web/src/pages/Call.tsx -->
+**Edit 5 — find:**
+```tsx
+    onAslChange.current = (on) => {
+      if (on) pipe.current?.start();
+      else { pipe.current?.pause(); setSpelled(null); }
+    };
+```
+**Replace with:**
+```tsx
+    onAslChange.current = (on) => {
+      if (on) { pipe.current?.start(); if (presageOk) presage.start(local.current!); }
+      else { pipe.current?.pause(); presage.stop(); setSpelled(null); }
+    };
+```
+<!-- edit: web/src/pages/Call.tsx -->
+**Edit 6 — find:**
+```tsx
+          {DEV && isSigner && aslOn &&
+```
+**Replace with:**
+```tsx
+          {isSigner && aslOn && faceSource && <small className="hud">brows: {faceSource}{faceHint ? ` · ${faceHint}` : ''}</small>}
+          {DEV && isSigner && aslOn &&
+```
+- [ ] Apply these edits to `web/src/pages/Bench.tsx` (MediaPipe brow readout for tuning):
+<!-- edit: web/src/pages/Bench.tsx -->
+**Edit 1 — find:**
+```tsx
+import { Knn } from '../lib/knn';
+```
+**Replace with:**
+```tsx
+import { Knn } from '../lib/knn';
+import { Nmm } from '../lib/nmm';
+```
+<!-- edit: web/src/pages/Bench.tsx -->
+**Edit 2 — find:**
+```tsx
+      const seg = new Segmenter();
+```
+**Replace with:**
+```tsx
+      const seg = new Segmenter();
+      const nmm = new Nmm();
+```
+<!-- edit: web/src/pages/Bench.tsx -->
+**Edit 3 — find:**
+```tsx
+        const ev = seg.push(f);
+```
+**Replace with:**
+```tsx
+        const ev = seg.push(f);
+        nmm.push(f, seg.anchors, seg.state !== 'ACTIVE');
+```
+<!-- edit: web/src/pages/Bench.tsx -->
+**Edit 4 — find:**
+```tsx
+            + ` · ${seg.state} speed
+```
+**Replace with:**
+```tsx
+            + ` · brow Δ ${nmm.delta().mediapipe?.map((v) => v.toFixed(2)).join('/') ?? '-'}`
+            + ` · ${seg.state} speed
+```
+- [ ] Run the web app **from the signer laptop** (`npm run dev`, http://localhost:5173), because a page on a public HTTPS site may be blocked from talking to localhost. If Chrome asks to allow access to devices on your local network, click **Allow**. Join, flip ASL on → the HUD shows `brows: Presage`.
+- [ ] Tune: sign `YOU HUNGRY` 3× with neutral brows and 3× with raised brows. In DevTools → Network → `/api/gloss` → Payload, `tags` should be `[]` vs `["Q-YN"]`. If not, lower `presageRaise` in `DEFAULT_NMM` (start at 20 percentage points). Do the same for `YOU NAME WHAT` with lowered brows (`Q-WH`) and a headshake on `ME HUNGRY` (`NEG` → "I'm not hungry.").
+- [ ] Without the sidecar running, confirm the HUD says `brows: MediaPipe` and the same tests mostly work (tune `raise`/`furrow` on Bench). Keep the "? question" button either way.
+- [ ] Commit: `eyebrows + headshake via presage with mediapipe fallback`.
+
+##### Task 4.4 [A] Robust captions with ElevenLabs Scribe (≈ 40 min)
+- [ ] `cd web && npm install @elevenlabs/client@^1.28.0` (the code below type-checks against 1.28).
+- [ ] Replace `web/src/lib/stt.ts`:
 ```ts
 import { getScribeToken } from './api';
 
-/** ElevenLabs Scribe v2 Realtime: works in any modern browser, echo cancellation on, key stays on the server. */
+export type OnTranscript = (text: string, final: boolean) => void;
+export type Stt = { kind: 'webspeech' | 'scribe'; stop(): void };
+
+/** Chrome's built-in recognizer (audio goes to Google). Restarts itself after Chrome's silence timeout. */
+export function startWebSpeech(onText: OnTranscript, onError: (msg: string) => void): Stt | null {
+  const w = window as unknown as { SpeechRecognition?: new () => any; webkitSpeechRecognition?: new () => any };
+  const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+  if (!Ctor) { onError('Live captions need Chrome on this laptop. You can still type below.'); return null; }
+  let wanted = true;
+  const rec = new Ctor();
+  rec.continuous = true;
+  rec.interimResults = true;
+  rec.lang = 'en-US';
+  rec.onresult = (e: any) => {
+    for (let i = e.resultIndex; i < e.results.length; i++) onText(e.results[i][0].transcript.trim(), e.results[i].isFinal);
+  };
+  rec.onerror = (e: any) => { if (e.error !== 'no-speech' && e.error !== 'aborted') onError(`Speech recognition: ${e.error}`); };
+  rec.onend = () => { if (wanted) { try { rec.start(); } catch { /* already running */ } } };
+  rec.start();
+  return { kind: 'webspeech', stop: () => { wanted = false; rec.stop(); } };
+}
+
+/** Task 4.4 — ElevenLabs Scribe v2 Realtime: any modern browser, echo cancellation on, key stays on the server. */
 export async function startScribe(onText: OnTranscript, onError: (msg: string) => void): Promise<Stt> {
   const { Scribe, CommitStrategy, RealtimeEvents } = await import('@elevenlabs/client');
   const { token } = await getScribeToken();
@@ -3470,259 +4631,321 @@ export async function startScribe(onText: OnTranscript, onError: (msg: string) =
   return { kind: 'scribe', stop: () => conn.close() };
 }
 ```
-(Move the `import` line to the top of the file.)
-- [ ] In `Call.tsx`, replace the body of `startListening()` with:
+- [ ] Apply this edit to `web/src/pages/Call.tsx`:
+<!-- edit: web/src/pages/Call.tsx -->
+**Edit 1 — find:**
 ```tsx
-const onText = (text: string, final: boolean) => {
-  if (!text || performance.now() < ttsUntil.current) return;
-  caption({ id: sttId.current, kind: 'speech', text, final });
-  if (final) sttId.current = crypto.randomUUID();
-};
-startScribe(onText, setBanner)
-  .then((s) => { stt.current = s; })
-  .catch(() => { stt.current = startWebSpeech(onText, setBanner); }); // token or network failure -> Chrome recognizer
+import { startWebSpeech, type Stt } from '../lib/stt';
 ```
-(import `startScribe` alongside `startWebSpeech`).
-- [ ] Test: hearing laptop speaks → interim gray captions, then final. Kill the server's ElevenLabs key temporarily → falls back to Web Speech with no banner spam.
-- [ ] Commit: `scribe captions with fallback`.
-
-##### Task 4.5 [B] Per-user calibration — "teach it your sign" (optional, ≈ 40 min)
-- [ ] In `signerPipeline.ts`, add a public field and method, and divert segments while calibrating:
-```ts
-calibrate: ((x: Float32Array) => void) | null = null;
-setModel(m: SignClassifier) { this.o.model = m; }
-// first lines of classify():
-const x = clipFeatures(frames);
-if (this.calibrate) { this.calibrate(x); return; }
-const p = await this.o.model.predict(x);   // replaces the old predict line
-```
-- [ ] In `Call.tsx`:
+**Replace with:**
 ```tsx
-const calib = useRef<Knn | null>(null);
-async function teach(label: string) {
-  calib.current ??= await Knn.load();
-  let n = 0;
-  setBanner(`Sign ${label} 3 times, lowering your hands between each.`);
-  pipe.current!.calibrate = (x) => {
-    calib.current!.add(label, x); calib.current!.add(label, x); // weight the user's own examples double
-    n++;
-    setBanner(`${label}: ${n}/3`);
-    if (n === 3) { pipe.current!.calibrate = null; pipe.current!.setModel(calib.current!); setBanner(`Learned your ${label}.`); }
-  };
-}
+import { startScribe, startWebSpeech, type Stt } from '../lib/stt';
 ```
-plus a `<select>` of `SIGNS_TIER1` and a "Teach" button in the signer actions.
-- [ ] Demo use: if a judge wants to try, they teach HELLO and THANK-YOU (≈ 30 s), then sign them.
-- [ ] Commit: `per-user calibration`.
+<!-- edit: web/src/pages/Call.tsx -->
+**Edit 2 — find:**
+```tsx
+  function startListening() {
+    stt.current = startWebSpeech((text, final) => {
+      if (!text || performance.now() < ttsUntil.current) return; // don't caption the signer's voice coming out of our speakers
+      caption({ id: sttId.current, kind: 'speech', text, final });
+      if (final) sttId.current = crypto.randomUUID();
+    }, setBanner);
+  }
+```
+**Replace with:**
+```tsx
+  function startListening() {
+    const onText = (text: string, final: boolean) => {
+      if (!text || performance.now() < ttsUntil.current) return; // don't caption the signer's voice coming out of our speakers
+      caption({ id: sttId.current, kind: 'speech', text, final });
+      if (final) sttId.current = crypto.randomUUID();
+    };
+    startScribe(onText, setBanner)
+      .then((s) => { stt.current = s; })
+      .catch(() => { stt.current = startWebSpeech(onText, setBanner); }); // token or network failure -> Chrome recognizer
+  }
+```
+- [ ] Test: the hearing laptop speaks → gray interim captions, then final. Temporarily break the ElevenLabs key on the server → falls back to Web Speech. Commit: `scribe captions with fallback`.
 
-##### Task 4.6 [D] Pitch workshop + slides (09:00–10:00 workshop, then ≈ 90 min)
-- [ ] One person attends the 09:00 "How to Pitch Your Project" workshop and brings back notes.
-- [ ] Slides (6 max): problem in one human sentence · live demo · how it works (diagram 3.1) · what we measured (confusion matrix, coverage curve, latency p50/p95 from Stats) · what it can't do (limitations, §9) · what's next + team learning.
-- [ ] B runs `python ml/eval_report.py` on the final model and hands D the PNGs + `metrics.json`.
+##### Task 4.5 [B] "Teach my sign" — per-user calibration (optional, ≈ 30 min)
+- [ ] Apply these edits to `web/src/pages/Call.tsx`:
+<!-- edit: web/src/pages/Call.tsx -->
+**Edit 1 — find:**
+```tsx
+import { WH_SIGNS } from '../vocab';
+```
+**Replace with:**
+```tsx
+import { DEMO_SIGNS, WH_SIGNS } from '../vocab';
+```
+<!-- edit: web/src/pages/Call.tsx -->
+**Edit 2 — find:**
+```tsx
+  const [faceHint, setFaceHint] = useState('');
+```
+**Replace with:**
+```tsx
+  const [faceHint, setFaceHint] = useState('');
+  const calib = useRef<Knn | null>(null);
+  const [teachLabel, setTeachLabel] = useState(DEMO_SIGNS[0]);
+```
+<!-- edit: web/src/pages/Call.tsx -->
+**Edit 3 — find:**
+```tsx
+  function finishSpelling() {
+```
+**Replace with:**
+```tsx
+  /** "Teach it your sign": 3 examples of one sign, added to a kNN that then replaces the CNN for this session. */
+  async function teach(label: string) {
+    if (!pipe.current) return;
+    calib.current ??= await Knn.load();
+    if (!aslRef.current) setAsl(true);
+    let n = 0;
+    setBanner(`Sign ${label} 3 times, lowering your hands between each.`);
+    pipe.current.calibrate = (x) => {
+      calib.current!.add(label, x); calib.current!.add(label, x); // weight the user's own examples double
+      n++;
+      setBanner(`${label}: ${n}/3`);
+      if (n === 3) { pipe.current!.calibrate = null; pipe.current!.setModel(calib.current!); setBanner(`Learned your ${label}.`); }
+    };
+  }
+
+  function finishSpelling() {
+```
+<!-- edit: web/src/pages/Call.tsx -->
+**Edit 4 — find:**
+```tsx
+          {DEV && isSigner && aslOn &&
+```
+**Replace with:**
+```tsx
+          {isSigner && <span className="teach">
+            <select value={teachLabel} onChange={(e) => setTeachLabel(e.target.value)}>{DEMO_SIGNS.map((l) => <option key={l}>{l}</option>)}</select>
+            <button onClick={() => void teach(teachLabel)}>Teach my sign</button></span>}
+          {DEV && isSigner && aslOn &&
+```
+- [ ] Demo use: a judge who wants to try teaches HELLO and THANKYOU (≈ 30 s), then signs them. Commit: `per-user calibration`.
+
+##### Task 4.6 [C] Pitch workshop + slides (09:00–10:00 workshop, then ≈ 90 min)
+- [ ] One person attends the 09:00 "How to Pitch Your Project" workshop.
+- [ ] Six slides max: the problem in one human sentence · live demo · how it works (diagram 3.1) · what we measured (confusion matrix, coverage curve, Kaggle vs our-signer accuracy, latency p50/p95) · what it can't do (§9) · what's next + what each of us learned.
+- [ ] Kev runs `python ml/eval_report.py` on the final model and sends the PNGs + `ml/out/metrics.json`.
 
 ##### Task 4.7 [All] Failure drills (≈ 45 min, 11:30–12:15)
-Run each, confirm the expected behavior from diagram 3.5, fix what doesn't match:
-- [ ] Stop the API server → preview shows "(offline translation)"; Speak → hearing laptop reads it aloud with the backup voice.
-- [ ] Set `GEMINI_MODEL=wrong` and restart → same offline path, no crash.
-- [ ] Turn Wi-Fi off on the hearing laptop for 10 s → "Reconnecting…" → recovers; last captions resent.
-- [ ] Deny the camera → clear banner; allow → join works.
-- [ ] Signer at the edge of frame → amber "Move back" hint.
-- [ ] Hearing headphones unplugged during a spoken sentence → no echo captions appear (ttsUntil gating).
-- [ ] Both laptops on a phone hotspot → full golden path works.
-- [ ] Hard refresh during a call → rejoin works; consent remembered.
+- [ ] Stop the API server → "(offline translation)", still spoken.
+- [ ] `GEMINI_MODEL=wrong` + restart → same, no crash.
+- [ ] Hearing laptop Wi-Fi off for 10 s → "Reconnecting…" → recovers, last captions resent.
+- [ ] Deny the camera → banner; allow → join works.
+- [ ] Signer at the frame edge → "Move back" hint.
+- [ ] Unplug the hearing laptop's headphones during a sentence → no echo captions.
+- [ ] Kill the Presage sidecar mid-call → HUD falls back to `brows: MediaPipe` after the next ASL off/on. Nothing else breaks.
+- [ ] Both laptops on a phone hotspot → the full golden path works.
+- [ ] Hard refresh mid-call → rejoin works; consent remembered.
 
-##### Task 4.8 [B] Tier 2 retrain (optional, only if Tier 1 ≥ 0.75 and ≥ 3 signers recorded Tier 2)
-- [ ] Add `...SIGNS_TIER2` to `RECORD_LABELS`, rebuild the dataset, retrain, re-run eval. Ship it **only if** Tier-1 per-class F1 does not drop by more than 0.05; otherwise keep the Tier-1 model for the demo and mention Tier 2 as "trained, not yet reliable".
+##### Task 4.8 [B] More Kaggle signs, no recording (optional, ≈ 20 min each round)
+- [ ] Add 2–6 words from the Kaggle list to `"gislr"` in `web/src/vocab.json` (good ones: `food`, `drink`, `home`, `time`, `finish`, `sleepy`). Avoid chest signs that look like PLEASE/HUNGRY.
+- [ ] `python ml/gislr_to_features.py --zip data/asl-signs.zip --signs demo --out data/gislr-demo` → `python ml/train.py finetune …` → `python ml/eval_report.py`.
+- [ ] Ship only if no existing demo sign's F1 drops by more than 0.05. Add a few Gemini examples for the new words if they're in the demo.
 
-**▶ CP4 — Sun 13:00:** deployed URL works on both laptops (or local fallback is rehearsed) · stats page shows real numbers · failure drills pass · slides drafted.
+**▶ CP4 — Sun 13:00:** deployed URL (or rehearsed local fallback) · stats page live · drills pass · slides drafted.
 
 ---
 
-### Phase 5 — Freeze, rehearse, submit (Sun 13:00–17:00, H27–H31)
+### Phase 5 — Freeze, rehearse, submit (Sun 13:00–17:00)
+- [ ] **13:00–13:30 Record the backup video** (≤ 3 min): the golden path on two laptops, a 20-second "how it works", limitations. Upload publicly (YouTube). On ElevenLabs' free plan, put "elevenlabs.io" in the title.
+- [ ] **14:30 Code freeze.** `git tag demo && git push --tags`. After this, only fixes of a few lines.
+- [ ] **14:30–16:00 Rehearse 5×** with a timer. Roles: Kev signs; Mac 1 person plays the hearing side; Mac 2 person presents and fields questions.
+- [ ] **By 16:30 Devpost submitted:**
+  - [ ] Title, tagline, event tracks **Best AI/ML, Best Live Demo, Next Giant Leap**; MLH tracks **Gemini, Vultr, Tiger Data** (+ **Presage** only if Task 4.3 works on stage; + GoDaddy if you registered a domain).
+  - [ ] Public GitHub + public video links.
+  - [ ] Built with: MediaPipe, ONNX Runtime Web, PyTorch, LiveKit, Gemini API, ElevenLabs, FastAPI, Tiger Data, Vultr, Presage, React, Vite — **and Claude Code + Codex (AI coding tools)**.
+  - [ ] One paragraph per sponsor (§8).
+  - [ ] What we learned: each person's background before the weekend and what they learned (a judging criterion).
+  - [ ] Data & credit: "Google – Isolated Sign Language Recognition" (Kaggle) / PopSign, CC BY 4.0; our own consented landmark recordings (not published).
+  - [ ] Limitations (§9) verbatim.
+- [ ] **16:30–17:00** README final, push. **17:15** demo setup (§7).
 
-- [ ] **13:00–13:30 [D+A] Record the backup video** (≤ 3 min): the golden path on two laptops, screen + room audio, a 20-second "how it works", limitations. Upload to YouTube (public). If you are on ElevenLabs' free plan, put "elevenlabs.io" in the video title.
-- [ ] **14:30 [All] Code freeze.** `git tag demo && git push --tags`. After this only fixes of a few lines.
-- [ ] **14:30–16:00 [All] Rehearse 5×** with a timer, swapping who plays the hearing person. Assign: presenter (D), signer (whoever signs most cleanly), laptop driver (A), Q&A backup (B, C).
-- [ ] **By 16:30 [D] Devpost submitted** — checklist:
-  - [ ] Title, tagline, the 3 event tracks (§8) + MLH tracks (Gemini, Vultr, Tiger Data, GoDaddy Registry).
-  - [ ] Public GitHub link; public video link.
-  - [ ] "Built with": MediaPipe, ONNX Runtime Web, PyTorch, LiveKit, Gemini API, ElevenLabs, FastAPI, Tiger Data, Vultr, GoDaddy Registry, React, Vite — and **Claude (AI assistant used for planning and code)**.
-  - [ ] One paragraph per sponsor (§8) explaining why it is essential, not decorative.
-  - [ ] What we learned: each teammate's background before the weekend and what they learned (a judging criterion).
-  - [ ] Data & licenses: our own consented landmark data; MediaPipe Apache-2.0; any public dataset with its license and attribution.
-  - [ ] Limitations (§9), verbatim.
-- [ ] **16:30–17:00** README final (how to run, credits, consent), push. Submit any last fix before 17:00.
-- [ ] **17:15** Demo-day setup (§7).
-
-### Phase 6 — After the event (by Fri Oct 31, for the DEV Writing Challenge)
-- [ ] One person writes the DEV post tagged `#mlhacks`: the architecture diagram, real latency numbers from Tiger Data, the confusion matrix, "what failed" (why an LLM can't be the recognizer: ~24% zero-shot vs our trained classifier), the Deaf-community perspective and consent choices, the demo video. Share it in the event Discord and on LinkedIn (community popularity is a criterion).
+### Phase 6 — After the event (by Sat Oct 31)
+- [ ] DEV Writing Challenge post tagged `#mlhacks`: architecture, real latency numbers from Tiger Data, the confusion matrix, "what failed" (why an LLM isn't the recognizer: ~24% zero-shot in a 2026 benchmark), how auto-speak + retraction keeps the signer in control, the demo video. Share it in the event Discord and on LinkedIn.
 - [ ] Rotate every API key used during the event.
 
 ---
 
 ## 7. Demo-day runbook (Sun 17:15)
-
-- [ ] Both laptops on power, Chrome only, all other apps closed, notifications and Do Not Disturb on, screen sleep off.
-- [ ] Signer laptop: light source in front (window or lamp), plain background behind, camera at chest-to-head height, sleeves above the wrist, sit ~1 m back.
+- [ ] Both laptops on power; Chrome only; notifications off; screen sleep off.
+- [ ] Signer laptop: light in front of Kev, plain background, camera at chest-to-head height, sleeves above the wrist, ~1 m back. Presage sidecar running (if used) and the app on localhost.
 - [ ] Hearing laptop: **headphones on**, volume tested.
-- [ ] Both joined to `demo-room` 10 minutes early; one test sentence each way.
-- [ ] Third tab open on `#/stats`; backup video downloaded locally; phone hotspot on standby.
-- [ ] Last-resort mode, used only if recognition fails under the venue lights: `?dev` simulator, **said out loud** to judges ("lighting is defeating the hand tracker, so I'm typing the glosses; everything after recognition is live").
-- [ ] After each judge: refresh nothing; clear captions only if asked.
+- [ ] Both in `demo-room` 10 minutes early; one test sentence each way. Leave **ASL → voice OFF** until the demo starts, then flip it on as the first beat.
+- [ ] Third tab on `#/stats`; backup video downloaded; phone hotspot ready.
+- [ ] Last resort, said out loud: if the venue lights defeat the hand tracker, use `?dev` and say "lighting is beating the hand tracker, so I'm typing the glosses. Everything after recognition is live."
 
-**Likely judge questions (have one owner each):**
-| Question | Answer owner | Short answer |
+| Likely question | Owner | Short answer |
 |---|---|---|
-| How accurate is it? | B | "On signers it never saw: X% top-1 (leave-one-signer-out). It answers only when confident: at our threshold it answers Y% of the time at Z% accuracy." |
-| Why not let Gemini watch the video? | B | "A 2026 benchmark found LLMs get ~24% of isolated signs zero-shot. We use a trained classifier for recognition and Gemini where language helps: word order, picking between our top guesses, punctuation." |
-| Did Deaf people help? | D | Answer truthfully (Q6). If not: "Not yet — it's the first thing we'll do; we built the confirm step and the limitations around what Deaf researchers have published." |
-| Does this replace interpreters? | D | "No. It's for casual moments where no interpreter is booked anyway." |
-| What about privacy? | A | "Landmarks are computed on the laptop; video never goes to our server or the AI. Only recognized words and English text leave the device, and we say so on the first screen." |
-| How fast is it? | C | Point at Stats p50/p95. |
-| What's next? | D | Continuous signing with Deaf co-researchers, more vocabulary with consented and paid data, facial grammar. |
+| How accurate is it? | Kev | "On Kaggle signers it never saw: X% over our 20 signs. On a teammate it never trained on: Y%. It only auto-speaks when confident; at that threshold it's right Z% of the time." |
+| Why not have Gemini watch the video? | Kev | "A 2026 benchmark found LLMs get ~24% of isolated signs zero-shot. We trained a classifier on 94k Kaggle clips for recognition and use Gemini for language: word order, questions, picking between our top guesses." |
+| Isn't auto-speak risky? | Mac 2 | "The signer controls the switch, only confident sentences are spoken, unsure ones wait, and 'That was wrong' retracts on both screens." |
+| Did Deaf people help? | Mac 2 | "Not yet — I'm (Kev) learning ASL, and testing with Deaf signers is the first next step. We designed the controls around what Deaf researchers have published." |
+| Replace interpreters? | Mac 2 | "No. It's for casual moments where no interpreter is booked anyway." |
+| What does Presage do here? | Kev | "It reads raised vs lowered eyebrows — ASL's question grammar — so 'YOU HUNGRY' becomes 'Are you hungry?'. We deliberately don't turn faces into voice emotion." |
+| Privacy? | Mac 1 | "Landmarks are computed on the laptop; video never goes to our server or the AI. Only recognized words and English text leave the device." |
+| How fast? | Mac 2 | Point at the stats tab: p50/p95. |
 
 ---
 
 ## 8. Prize tracks
 
-**Event tracks (pick 3; confirm Q4 about Best Overall):**
+**Event tracks:** Best Overall (automatic) + **Best AI/ML**, **Best Live Demo**, **Next Giant Leap**.
 
-| Track | Enter? | What the judges should see |
+| Track | What the judges should see |
+|---|---|
+| Best AI/ML | A model pretrained on 94k Kaggle clips and fine-tuned this weekend; held-out-signer accuracy for Kaggle and our signers; calibrated confidence that decides what auto-speaks; a train/serve parity test; Gemini used for language, not vision. |
+| Best Live Demo | A real two-laptop call, voice + captions both ways in 3 minutes, a judge invited to try, live latency numbers, and a visible recovery ("That was wrong"). |
+| Next Giant Leap | Two-way conversation across a language barrier, built consent-first, with ASL grammar (eyebrows) taken seriously. |
+
+**MLH tracks** (Devpost paragraphs — edit to match what shipped):
+
+| Track | Enter? | Paragraph |
 |---|---|---|
-| Best AI/ML (ML @ UVA) | **Yes** | A model we trained this weekend, held-out-signer accuracy, confusion matrix, calibrated confidence + rejection, and Gemini used where language (not vision) helps. |
-| Best Live Demo | **Yes** | A real two-laptop call, a judge playing the hearing person, voice + captions both ways in < 90 s, live latency numbers. |
-| Next Giant Leap | **Yes** | Two-way conversation across a language barrier, built consent-first. |
-| Best Female Empowerment | Only if Q15 has a genuine answer | A women-centered angle you can stand behind; otherwise skip. |
-| Best Beginner | Only if Q2 says the team qualifies | — |
-| Most Sustainable | No (framing only) | Mention: recognition runs on the laptop, we send landmarks/words instead of video, one small LLM call per sentence. |
-| Best Overall | Automatic or pick (Q4) | Everything above. Stress what's new versus 2025's hand-tracking winner: real-time two-way conversation and voice. |
-
-**MLH tracks (unlimited):**
-
-| Track | Enter? | Devpost paragraph (edit to match what you shipped) |
-|---|---|---|
-| Best Use of Gemini API | **Yes** | "Gemini 3.5 Flash-Lite turns recognized ASL glosses into natural English with a JSON schema (english, sentence type, confidence, uncertain words). It receives our classifier's top alternatives and the hearing person's last captions, so it can pick the word that fits the conversation, and it uses eyebrow/headshake tags for questions and negation. We measured p50 latency of X ms. We deliberately don't use Gemini to recognize signs from video: published zero-shot accuracy is ~24%, so a trained classifier does recognition and Gemini does language." |
-| Best Use of Vultr | **Yes** | "Our whole app runs on a Vultr VM: Caddy serves the site with automatic HTTPS and proxies a FastAPI server that holds every API key, mints LiveKit tokens, and streams ElevenLabs audio without buffering." |
-| Best Use of Tiger Data | **Yes** | "Every recognized sign and every spoken sentence is a time-series event in two hypertables. A continuous aggregate (refreshed every minute, real-time enabled) powers a live dashboard of sign-to-voice latency (p50/p95), Gemini and voice latency, offline-fallback rate, and the signs our model is least sure about — which told us what to re-record." |
-| Best Domain Name (GoDaddy Registry) | **Yes** | Register it and use it as the live URL. |
-| DEV Writing Challenge | **Yes, after the event** | Phase 6. |
-| Best Use of Presage | No (default) | No browser SDK; vitals are unreliable during signing; its emotion classes would misread grammatical eyebrows. Revisit only if someone already knows Node/Electron. |
-| Best Use of Solana | No | No honest fit for a live accessibility call. |
+| **Gemini API** | Yes | "Gemini 3.5 Flash-Lite turns recognized ASL glosses into natural English using a JSON schema (english, sentence type, confidence, uncertain words). It sees our classifier's top alternatives and the hearing person's last captions, plus eyebrow/headshake tags for questions and negation. Its confidence decides whether a sentence is auto-spoken or held for the signer. Median latency: X ms. We don't use Gemini to recognize signs from video (published zero-shot accuracy ~24%); a trained classifier does recognition, Gemini does language." |
+| **Tiger Data** | Yes | "Every recognized sign and spoken sentence is a time-series event in two hypertables; a real-time continuous aggregate powers a live dashboard of sign-to-voice latency (p50/p95), Gemini and voice latency, offline-fallback rate, and the signs our model is least sure about — which told us what to re-record." |
+| **Vultr** | Yes | "Our app runs on a Vultr VM: Caddy serves the site with automatic HTTPS and proxies a FastAPI server that holds every API key, mints LiveKit tokens, and streams ElevenLabs audio without buffering." |
+| **Presage** | If Task 4.3 works on stage | "Presage's on-device face model runs in a local sidecar fed by our page. Its expression scores rise for raised brows ('surprise') and lowered brows ('anger'). In ASL those are grammar, marking yes/no and WH questions, so we map them to question tags for Gemini instead of treating them as emotion, and we never put emotion into the voice." |
+| GoDaddy Registry | Only if a domain is registered | Use it as the live URL. |
+| DEV Writing | After the event | Phase 6. |
+| Solana | No | No honest fit. |
 
 ---
 
 ## 9. Pitch wording and limitations
 
-**60-second opener (adapt):** "Most video calls give Deaf signers two options: book an interpreter, or type in the chat. For a quick study-group question or a coffee chat, neither feels like a conversation. SignLine is a two-way prototype: you sign, you see what it understood, you press Speak, and the other person hears it. They talk, you read it. Watch."
+**60-second opener:** "Most video calls give Deaf signers two options: book an interpreter, or type in the chat. For a quick 'want to grab pizza?', neither feels like a conversation. SignLine is a two-way prototype. You flip on ASL → voice, sign, and the other person hears it. They talk, you read it. I'm Kev — I'm hearing and learned these signs this weekend, so watch the system, not my signing."
 
 | Say | Don't say |
 |---|---|
-| "recognizes a 16-sign vocabulary (27 trained) plus slow fingerspelling for names" | "translates ASL" / "real-time ASL translation" |
-| "for casual, low-stakes conversations where no interpreter is booked anyway" | "replaces interpreters" / "no need for an interpreter" |
-| "the signer stays in control: nothing is spoken until they approve it" | "gives Deaf people a voice" / "breaks the silence" |
-| "X% accurate on signers it never saw" | "99% accurate" (training/validation on your own data) |
-| "Deaf", "deaf", "hard of hearing", "signer" | "mute", "deaf-mute", "hearing-impaired" |
+| "recognizes a 20-sign vocabulary plus fingerspelled names" | "translates ASL" |
+| "for casual, low-stakes conversations where no interpreter is booked anyway" | "replaces interpreters" |
+| "the signer controls the switch; only confident sentences are spoken; one tap takes it back" | "gives Deaf people a voice" / "breaks the silence" |
+| "X% on Kaggle signers it never saw, Y% on a teammate it never trained on" | "99% accurate" |
 | "we read eyebrows and headshakes for questions and negation" | "understands ASL grammar" |
-| — | hospitals, courts, emergencies, mental health |
+| "Deaf", "hard of hearing", "signer" | "mute", "deaf-mute", "hearing-impaired" |
 
 **Limitations slide (verbatim):**
-- Isolated signs from a small vocabulary; no continuous or fluent signing.
-- Fingerspelling is slow and limited to a few letters.
-- Facial grammar: only eyebrows (questions) and headshake (negation); no mouth morphemes, classifiers, or directional verbs.
-- Trained on N consented signers, mostly not fluent; accuracy drops for new signers and for regional variants (including Black ASL).
-- Lighting and camera position matter; closed-fist handshapes are hardest to track.
-- Not for medical, legal, or emergency use.
-- Privacy: landmarks are computed on-device; video is never sent for recognition; recognized words go to Google Gemini (free tier may use them to improve products) and English text to ElevenLabs.
+- Isolated signs from a 20-sign vocabulary; no continuous or fluent signing.
+- Fingerspelling is slow and knows only the letters K, E, V.
+- Facial grammar: eyebrows (questions) and headshake (negation) only; no mouth morphemes, classifiers or directional verbs.
+- Trained on Kaggle/PopSign recordings plus a few hearing teammates learning ASL; accuracy drops for new signers and regional variants (including Black ASL).
+- Auto-speak can still say a wrong sentence; that's why the retract button exists.
+- Not for medical, legal or emergency use.
+- Privacy: landmarks are computed on-device; recognized words go to Google Gemini (the free tier may use them to improve products) and English text to ElevenLabs.
 
 ---
 
-## 10. Cut list and risk register
+## 10. Cut list and risks
 
-**If you are behind, cut in this order (top first):** Tier 2 vocabulary → per-user calibration (4.5) → Scribe (keep Web Speech) → eyebrow/headshake tags (keep the manual "? question" button) → stats page (keep event logging) → Vultr + domain (run from laptop A) → trained CNN (ship kNN) → spell mode (type the name into the simulator box, said out loud).
+**Behind? Cut in this order:** GoDaddy → more Kaggle signs (4.8) → teach-my-sign (4.5) → Scribe (keep Web Speech) → Presage (keep MediaPipe brows) → MediaPipe brows (keep the "?" button) → stats page (keep logging) → Vultr (run from laptop 1) → pretraining on all 250 (fine-tune from the demo subset only) → the CNN (ship the kNN templates) → spell mode (type "fs-KEV" in the simulator, said out loud).
 
-**Never cut:** consent screen, confirm-before-speak, offline fallbacks, cached demo MP3s, the backup video, the limitations slide.
+**Never cut:** consent screen, the ASL switch, holding unsure sentences, "That was wrong", offline fallbacks, cached MP3s, the backup video, the limitations slide.
 
 | Risk | Likelihood | Impact | Mitigation | Owner |
 |---|---|---|---|---|
-| Recognition fails under venue lighting | Medium | High | Rehearse in the venue room Sunday afternoon; lamp in front; `_idle` data; honest simulator fallback | B |
-| Gemini free-tier 429 (resets 3:00 AM EDT, per project) | Medium | Medium | Tier-1 billing; rule-based fallback; cached MP3s match fallback text | C |
-| ElevenLabs credits run out | Medium | Medium | Dev on teammates' free accounts; demo account untouched; Starter plan; cache | C |
-| Accuracy on new signers < 60% | Medium | High | Small distinct vocabulary; confusion matrix → re-record pairs; per-user calibration | B |
-| Echo: hearing STT captions the voice | High without headphones | Medium | Headphones; `tts` ctrl gating; Scribe echo cancellation | A |
-| Wi-Fi drops | Medium | High | Phone hotspot; LiveKit reconnect banner; backup video | A |
-| Vultr verification/deposit delays | Low–Medium | Low | Launched in Phase 0; local server fallback | C |
-| Team burnout → bugs Sunday | High | High | Golden-path tag at 02:00; staggered sleep; code freeze 14:30 | All |
-| Key leaked in a public repo | Low | High | `.env*` ignored from commit 1; rotate after event | C |
-| Overclaiming in the pitch | Medium | High (with ASL-aware judges) | §9 table; limitations slide | D |
+| 40 GB Kaggle download too slow | Medium | High | Start first; ethernet; Kaggle-notebook conversion fallback; `--signs demo` first | Kev |
+| Kev's signs differ from the PopSign versions | Medium | High | Learn from PopSign videos; record 5 reps of each Kaggle sign; fine-tune on them | Kev |
+| GISLR aspect ratio unknown | Medium | Low | `--estimate-aspect-from`; x-stretch augmentation | Kev |
+| Auto-speak says a wrong sentence on stage | Medium | Medium | Confidence gating + holds; "That was wrong"; rehearse | A |
+| Presage key check / localhost blocked | Medium | Low | Automatic MediaPipe fallback; run the app from localhost | Kev |
+| Venue lighting breaks hand tracking | Medium | High | Lamp in front; rehearse in Rice 130; honest simulator fallback | Kev |
+| Gemini 429 (limits reset 3:00 AM EDT, per project) | Medium | Medium | Tier-1 billing; offline rules; cached MP3s | C |
+| ElevenLabs credits run out | Medium | Medium | Dev on teammates' accounts; demo account untouched; Starter | C |
+| Two agents edit the same file | High | Medium | One agent per track; small commits; `git pull --rebase` | All |
+| Echo of the voice into captions | High w/o headphones | Medium | Headphones; tts gating; Scribe echo cancellation | A |
+| Wi-Fi drops | Medium | High | Hotspot; reconnect banner; backup video | A |
+| Burnout → Sunday bugs | High | High | golden-path tag; sleep shifts; 14:30 freeze | All |
+| Overclaiming to ASL-aware judges | Medium | High | §9 table; limitations slide; "Kev is learning" | C |
 
 ---
 
 ## 11. Self-review (xvant)
 
-**Coverage — every request maps to a section:**
+**Your answers → where they landed**
 
-| You asked for | Where |
+| Answer | Where |
 |---|---|
-| The stack to integrate | Header, §3.1, §3.6, §4 |
-| Nuances that need clarification | §1 (Q1–Q16, each with a default) |
-| A detailed plan in phases | §6 Phases 0–6 with clock times, owners, checkpoints |
-| Deep research on small details and edge cases (ASL, ML, stack) | §0, §2 vocabulary, §3.5 error map, Tasks 1.B2–1.B3, 2.B2, 4.3, §9; full report in `reports/ASL video call hackathon research.md` |
-| Fit to the prize tracks | §8 |
-| xvant plan format | File map (§4), ASCII diagrams with unhappy paths (§3), checkbox steps with tests and expected output (§6), this self-review |
+| Kaggle pretrained data | §1, §2 vocabulary, diagram 3.7, Tasks 0.2, 1.B5, 1.B6, 2.B4, 4.8 |
+| No Best Beginner / no Female Empowerment; Best Overall auto + 3 tracks | §1, §8 |
+| 3-minute table demo on two laptops | §2 demo script, §7 |
+| GoDaddy not now | §1, Task 4.1 (optional), cut list |
+| Learning ASL ourselves | Task 0.3 (PopSign videos), §7 Q&A, §9 |
+| Claude Code + Codex, 2 Macs + MSI 3060 | §5.1, §5.2, `AGENTS.md`/`CLAUDE.md` (Task 0.4), Task 0.2 (CUDA) |
+| "KEV" | vocabulary, letters, Gemini examples, offline rules, cached audio |
+| Auto-speak by default, one ASL toggle | rule 0.3, diagram 3.2, Task 2.A3 (`setAsl`, `sure` gate, `retract`) |
+| Q14 via Presage | Task 4.3 (sidecar + `PresageLink` + `Nmm`), §8 Presage paragraph |
+| MLH sponsors first | §8 (Gemini, Tiger Data, Vultr, Presage) |
 
-**Placeholder scan.** No "TBD" or "add error handling" steps. The only values you must replace are yours by nature, and each is marked where it appears: `<your-org>` (GitHub org), the example IP `149-28-1-2.sslip.io`, the example domain `signline.co`, the demo name "Liv" (Q10 — also update `cache_tts.py` and the Gemini examples if you change it), the voice IDs, and the `X/Y/Z` numbers on slides that come from your own runs.
+**Verified before handing over (Oct 17), by walking this document in order the way an agent would:** create/replace every file it lists and apply every find/replace edit in sequence, then check the result at each checkpoint.
+- All **27 find/replace edits** applied; each anchor matched exactly once.
+- The web app **type-checks at CP1, CP2, CP3, CP4 and at the end** under today's `create-vite` React-TS template (TypeScript 6, React 19, `erasableSyntaxOnly`). `vite build` succeeds.
+- Frontend tests: **31 pass at CP2, 36 at the end** (vitest 5).
+- Server tests: **7/7** (FastAPI, `livekit-api`, `google-genai` 2.31). Gemini request config builds.
+- **Parity:** TypeScript and Python features agree on 7 cases (one hand, two hands, left-handed ×2, missing pose/hands, portrait aspect, single frame). A deliberate mismatch makes the test fail.
+- **ML end to end on a fake Kaggle zip with the real parquet schema:**
+  - The converter's zip and folder modes produce byte-identical output.
+  - Pretrain and fine-tune both run, with leave-one-signer-out including a left-handed signer.
+  - Charts are written.
+  - `sign.onnx` is a single file matching PyTorch to ~1e-6.
+  - **onnxruntime-web 1.30 and Python give identical predictions** (85/92 on the check set).
+- **Presage:** the real `@smartspectra/node-sdk` 3.4.0 loads its native runtime, and the sidecar accepts our frame protocol without crashing. It stopped at Presage's online key check, which this sandbox can't reach, so a real key and internet are needed at the venue.
+- Package APIs exist in current versions: `livekit-client` 2.23 (`sendText`, `registerTextStreamHandler`), `@elevenlabs/client` 1.28 (`Scribe`, `CommitStrategy`, `RealtimeEvents`), `@smartspectra/node-sdk` 3.4 (`SmartSpectraSDK`, `faceMetrics`, `decodeMetrics`, `PixelFormat`).
+- **Bugs this round caught and fixed:**
+  - Labels stored as NumPy strings made `torch.load` fail on current PyTorch.
+  - Recent PyTorch splits ONNX weights into a second file the browser wouldn't load.
+  - The temperature fit collapsed on perfectly separable data.
+  - The letter-distance threshold could be zero.
+  - One task's wording would have let an agent skip a file.
 
-**Name consistency (defined → used):** `Frame`/`Pt`/`Caption`/`Ctrl` (`types.ts`) → everywhere · `FEAT_PER_FRAME`=174, `T`=32 (`features.ts`) → `onnx.ts`, `knn.ts`, `build-dataset.ts`, `train.py` (reads them from `meta.json`) · `IDLE`='_idle' (`vocab.ts`) → `classifier.ts`, `build-dataset.ts`, `train.py`, `eval_report.py` · `Token`/`Tag` (`gloss.ts`) → `Chips.tsx`, `Call.tsx`, `nmm.ts` · `Pred`/`Alt`/`SignClassifier` (`classifier.ts`) → `onnx.ts`, `knn.ts`, `signerPipeline.ts` · `/api/*` routes (`main.py`) → `api.ts`, `metrics.ts`, `Stats.tsx` · event fields (`main.py` models) ↔ `schema.sql` columns ↔ `metrics.ts` log types · cached sentences (`cache_tts.py`) ↔ `ruleBasedEnglish` outputs ↔ Gemini few-shot outputs.
+**Not testable here — each has a check step in its task:**
+- The real Kaggle download and license page (Task 0.2).
+- Live LiveKit, Gemini and ElevenLabs calls (Tasks 1.C1–1.C3, 1.A1).
+- The Tiger schema syntax on your service version (Task 1.C5 has a fallback).
+- MediaPipe in a real browser with a camera, including blendshape names (Task 1.B1 Bench).
+- Presage with a real key (Task 4.3 tuning step).
+- Chrome's local-network prompt for the sidecar (Task 4.3).
 
-**Things the research could not fully verify — each has a check step in its task:**
-- `tsdb.hypertable` table syntax on your Tiger service version (Task 1.C5 gives the fallback).
-- MediaPipe blendshape names `browInnerUp`/`browDown*`/`browOuterUp*` (Bench shows `brow -` if they don't match).
-- Gemini free-tier limits (only visible in AI Studio; Task 0.1).
-- ElevenLabs `/v1/voices` category `premade` (route falls back to any voices).
-- Edge support for Web Speech is disputed → demo on desktop Chrome.
+**Placeholders that are yours by nature:** the example IP `149-28-1-2.sslip.io`, the voice ID, and the X/Y/Z numbers on slides that come from your runs.
 
-**Unit tests in this plan:** `features`, `segmenter`, `classifier`/`knn`, `letters`, `gloss`, `nmm` (vitest) and `test_api`, `test_gloss` (pytest).
-
-**Verified before handing over (Oct 17, in a scratch copy built only from this document's code blocks):**
-- Frontend: every file type-checks with the current `create-vite` React-TS template settings (TypeScript 6, React 19, `erasableSyntaxOnly`), including the Phase 3–4 edits to `Call.tsx` and `signerPipeline.ts` applied exactly as written. `vite build` succeeds.
-- Frontend unit tests: **29/29 pass** (vitest 5).
-- Server tests: **7/7 pass** (FastAPI, `livekit-api`, `google-genai` 2.31). The Gemini request config (JSON schema from the Pydantic model) builds without errors.
-- Package APIs used by the plan exist in current versions: `livekit-client` 2.23 (`sendText`, `registerTextStreamHandler`), `@elevenlabs/client` 1.28 (`Scribe`, `CommitStrategy`, `RealtimeEvents`).
-- `build-dataset.ts` runs on synthetic recordings and writes `X.f32`, `meta.json`, kNN and letter templates (this run caught the letter-threshold floor now in the script).
-- `train.py` runs end to end on PyTorch 2.14 (leave-one-signer-out, temperature, threshold, export) in ~15 s on synthetic data; ONNX output matches PyTorch to ~1e-6; `eval_report.py` writes all three charts. This run caught two bugs now fixed: PyTorch 2.14 splits weights into `sign.onnx.data` (now inlined), and temperature collapsing on perfectly separable data (now bounded).
-- The exported `sign.onnx` loads and runs in **onnxruntime-web 1.30** — the same runtime the browser uses.
-- Not testable here: live calls to Gemini/ElevenLabs/LiveKit (no keys), the TimescaleDB schema, Caddy, and MediaPipe in a real browser — Phase 1's curl and two-laptop checks cover those.
+**Name consistency:**
+- `vocab.json` → `vocab.ts`, `gislr_to_features.py --signs demo`, `train.py finetune`.
+- `T=32`, `F=174` → `features.ts` = `features.py` → `meta.json` → `train.py` → `sign_meta.json` → `onnx.ts` / `knn.ts`.
+- `_idle` → `vocab.json`, `classifier.ts`, `train.py`.
+- Glosses are the uppercase Kaggle names (`THANKYOU`) → Gemini prompt, `gloss.ts`, `cache_tts.py`.
+- `Ctrl` `asl`/`tts`/`signing` → `Call.tsx` both roles.
+- `/api/*` → `main.py` ↔ `api.ts` / `metrics.ts` / `Stats.tsx`.
+- Event fields → `main.py` ↔ `schema.sql` ↔ `metrics.ts`.
 
 ---
 
 ## 12. Sources
 
-Event and rules
-- Girls Hoo Hack 2026 Devpost — https://girls-hoo-hack-2026.devpost.com/ (rules: /rules, dates: /details/dates)
-- MLH standard hackathon rules — https://github.com/MLH/mlh-policies/blob/main/standard-hackathon-rules.md
-- Girls Hoo Hack 2025 winners — https://girls-hoo-hack-2025.devpost.com/
+Event and data
+- Girls Hoo Hack 2026 Devpost — https://girls-hoo-hack-2026.devpost.com/ (rules, dates)
+- MLH standard rules — https://github.com/MLH/mlh-policies/blob/main/standard-hackathon-rules.md
+- Kaggle "Google – Isolated Sign Language Recognition" — https://www.kaggle.com/competitions/asl-signs
+- PopSign v1.0 sign list (the 250 Kaggle words) — https://signdata.cc.gatech.edu/view/datasets/popsign_v1_0/non-game/index.html · game signs: https://signdata.cc.gatech.edu/view/datasets/popsign_v1_0/game/index.html
+- GISLR 1st-place notebook (preprocessing/augmentation ideas, MIT) — https://github.com/hoyso48/Google---Isolated-Sign-Language-Recognition-1st-place-solution
 
 ASL and Deaf-community perspective
-- Lifeprint Lesson 1 and minimal pairs — https://www.lifeprint.com/asl101/lessons/lesson01.htm · https://www.lifeprint.com/asl101/topics/minimalpairs.htm
-- Tran, Ladner & Bragg (ASSETS 2023), Deaf perspectives on sign translation — https://microsoft.com/en-us/research/uploads/prod/2023/10/Automatic_Sign_Language_Translation_Perspectives.pdf
+- Lifeprint lessons and minimal pairs — https://www.lifeprint.com/asl101/lessons/lesson01.htm · https://www.lifeprint.com/asl101/topics/minimalpairs.htm
+- Tran, Ladner & Bragg (ASSETS 2023) — https://microsoft.com/en-us/research/uploads/prod/2023/10/Automatic_Sign_Language_Translation_Perspectives.pdf
 - EUD Ethical Framework on AI and sign language — https://eud.eu/wp-content/uploads/2025/07/ETHICAL-FRAMEWORK-ON-AI-AND-SIGN-LANGUAGE.pdf
-- De Meulder (2025) — https://arxiv.org/pdf/2505.02519
-- ASL Citizen — https://arxiv.org/html/2304.05934v2
-
-ML
-- MediaPipe Holistic / Hand landmarker (web) — https://developers.google.com/edge/mediapipe/solutions/vision/holistic_landmarker/web_js · https://developers.google.com/edge/mediapipe/solutions/vision/hand_landmarker/web_js
-- GISLR 1st-place notebook (MIT) — https://github.com/hoyso48/Google---Isolated-Sign-Language-Recognition-1st-place-solution
-- PopSign v1.0 (CC BY 4.0) — https://signdata.cc.gatech.edu/view/datasets/popsign_v1_0/
-- Open-source fingerspelling interface (A/M/N/S/T confusions) — https://arxiv.org/pdf/2408.09311
 - LLMs on isolated sign recognition (~24% zero-shot) — https://arxiv.org/pdf/2604.11225
-- Temperature scaling — https://arxiv.org/abs/1706.04599
-- ONNX Runtime Web — https://onnxruntime.ai/docs/tutorials/web/
 
 Stack and sponsors
-- LiveKit pricing, tokens, text streams — https://livekit.com/pricing · https://docs.livekit.io/home/server/generating-tokens/ · https://docs.livekit.io/transport/data/text-streams/
-- Gemini models, rate limits, structured output — https://ai.google.dev/gemini-api/docs/models · https://ai.google.dev/gemini-api/docs/rate-limits · https://ai.google.dev/gemini-api/docs/structured-output
-- ElevenLabs models, latency, Scribe JS SDK — https://elevenlabs.io/docs/models · https://elevenlabs.io/docs/best-practices/latency-optimization · https://elevenlabs.io/docs/eleven-api/resources/libraries/scribe-stt/javascript-scribe/llms.txt
-- Chrome autoplay policy — https://developer.chrome.com/blog/autoplay
-- Web Speech API — https://developer.mozilla.org/en-US/docs/Web/API/SpeechRecognition
+- MediaPipe Hand/Holistic (web) — https://developers.google.com/edge/mediapipe/solutions/vision/hand_landmarker/web_js
+- ONNX Runtime Web — https://onnxruntime.ai/docs/tutorials/web/
+- LiveKit tokens & text streams — https://docs.livekit.io/home/server/generating-tokens/ · https://docs.livekit.io/transport/data/text-streams/
+- Gemini models & rate limits — https://ai.google.dev/gemini-api/docs/models · https://ai.google.dev/gemini-api/docs/rate-limits
+- ElevenLabs models & Scribe JS SDK — https://elevenlabs.io/docs/models · https://elevenlabs.io/docs/eleven-api/resources/libraries/scribe-stt/javascript-scribe/llms.txt
+- Presage SmartSpectra Node.js SDK — https://github.com/Presage-Security/SmartSpectra/tree/main/nodejs
 - Tiger Data continuous aggregates — https://www.tigerdata.com/docs/use-timescale/latest/continuous-aggregates/create-a-continuous-aggregate
-- MLH partner pages (Gemini, Presage, Tiger Data) — https://www.mlh.com/partners/gemini · https://www.mlh.com/partners/presage · https://www.mlh.com/partners/tigerdata
+- Claude Code project instructions (`CLAUDE.md` imports, `AGENTS.md`) — https://code.claude.com/docs/en/memory
+- Chrome autoplay policy — https://developer.chrome.com/blog/autoplay
