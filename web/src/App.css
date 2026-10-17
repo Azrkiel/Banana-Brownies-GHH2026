@@ -1,0 +1,6 @@
+main { max-width: 880px; margin: 0 auto; padding: 4rem 1.5rem; }
+.eyebrow { color: #44675d; font-weight: 650; }
+section { margin: 2rem 0; padding: 1.5rem; background: #fff; border: 1px solid #d2ded3; border-radius: 1rem; }
+ul { display: flex; flex-wrap: wrap; gap: .6rem; list-style: none; padding: 0; }
+li { background: #eaf1e9; border-radius: .4rem; padding: .3rem .7rem; font-size: .9rem; }
+.note { color: #4e625b; font-size: .9rem; }

@@ -1,0 +1,12 @@
+.env*
+!.env.example
+node_modules/
+.venv/
+__pycache__/
+.pytest_cache/
+data/
+web/dist/
+ml/out/
+web/public/mediapipe/
+web/public/models/
+web/public/ort/
