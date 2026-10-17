@@ -8,9 +8,12 @@ for the implementation roadmap, consent requirements, and limitations.
 
 Phase 0's frontend and Python server scaffolds are implemented. The frontend
 shows the planned vocabulary. Phase 1's shared types and landmark feature extraction
-are implemented and unit-tested. Task 1.C1 adds the backend health, token, gloss,
-TTS, voices, Scribe token, events, and stats routes. Calling, camera tracking,
-and recognition are not implemented yet. No recognition accuracy has been measured.
+are implemented and unit-tested, along with the either-hand segmenter. Camera
+tracking, a benchmark page, and a landmark recorder are implemented. Task 1.C1 adds
+the backend health, token, gloss, TTS, voices, Scribe token, events, and stats routes.
+Calling and recognition are not implemented yet. No recognition accuracy or
+real-camera benchmark has been measured. The updated plan's canonical-handedness
+feature contract and Python parity work are still pending.
 
 ## Development setup
 
@@ -43,10 +46,12 @@ npm --prefix web run setup:assets -- --runtime-only
 ```
 
 This mode does **not** prepare the three models needed for later camera tracking.
-Model downloads from `storage.googleapis.com` have been verified in the cloud
-workspace. All three bundles are present locally and reused on subsequent runs.
-If a new environment blocks the bucket, allow this hostname in its network settings
-and retry the full asset command.
+Model bundles are local to each machine and are not included in a Git clone.
+Downloads passed in an earlier cloud setup, but this instance currently receives
+a proxy HTTP 403 from `storage.googleapis.com`. The hostname is saved in the
+environment network draft; review/save the settings and publish the environment,
+then retry the full asset command. On a laptop, run the full command before
+opening the camera pages.
 
 ## Run and check
 
@@ -76,9 +81,38 @@ server/.venv/bin/python -m pip check
 (cd server && .venv/bin/python -m pytest -q)
 ```
 
-`npm --prefix web test` runs the landmark feature extraction tests, including
-normalization, mirroring, tracking loss, and temporal resampling.
+`npm --prefix web test` runs feature extraction, segmenter, and tracker tests,
+including normalization, mirroring, tracking loss, temporal resampling, either-hand
+movement, and model initialization cleanup.
 The dataset script is not registered until its implementation arrives in Phase 2.
+
+### Camera benchmark and recording
+
+With the dev server running, choose **Camera benchmark** or **Record landmarks**
+in the navigation (`#/bench` and `#/record`). Camera access requires desktop Chrome
+on localhost or HTTPS. The pages release the camera and models when stopped or
+when navigating away.
+
+1. On each candidate signer laptop, start the benchmark, compare face-on and
+   face-off FPS, and check one-hand/two-hand tracking. Target at least 20 FPS.
+2. In the recorder, read and accept consent, enter a pseudonymous signer ID, and
+   select handedness. Start the camera; wait for **Camera ready**.
+3. Select `ME`, start recording, sign once, then lower your hands or pause. Repeat
+   three times; confirm one clip per repetition, then stop recording.
+4. For letters, choose **Letters** and hold the selected letter for two seconds.
+   At least 20 frames with a detected hand are required. Cancel discards that hold.
+5. Undo unwanted clips and download the session JSON before leaving the page.
+   Store it under ignored `data/raw/`; no video or recordings are uploaded.
+
+Signer metadata locks after the first saved clip. Labels and modes lock during
+capture to prevent mixing examples. The download preserves the existing version-1
+session contract and raw landmarks; no handedness transform is applied in the
+recorder. Start a new page/session for another signer after saving the current one.
+
+Chromium checks with synthetic video and mocked models verified sign/letter
+capture, consent gating, downloads, undo, cancellation, missing-hand rejection,
+and camera cleanup. Actual MediaPipe inference, laptop FPS, and the three-repetition
+`ME` check still need a real camera and the downloaded model bundles.
 
 ## Credentials and team tasks
 

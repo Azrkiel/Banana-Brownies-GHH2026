@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { LETTERS, SIGNS_TIER1 } from './vocab'
 import Bench from './pages/Bench'
+import Recorder from './pages/Recorder'
 import './App.css'
 
 function Home() {
@@ -35,7 +36,7 @@ export default function App() {
     return () => window.removeEventListener('hashchange', update);
   }, []);
   return <>
-    <nav aria-label="Development pages"><a href="#/">Home</a> · <a href="#/bench">Camera benchmark</a></nav>
-    {hash.replace(/^#\/?/, '') === 'bench' ? <Bench /> : <Home />}
+    <nav aria-label="Development pages"><a href="#/">Home</a> · <a href="#/bench">Camera benchmark</a> · <a href="#/record">Record landmarks</a></nav>
+    {hash.replace(/^#\/?/, '') === 'record' ? <Recorder /> : hash.replace(/^#\/?/, '') === 'bench' ? <Bench /> : <Home />}
   </>;
 }
