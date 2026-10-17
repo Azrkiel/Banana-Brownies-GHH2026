@@ -8,8 +8,9 @@ for the implementation roadmap, consent requirements, and limitations.
 
 Phase 0's frontend and Python server scaffolds are implemented. The frontend
 shows the planned vocabulary. Phase 1's shared types and landmark feature extraction
-are implemented and unit-tested; calling, camera tracking, recognition, and API
-routes are not implemented yet. No recognition accuracy has been measured.
+are implemented and unit-tested. Task 1.C1 adds the backend health, token, gloss,
+TTS, voices, Scribe token, events, and stats routes. Calling, camera tracking,
+and recognition are not implemented yet. No recognition accuracy has been measured.
 
 ## Development setup
 
@@ -54,15 +55,25 @@ cd web
 npm run dev
 ```
 
-Vite proxies `/api` to port 8000 by default. Set `VITE_API_PROXY` when using a
-backend on another host. The server directory is only a Python package scaffold;
-there is no `app.main` or API service to start until Phase 1.
+In a second terminal, start the backend:
+
+```sh
+cd server
+.venv/bin/uvicorn app.main:app --reload --port 8000
+```
+
+The backend reads ignored `server/.env`. Vite proxies `/api` to port 8000 by
+default. Set `VITE_API_PROXY` when using a backend on another host.
+`GET /api/health` reports setting presence; it does not test provider connectivity.
+Health and local LiveKit token signing were validated with the configured settings.
+Live provider calls and database schema setup remain separate integration tasks.
 
 ```sh
 # From the repository root:
 npm --prefix web run build
 npm --prefix web run lint
 server/.venv/bin/python -m pip check
+(cd server && .venv/bin/python -m pytest -q)
 ```
 
 `npm --prefix web test` runs the landmark feature extraction tests, including
