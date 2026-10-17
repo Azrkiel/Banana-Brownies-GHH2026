@@ -42,10 +42,10 @@ npm --prefix web run setup:assets -- --runtime-only
 ```
 
 This mode does **not** prepare the three models needed for later camera tracking.
-Cloud onboarding currently blocks the bucket with an HTTP 403 proxy response.
-`storage.googleapis.com` has been added to the network settings draft. Review and
-save that change in environment settings, publish the environment, and retry the
-full asset command once access is available.
+Model downloads from `storage.googleapis.com` have been verified in the cloud
+workspace. All three bundles are present locally and reused on subsequent runs.
+If a new environment blocks the bucket, allow this hostname in its network settings
+and retry the full asset command.
 
 ## Run and check
 
@@ -88,7 +88,6 @@ Remaining Phase 0 tasks:
 - Confirm the default demo name (LIV) and letters with the team.
 - Verify each sign against Lifeprint/Handspeak, add verified form descriptions to
   `web/src/vocab.ts`, and teach the agreed forms before collecting recordings.
-- Download the three MediaPipe model bundles after network access is enabled.
 
 Only record consenting participants. Keep recordings in ignored `data/` paths.
 This project targets a small set of isolated signs and slow fingerspelling, not

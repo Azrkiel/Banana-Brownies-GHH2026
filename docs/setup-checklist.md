@@ -5,15 +5,12 @@ credentials, browser/camera, or decisions. You do not need to send secret values
 in chat. None of the provider credentials are currently injected in this cloud
 machine or declared in its saved configuration.
 
-## 1. Enable model downloads in Codex
+## 1. Model downloads — complete in the cloud workspace
 
-- [ ] Open this cloud environment's settings.
-- [ ] Review and save the existing network draft adding `storage.googleapis.com`.
-- [ ] Publish the environment to activate the prepared configuration.
-- [ ] Tell Codex the change is saved so it can retry `npm --prefix web run setup:assets`.
-
-Three official MediaPipe bundles are still missing because the running proxy
-returns HTTP 403. npm dependencies and browser WASM runtime copies are installed.
+All three official MediaPipe bundles have downloaded successfully and passed
+bundle integrity/size checks. Re-running `npm --prefix web run setup:assets`
+reuses them. `storage.googleapis.com` must remain allowed in network settings.
+Generated model and browser runtime assets remain ignored by Git.
 
 ## 2. Create the accounts needed for live integration
 
