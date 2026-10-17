@@ -209,7 +209,7 @@ Owns: `server/` (except `scripts/cache_tts.py`), `web/src/pages/Stats.{tsx,css}`
 | [1.C2](plan/tasks/1.C2.md) | Gemini prompt test + eval script | AGENT then HUMAN-CHECK | 1.C1 | NEEDS-HUMAN | verify PASS 2026-10-17 on 8d6cd13+ |
 | [1.C5](plan/tasks/1.C5.md) | Tiger Data schema | AGENT then HUMAN-CHECK | 1.C1 | NEEDS-HUMAN | verify PASS 2026-10-17 on f944542+ |
 | [1.C4](plan/tasks/1.C4.md) | Deploy files (+ human VM deploy) | AGENT then HUMAN-CHECK | 1.C1 | NEEDS-HUMAN | verify PASS 2026-10-17 on 10a4f30+ |
-| [4.2](plan/tasks/4.2.md) | Live stats page (Tiger Data) | AGENT then HUMAN-CHECK | 1.C5 | TODO | stretch |
+| [4.2](plan/tasks/4.2.md) | Live stats page (Tiger Data) | AGENT then HUMAN-CHECK | 1.C5 | NEEDS-HUMAN | verify PASS 2026-10-17 on de011a8+; live /api/stats fails with database InvalidPasswordError; correct DB credentials, apply 1.C5 schema, then check dashboard; browser visual QA pending |
 
 ### Lane ml — Python training: train/eval with a synthetic smoke test, feature twin + parity, Kaggle converter
 
