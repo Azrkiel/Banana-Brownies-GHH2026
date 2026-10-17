@@ -1,4 +1,4 @@
-# Fly.io deploy for the SignLine API: `cd server && fly deploy`.
+# Fly.io deploy for SignLine (API + web app): `fly deploy` from the repo root.
 # Keys are Fly secrets (`fly secrets set ...`), including CORS_ORIGINS for the GitHub Pages site.
 app = "signline-api"
 primary_region = "iad"

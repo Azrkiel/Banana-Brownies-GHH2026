@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from google.genai import errors as genai_errors
 from livekit import api as lk
 from pydantic import BaseModel, Field, ValidationError
@@ -173,3 +174,8 @@ async def events(e: Events):
 @app.get("/api/stats")
 async def stats():
     return await db.stats()
+
+
+# The Fly image serves the built web app from the same origin. Mounted last so /api/* routes win.
+if (web_dir := os.environ.get("WEB_DIR")) and os.path.isdir(web_dir):
+    app.mount("/", StaticFiles(directory=web_dir, html=True), name="web")

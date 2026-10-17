@@ -36,10 +36,11 @@ The Vultr VM was never created. Hosting is now **GitHub Pages + Fly.io**, replac
 
 - **Web:** https://azrkiel.github.io/Banana-Brownies-GHH2026/ — `.github/workflows/pages.yml` builds `web/` on every
   push to `main` (Pages source: GitHub Actions). Repo variable `VITE_API_BASE` points the build at the API.
-- **API:** https://signline-api.fly.dev — Fly app `signline-api` (`server/Dockerfile`, `server/fly.toml`). Keys are
-  Fly secrets, not files; `CORS_ORIGINS=https://azrkiel.github.io` lets the Pages site call it. The machine sleeps
-  when idle, so the first request takes a few seconds. Redeploy: `cd server && fly deploy --remote-only`
-  (add `--depot=false` behind TLS-intercepting antivirus). After changing a key in `server/.env`, also run
+- **API + web on Fly:** https://signline-api.fly.dev — Fly app `signline-api` (root `Dockerfile`, `fly.toml`) serves
+  the API and its own build of the web app on one origin (`WEB_DIR`). Keys are Fly secrets, not files;
+  `CORS_ORIGINS=https://azrkiel.github.io` lets the Pages site call it. The machine sleeps when idle, so the first
+  request takes a few seconds. Redeploy from the repo root: `fly deploy --remote-only` (add `--depot=false` behind
+  TLS-intercepting antivirus). Pages redeploys on push; Fly only when you run `fly deploy`. After changing a key in `server/.env`, also run
   `fly secrets set NAME=value -a signline-api`.
 - **Local fallback** still works: `server` on port 8000 plus `npm --prefix web run dev`.
 
