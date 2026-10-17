@@ -4,3 +4,8 @@ section { margin: 2rem 0; padding: 1.5rem; background: #fff; border: 1px solid #
 ul { display: flex; flex-wrap: wrap; gap: .6rem; list-style: none; padding: 0; }
 li { background: #eaf1e9; border-radius: .4rem; padding: .3rem .7rem; font-size: .9rem; }
 .note { color: #4e625b; font-size: .9rem; }
+nav { padding: 1rem 1.5rem; }
+.mirror { transform: scaleX(-1); max-width: 100%; height: auto; background: #172b25; border-radius: .5rem; }
+button, input, select { font: inherit; margin: .4rem; padding: .5rem; }
+button { cursor: pointer; }
+button:disabled { cursor: default; }

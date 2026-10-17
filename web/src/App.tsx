@@ -1,7 +1,9 @@
+import { useEffect, useState } from 'react'
 import { LETTERS, SIGNS_TIER1 } from './vocab'
+import Bench from './pages/Bench'
 import './App.css'
 
-export default function App() {
+function Home() {
   return (
     <main>
       <p className="eyebrow">SignLine · Development scaffold</p>
@@ -23,4 +25,17 @@ export default function App() {
         Not for medical, legal, or emergency use.</p>
     </main>
   )
+}
+
+export default function App() {
+  const [hash, setHash] = useState(window.location.hash);
+  useEffect(() => {
+    const update = () => setHash(window.location.hash);
+    window.addEventListener('hashchange', update);
+    return () => window.removeEventListener('hashchange', update);
+  }, []);
+  return <>
+    <nav aria-label="Development pages"><a href="#/">Home</a> · <a href="#/bench">Camera benchmark</a></nav>
+    {hash.replace(/^#\/?/, '') === 'bench' ? <Bench /> : <Home />}
+  </>;
 }
