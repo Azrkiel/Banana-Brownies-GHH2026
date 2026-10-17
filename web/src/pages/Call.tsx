@@ -87,7 +87,7 @@ export default function Call() {
         </div>
       </aside>
       </div>
-      <footer className="home-footer"><span>At your pace. In your words.</span><span>Built for a two-person conversation.</span></footer>
+      <footer className="home-footer"><span>At your pace. In your words.</span><a href="#/welcome">Back to the stars <span aria-hidden="true">↗</span></a></footer>
     </main>
   );
 }
@@ -97,7 +97,7 @@ export function CallRoom({ query }: { query: string }) {
   if (!params) {
     return (
       <main className="call-page" id="main-content">
-        <div className="error-banner" role="alert">This room link is missing a valid name, room, or role. <a href="#/">Go back and join a room</a>.</div>
+        <div className="error-banner" role="alert">This room link is missing a valid name, room, or role. <a href="#/conversation">Go back and join a room</a>.</div>
       </main>
     );
   }

@@ -158,7 +158,7 @@ export default function SpeechCheck() {
           <section className="speech-check__guide" aria-labelledby="speech-guide-title"><p className="speech-check__eyebrow">TRY IT OUT</p><h2 id="speech-guide-title">One phrase at a time.</h2><ol><li>Allow the microphone when your browser asks.</li><li>Wait for <strong>Listening</strong>, then say a short sentence.</li><li>Pause to let the phrase finish. Choose Stop when you’re done.</li></ol><blockquote>“Hello. I’m testing live captions today.”</blockquote><p>Try saying it twice. Both phrases should appear.</p></section>
         </aside>
       </div>
-      <footer className="speech-check__footer"><span>Browser speech can make mistakes. Check the words as you go.</span><a href="#/">Back to SignLine <span aria-hidden="true">↗</span></a></footer>
+      <footer className="speech-check__footer"><span>Browser speech can make mistakes. Check the words as you go.</span><a href="#/conversation">Back to SignLine <span aria-hidden="true">↗</span></a></footer>
     </main>
   );
 }

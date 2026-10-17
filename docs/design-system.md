@@ -5,6 +5,10 @@ content stays readable and grounded, while navigation and important control grou
 occupy a separate translucent layer. The interactive **Design kit** is at
 `#/design-kit`. Its examples do not start a call or recording.
 
+The root URL now opens the [Earthrise introduction](intro.md). Choose **Begin** or
+**Skip intro** to enter the app at `#/conversation`. Shared room and utility links
+bypass the introduction.
+
 ## Sources and interpretation
 
 The following official documentation was read on October 17, 2026:
@@ -158,8 +162,8 @@ and target-hardware performance checks remain necessary.
 
 The home, Recorder, Speech check, and Design kit also passed a 200% root-text
 enlargement check at 1280 px without document overflow. The production build retains
-Vite's existing warning about a main chunk larger than 500 kB; no dependencies were
-added by this update.
+Vite's warning about the separate call chunk exceeding 500 kB; app screens are now
+lazy-loaded for the introduction. No dependencies were added by these UI updates.
 
 This visual update does not promote any roadmap card. Recognition, model training,
 provider integration, and live acceptance remain governed by `plan.md`.

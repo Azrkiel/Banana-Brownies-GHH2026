@@ -50,6 +50,12 @@ opening the camera pages.
 
 ## Run and check
 
+The root URL opens the Moon/Earth [welcome screen](docs/intro.md). Choose **Begin**
+or **Skip intro** to reach the conversation options. Shared `#/room?...` links and
+the camera, recorder, speech, stats, and design-kit routes still open directly.
+The welcome screen supports pausing the stars and the system's reduced-motion
+preference; it does not request camera or microphone access.
+
 ```sh
 cd web
 npm run dev
