@@ -35,7 +35,7 @@ export default function Stats() {
         <div><b>{sum?.fallback_rate == null ? '–' : `${Math.round(Number(sum.fallback_rate) * 100)}%`}</b><span>offline fallbacks</span></div>
       </div>
       <svg viewBox="0 0 300 80" width="600" height="160" role="img" aria-label="Average sign-to-voice latency per minute, last 30 minutes">
-        <polyline fill="none" stroke="#2563eb" strokeWidth="2" points={pts} />
+        <polyline fill="none" stroke="#5b2ea6" strokeWidth="2" points={pts} />
       </svg>
       <table>
         <thead><tr><th>sign</th><th>seen</th><th>avg confidence</th><th>accepted</th></tr></thead>
