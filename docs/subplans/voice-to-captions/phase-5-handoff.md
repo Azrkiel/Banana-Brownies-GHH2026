@@ -1,14 +1,15 @@
 # Voice captions: GitHub merge and Phase 5 integration
 
-Status: implemented locally; automated checks passed. Live two-laptop acceptance is
+Status: committed and pushed in [13b6b5d](https://github.com/Azrkiel/Banana-Brownies-GHH2026/commit/13b6b5dca135b65510476777df20902db4ee4b86); automated checks passed. Live two-laptop acceptance is
 pending. The user explicitly requested call integration while Phase 4's stability,
 accuracy and timing checks remain pending. Phase 6 has not started.
 
 Incoming GitHub main: ff2471930036f4f1ab491953e8da4e31e9275104 (rechecked unchanged).
 Previous local base: 33ed3812e5ce19da0ab4753252581f2112422d8d.
-The local branch fast-forwarded over existing upstream commits. After reviewing the
-local integration, the user authorized committing and pushing this feature. This
-handoff records the validated source before publication; live acceptance is pending.
+The local branch fast-forwarded over existing upstream commits. The user reviewed,
+authorized and published the feature in 13b6b5d. GitHub main matched that full SHA
+after push, with a clean working tree. The code has not been deployed to Fly.io by
+this work; live acceptance is pending.
 
 ## How this fits current GitHub
 
@@ -74,7 +75,8 @@ sandbox blocked asyncio's local socketpair. Re-running the same suite with norma
 permission escalation passed in 1.76 seconds. Obsolete stalled runs were stopped.
 No real provider keys were copied into the validation checkout or used in its tests.
 
-GitHub reports zero check runs and zero commit status contexts for this SHA. Its
+GitHub reported zero check runs and zero commit status contexts for the incoming
+base ff2471930036f4f1ab491953e8da4e31e9275104. Its
 combined status is 'pending' with count zero: there is no CI success claim or failed
 configured check. Validation therefore rests on the local checks above.
 
@@ -95,8 +97,8 @@ The user's Downloads clone is the merged result. All 32 transferred feature path
 matched the validated candidate, and its frontend suite passed again (158 tests).
 The original speech files,
 App.tsx and sub-plan have a separate backup in the session workspace. Git retains
-the prior base through refs/backup/voice-captions-before-ff247193. Feature files remain
-unstaged. server/.env and ignored recordings/model assets are preserved, never copied
+the prior base through refs/backup/voice-captions-before-ff247193. Feature files are
+committed in 13b6b5d. server/.env and ignored recordings/model assets are preserved, never copied
 to the candidate, included in a patch or printed.
 
 Use desktop Chrome at http://localhost:5173/ with the local API on port 8000 for call

@@ -15,20 +15,42 @@ Girls Hoo Hack 2026; the Devpost deadline is **Sun Oct 18, 17:00 EDT**.
 
 ## 0. Read this first: the app is NOT built yet
 
-### Current snapshot — audited October 17, 2026 at `8a89e2f`
+### Current snapshot — updated October 17, 2026 at `13b6b5d`
 
 The repo contains the scaffold, FastAPI routes, Gemini prompt/evaluation script, database schema, deployment
-templates, stats page, feature extraction, segmenter, Bench/Recorder pages, and a first call skeleton.
+templates, stats page, feature extraction, segmenter, Bench/Recorder pages, separate lobby/room screens,
+and opt-in speech captions integrated into LiveKit calls.
 The **server lane's code is complete; its live checks are not**. There is still **no ASL switch, sign classifier,
-call voice output, ML training code, or trained sign model**. The browser vocabulary and shared types are still v1.
+call voice output, ML training code, or trained sign model**. Vocabulary v2 is published (0.4); shared Frame/Session
+types still need task 1.0. The additive speech Caption/Ctrl protocol is already implemented.
 
-The ledger currently has **2 DONE, 7 NEEDS-HUMAN, 4 PARTIAL, 16 TODO, and 12 HUMAN** rows. That means
-**20 coding tasks remain**, plus seven live acceptance checks and twelve human-owned tasks. These counts describe
-this audit; §3 remains the only task-status record. Refresh with `python plan/verify.py status` and `lanes`.
+The ledger currently has **3 DONE, 7 NEEDS-HUMAN, 3 PARTIAL, 16 TODO, and 12 HUMAN** rows. That means
+**19 coding cards remain open**, plus seven live acceptance checks and twelve human-owned tasks. Open cards can
+contain completed subsets, including STT in 2.A2. §3 remains the authoritative card-status record.
+Refresh with `python plan/verify.py status` and `lanes`.
 
-Audit evidence: `preflight` passed; `ledger` rechecked all nine DONE/NEEDS-HUMAN rows and reported
-`ledger consistent`. Checks for 0.4, 1.0, 1.B2, 1.B4, 2.A1, and 2.B4 still fail at their documented gaps.
-No task status was changed by this audit, and no live provider, camera, GPU, database, or VM check was repeated.
+This update records published speech work and reconciles counts with `verify.py status`; it is not a fresh
+whole-repository audit. Call preflight passed. The feature validation passed 158 frontend tests, 10 backend
+tests, build, lint and pip check. No ledger status is promoted by this documentation update.
+
+### Speech-caption integration — published in `13b6b5d`
+
+The hearing participant can explicitly consent and start captions inside the room. Interim/final captions use
+ordered, sender-scoped messages; disabling, muting, reconnecting and leaving clean up recognition and drafts.
+The standalone development check remains available at `#/speech-check`, with local launch scripts.
+See the separate [voice-to-captions sub-plan](docs/subplans/voice-to-captions/README.md) and
+[integration evidence](docs/subplans/voice-to-captions/phase-5-handoff.md); its six phases stay in that sub-plan.
+
+User-reported desktop Chrome checks passed for standalone speech, repeated phrases, Stop/microphone release and
+navigation cleanup. The ten-minute stability test was deferred. Accuracy/latency measurements, integrated
+two-laptop captions, live mute/reconnect behavior, accessibility and generated-voice echo checks remain pending.
+Codex embedded recognition failed; use desktop Chrome for microphone testing. This work has been pushed to
+GitHub; deployment of the caption commit to Fly.io has not been performed by this work.
+
+Task 2.A2 remains open: metrics.ts, Chips.tsx and the full product Consent.tsx are still absent. Its existing
+acceptance block was not changed. The attempted card check could not execute under the available WSL Bash
+because the Windows temporary script path was not recognized; this is not a passing card check. Restore a
+compatible Git Bash environment before rerunning it. Other project tasks and optional Scribe remain open.
 
 ### Deployment — live since October 17, 2026 (`86df6f7`)
 
@@ -44,17 +66,18 @@ tried and removed on October 17):
 
 ### Current to-do list — coding
 
-**Start now:** recog **0.4**, call **2.A1**, and ml **2.B4** are independently eligible. The global runner selects
-**0.4** first. There is no open server coding card; finish its human checks below rather than rebuilding its routes.
+**Start now:** recog **1.0**, call **2.A1**, and ml **2.B4** are independently eligible. The global runner selects
+**1.0** first. There is no open server coding card; finish its human checks below rather than rebuilding its routes.
 
 Follow this dependency order:
 
-1. Publish vocabulary v2 (0.4), shared types (1.0), classifier interfaces (2.B1), and canonical features (1.B2).
+1. Vocabulary v2 (0.4) is published. Finish shared types (1.0), classifier interfaces (2.B1), and canonical features (1.B2).
    These unblock most browser work and the Python feature twin.
 2. Update Recorder (1.B4), implement letters (2.B2), build datasets (2.B3), and add Bench recognition (2.B5).
    In the ML lane, finish parity (1.B5) before the Kaggle converter (1.B6). Start recording once Recorder is ready.
-3. In the call lane, finish voice (2.A1), gloss buffering/offline English (2.C1), STT/metrics/Chips/Consent (2.A2),
-   then the ASL switch screen (2.A3). Keep all confidence holds, correction controls, and offline fallbacks.
+3. In the call lane, finish voice (2.A1), gloss buffering/offline English (2.C1), and the remaining
+   metrics/Chips/product Consent in 2.A2, then the ASL switch screen (2.A3). Preserve the integrated STT,
+   confidence holds, correction controls, and offline fallbacks.
 4. Build the signer pipeline (3.1), wire it to the ASL switch (3.2), train on real data, and run the two-laptop
    golden path (3.3). Synthetic training checks do not establish real recognition accuracy.
 5. Only after the core demo works, consider the stretch cards below. Use `plan/context.md` §10 if time is short.
@@ -79,7 +102,7 @@ Keep this checklist in sync when a task changes; only `verify.py done <ID>` may 
 
 - [ ] [2.A1](plan/tasks/2.A1.md): voice into the call, cache-generation script, and fallback cache index.
 - [ ] [2.C1](plan/tasks/2.C1.md): gloss buffer and offline English rules.
-- [ ] [2.A2](plan/tasks/2.A2.md): STT, metrics, Chips, and Consent.
+- [ ] [2.A2](plan/tasks/2.A2.md): STT integrated in `13b6b5d`; metrics, Chips, and full product Consent remain.
 - [ ] [2.A3](plan/tasks/2.A3.md): ASL switch screen, sentence holds, correction, and auto-speak behavior.
 - [ ] [3.2](plan/tasks/3.2.md): connect the recognizer to the ASL switch.
 - [ ] [4.4](plan/tasks/4.4.md): optional Scribe captions with fallback (stretch).
@@ -296,7 +319,7 @@ Owns: `web/src/lib/{api,call,captions,voice,stt,metrics,gloss}.ts`, `web/src/com
 | [1.A1](plan/tasks/1.A1.md) | Call skeleton: API client, LiveKit, captions, routes | AGENT then HUMAN-CHECK | 1.0 | NEEDS-HUMAN | verify PASS 2026-10-17 on ee9f61f+ |
 | [2.A1](plan/tasks/2.A1.md) | Voice into the call + TTS cache script | AGENT then HUMAN-CHECK | 1.A1 | TODO |  |
 | [2.C1](plan/tasks/2.C1.md) | Gloss buffer + offline English | AGENT | 0.4, 2.B1 | TODO |  |
-| [2.A2](plan/tasks/2.A2.md) | STT, metrics, Chips, Consent | AGENT | 1.A1, 2.C1 | TODO |  |
+| [2.A2](plan/tasks/2.A2.md) | STT, metrics, Chips, Consent | AGENT | 1.A1, 2.C1 | TODO | STT subset published in 13b6b5d: 158 frontend/10 backend tests, build/lint PASS; metrics/Chips/product Consent absent; full card and live speech acceptance pending; see voice-to-captions sub-plan |
 | [2.A3](plan/tasks/2.A3.md) | Call screen with the ASL → voice switch | AGENT then HUMAN-CHECK | 1.0, 2.A1, 2.A2, 2.C1 | TODO |  |
 | [3.2](plan/tasks/3.2.md) | Recognizer on the ASL switch | AGENT then HUMAN-CHECK | 3.1, 2.A3 | TODO |  |
 | [4.4](plan/tasks/4.4.md) | Scribe captions with fallback | AGENT then HUMAN-CHECK | 2.A3 | TODO | stretch |
@@ -369,6 +392,11 @@ limitations slide.
 | API | `server/app/main.py` routes ↔ `web/src/lib/api.ts`, `metrics.ts`, `Stats.tsx` | Request/response shapes |
 | Events schema | `server/sql/schema.sql` ↔ `server/app/db.py` SQL ↔ `metrics.ts` | Column names |
 | Model files | `web/public/models/{sign.onnx, sign_meta.json, knn.*, letters.*}` | Written by `train.py`/`build-dataset.ts`, read by `onnx.ts`/`knn.ts`/`letters.ts` |
+
+Speech integration in `13b6b5d` adds optional Caption.revision, Ctrl caption-clear (id/revision), and authenticated
+sender identity on CallHandlers.onCaption. Preserve these additive contracts while completing shared types v2.
+The standalone recognizer retains two-argument compatibility and adds an optional SttState observer; see its
+sub-plan handoff for callback ordering, ownership, delivery bounds and known limitations.
 
 Product rules (they are judged): UI text says "Deaf", "hard of hearing", "signer". It never says "mute",
 "deaf-mute", or "hearing-impaired", and never claims the app "translates ASL" or "replaces interpreters". Auto-speak
