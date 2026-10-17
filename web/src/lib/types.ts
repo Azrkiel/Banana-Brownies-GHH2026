@@ -15,6 +15,7 @@ export type Role = 'signer' | 'hearing';
 export type Caption = {
   id: string; speaker: string; role: Role;
   kind: 'english' | 'speech'; text: string; final: boolean; ts: number;
+  retracted?: boolean; // signer withdrew a mistaken sentence
 };
 export type Ctrl =
   | { type: 'signing'; on: boolean }

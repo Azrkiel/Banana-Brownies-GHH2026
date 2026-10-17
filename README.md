@@ -6,14 +6,18 @@ for the implementation roadmap, consent requirements, and limitations.
 
 ## Current status
 
-Phase 0's frontend and Python server scaffolds are implemented. The frontend
-shows the planned vocabulary. Phase 1's shared types and landmark feature extraction
-are implemented and unit-tested, along with the either-hand segmenter. Camera
-tracking, a benchmark page, and a landmark recorder are implemented. Task 1.C1 adds
-the backend health, token, gloss, TTS, voices, Scribe token, events, and stats routes.
-Calling and recognition are not implemented yet. No recognition accuracy or
-real-camera benchmark has been measured. The updated plan's canonical-handedness
-feature contract and Python parity work are still pending.
+Phase 0's development setup is implemented. The home page is now a responsive
+call interface with a room/name/role form, local and remote video, connection
+states, typed captions, audio-unlock, and leave controls (Task 1.A1). Camera Check
+and Recorder remain available in the navigation. Shared types, feature extraction,
+segmenter, tracker, and the backend API routes are implemented.
+
+Call lifecycle/caption unit tests and Chromium checks with synthetic camera input
+pass. The connected UI was checked with a mocked transport; a real LiveKit call
+between two laptops is still unverified. Automatic sign recognition, automatic
+speech captions, and synthesized voice playback are not wired into the call yet.
+No recognition accuracy or real-camera benchmark has been measured. The updated
+plan's canonical-handedness feature contract and Python parity work remain pending.
 
 ## Development setup
 
@@ -81,14 +85,39 @@ server/.venv/bin/python -m pip check
 (cd server && .venv/bin/python -m pytest -q)
 ```
 
-`npm --prefix web test` runs feature extraction, segmenter, and tracker tests,
-including normalization, mirroring, tracking loss, temporal resampling, either-hand
-movement, and model initialization cleanup.
+`npm --prefix web test` runs feature extraction, segmenter, tracker, call lifecycle,
+and caption-history tests. The call tests cover role-specific microphone behavior,
+connection failures, cancellation, remote media cleanup, messages, and reconnect/audio states.
 The dataset script is not registered until its implementation arrives in Phase 2.
+
+### Conversation / two-laptop check
+
+1. Start the API and frontend. On Windows, use the virtual environment's
+   `server\.venv\Scripts\python.exe -m uvicorn app.main:app --app-dir server --port 8000`
+   from the repository root; on macOS/Linux use the backend command above from `server/`.
+2. Open the frontend in desktop Chrome on localhost or HTTPS. Enter a display
+   name and a room (3–32 lowercase letters, numbers or hyphens), then select a role.
+3. Choose **Join room** and allow camera access. The hearing participant also
+   grants microphone access; the signer's microphone stays off. The same camera
+   track supplies the local preview and LiveKit publication; only the preview is mirrored.
+4. Join the same room on another laptop with a different name. Each frontend
+   needs a reachable API. When sharing one API over the LAN, bind Uvicorn to
+   `0.0.0.0` and start the second laptop's frontend with
+   `VITE_API_PROXY=http://<server-LAN-IP>:8000 npm run dev` (PowerShell:
+   `$env:VITE_API_PROXY="http://<server-LAN-IP>:8000"; npm run dev`).
+   Keep each browser on its own localhost frontend for camera permissions.
+5. Verify video both ways and the hearing microphone audio. Type a caption and
+   press Enter or the send arrow; verify it appears on both screens.
+6. If audio is blocked, choose **Enable audio**. Leave the room and verify camera
+   use stops. Navigation away and cancellation also stop camera tracks.
+
+Typed captions remain in memory only, with the latest eight displayed. A failed
+send retains the draft for retry. The ASL voice switch and speech recognition
+arrive in later tasks, so typing is the available caption input for now.
 
 ### Camera benchmark and recording
 
-With the dev server running, choose **Camera benchmark** or **Record landmarks**
+With the dev server running, choose **Camera check** or **Recorder**
 in the navigation (`#/bench` and `#/record`). Camera access requires desktop Chrome
 on localhost or HTTPS. The pages release the camera and models when stopped or
 when navigating away.
