@@ -197,7 +197,7 @@ Owns: `server/` (except `scripts/cache_tts.py`), `web/src/pages/Stats.{tsx,css}`
 |---|---|---|---|---|---|
 | [0.5](plan/tasks/0.5.md) | Server scaffold (Windows-installable requirements) | AGENT | — | DONE | verify PASS 2026-10-17 on b16cf44+ |
 | [1.C1](plan/tasks/1.C1.md) | API routes | AGENT then HUMAN-CHECK | 0.5 | NEEDS-HUMAN | code matches plan on 9dced31; live curl pending |
-| [1.C2](plan/tasks/1.C2.md) | Gemini prompt test + eval script | AGENT then HUMAN-CHECK | 1.C1 | PARTIAL | test_gloss.py, eval_gloss.py missing |
+| [1.C2](plan/tasks/1.C2.md) | Gemini prompt test + eval script | AGENT then HUMAN-CHECK | 1.C1 | NEEDS-HUMAN | verify PASS 2026-10-17 on 8d6cd13+ |
 | [1.C5](plan/tasks/1.C5.md) | Tiger Data schema | AGENT then HUMAN-CHECK | 1.C1 | TODO |  |
 | [1.C4](plan/tasks/1.C4.md) | Deploy files (+ human VM deploy) | AGENT then HUMAN-CHECK | 1.C1 | TODO |  |
 | [4.2](plan/tasks/4.2.md) | Live stats page (Tiger Data) | AGENT then HUMAN-CHECK | 1.C5 | TODO | stretch |
