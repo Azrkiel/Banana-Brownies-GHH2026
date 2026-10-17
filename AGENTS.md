@@ -29,6 +29,9 @@ Each task is a card in `plan/tasks/<ID>.md` with its intent, exact steps, refere
 task done only when they pass (`done <ID>`).
 
 - "Do Task X": do only that card, then report.
+- "You are the <lane> lane agent": several agents run in parallel, one per lane (`recog`, `call`, `server`, `ml`).
+  Use `--lane <lane>` on every `next`/`wait`, touch only that lane's files, and push after every task
+  (`plan.md` §1.5).
 - "Continue", "keep going", or no task named: loop with `python plan/verify.py next` until it prints
   `NO AGENT TASKS LEFT`. A task that needs a camera, key, GPU, or second laptop becomes `NEEDS-HUMAN`; it is
   not a reason to stop.

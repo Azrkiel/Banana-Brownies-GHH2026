@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 """Blueprint runner: picks the next task, runs a task's "Done when" checks, and guards the ledger.
 
-Usage (from the repo root):
+Usage (from the repo root). Add `--lane <name>` to next/wait to stay inside one lane (parallel agents):
   python plan/verify.py next             which AGENT task to do now (first eligible ledger row)
+  python plan/verify.py wait [minutes]   git pull every 60 s until a task is eligible (default 30 min)
+  python plan/verify.py lanes            one line per lane: progress and what it is doing/waiting on
   python plan/verify.py check 1.B2 ...   run those tasks' "Done when" blocks; exit 1 if any fails
   python plan/verify.py done 1.B2        run the checks; on PASS set the ledger row to DONE/NEEDS-HUMAN
   python plan/verify.py ledger           re-run checks for every DONE/NEEDS-HUMAN row; exit 1 on any FAIL
@@ -76,13 +78,17 @@ def read_ledger() -> tuple[list[str], list[dict], int, int]:
     lines = PLAN.read_text(encoding="utf-8").split("\n")
     s = next(i for i, l in enumerate(lines) if l.strip() == START)
     e = next(i for i, l in enumerate(lines) if l.strip() == END)
-    rows = []
+    rows, lane = [], "?"
     for i in range(s + 1, e):
+        m = re.match(r"#+\s*Lane\s+(\w+)", lines[i].strip())
+        if m:
+            lane = m.group(1).lower()
+            continue
         cells = [c.strip() for c in lines[i].strip().strip("|").split("|")]
         if len(cells) < 6 or cells[0] in ("ID", "") or set(cells[0]) <= set("-: "):
             continue
         deps = [] if cells[3] in ("—", "-", "") else [d.strip() for d in cells[3].split(",")]
-        rows.append({"line": i, "id": cell_id(cells[0]), "task": cells[1], "owner": cells[2],
+        rows.append({"line": i, "lane": lane, "id": cell_id(cells[0]), "task": cells[1], "owner": cells[2],
                      "deps": deps, "status": cells[4].split()[0].strip("*"), "cells": cells})
     return lines, rows, s, e
 
@@ -121,29 +127,69 @@ def run_check(task_id: str) -> bool:
     return False
 
 
-def next_task(rows: list[dict]) -> None:
+def pick(rows: list[dict], lane: str | None) -> tuple[dict | None, list[str], list[dict]]:
+    """First eligible AGENT row (in ledger order, optionally within one lane), the dependency waits, open rows."""
     status = {r["id"]: r["status"] for r in rows}
-    blocked = []
-    for r in rows:
-        if not r["owner"].startswith("AGENT") or r["status"] not in OPEN:
+    lanes = {r["id"]: r["lane"] for r in rows}
+    mine = [r for r in rows if r["owner"].startswith("AGENT") and (lane is None or r["lane"] == lane)]
+    waits = []
+    for r in mine:
+        if r["status"] not in OPEN:
             continue
         unmet = [d for d in r["deps"] if status.get(d) not in SATISFIED]
-        if unmet:
-            blocked.append(f"{r['id']} (waits on {', '.join(unmet)})")
-            continue
-        print(f"NEXT: {r['id']} — {r['task']}  [{r['status']}]")
+        if not unmet:
+            return r, waits, []
+        waits.append(f"{r['id']} waits on " + ", ".join(f"{d} ({lanes.get(d, '?')} lane, {status.get(d, '?')})"
+                                                          for d in unmet))
+    return None, waits, [r for r in mine if r["status"] not in SATISFIED]
+
+
+def next_task(rows: list[dict], lane: str | None) -> int:
+    r, waits, left = pick(rows, lane)
+    scope = f"lane {lane}" if lane else "all lanes"
+    if r:
+        print(f"NEXT ({scope}): {r['id']} — {r['task']}  [{r['status']}]")
         print(f"Read plan/tasks/{r['id']}.md, do its Steps, then: python plan/verify.py done {r['id']}")
-        return
-    left = [r for r in rows if r["owner"].startswith("AGENT") and r["status"] not in SATISFIED]
+        return 0
     if left:
-        print("NO ELIGIBLE AGENT TASK, but agent work remains (NOT finished):")
-        for r in left:
-            print(f"  {r['id']} [{r['status']}] {r['task']}")
-        if blocked:
-            print("Dependency waits: " + "; ".join(blocked))
-        sys.exit(2)
-    print("NO AGENT TASKS LEFT. Every AGENT row is DONE or NEEDS-HUMAN.")
-    status_report(rows)
+        print(f"WAITING ({scope}): agent work remains but every open task waits on another lane. NOT finished.")
+        for w in waits:
+            print("  " + w)
+        for r2 in left:
+            if r2["status"] == "BLOCKED":
+                print(f"  {r2['id']} BLOCKED: {r2['cells'][5]}")
+        print(f"Run: python plan/verify.py wait{' --lane ' + lane if lane else ''}")
+        return 2
+    print(f"NO AGENT TASKS LEFT ({scope}). Every AGENT row is DONE or NEEDS-HUMAN.")
+    status_report(rows if lane is None else [x for x in rows if x["lane"] == lane])
+    return 0
+
+
+def wait_for(lane: str | None, minutes: int) -> int:
+    """Pull every 60 s until this lane has an eligible task (other lanes finish their dependencies)."""
+    import time
+    deadline = time.time() + minutes * 60
+    while True:
+        subprocess.run(["git", "pull", "--rebase", "--autostash", "-q"], cwd=ROOT)
+        _, rows, _, _ = read_ledger()
+        r, _, left = pick(rows, lane)
+        if r or not left:
+            return next_task(rows, lane)
+        if time.time() > deadline:
+            print(f"still waiting after {minutes} min:")
+            return next_task(rows, lane)
+        time.sleep(60)
+
+
+def lanes_report(rows: list[dict]) -> None:
+    names = [l for l in dict.fromkeys(r["lane"] for r in rows) if l != "human"]
+    for name in names:
+        lr = [r for r in rows if r["lane"] == name]
+        done = sum(r["status"] in SATISFIED for r in lr)
+        r, waits, left = pick(rows, name)
+        state = f"next {r['id']}" if r else ("waiting: " + waits[0] if left and waits else
+                                            "blocked" if left else "finished")
+        print(f"{name:<7} {done}/{len(lr)} done · {state}")
 
 
 def status_report(rows: list[dict]) -> None:
@@ -182,9 +228,21 @@ def main() -> None:
     if len(sys.argv) < 2:
         sys.exit(__doc__)
     cmd, args = sys.argv[1], sys.argv[2:]
+    lane = None
+    if "--lane" in args:
+        i = args.index("--lane")
+        lane = args[i + 1].lower()
+        del args[i:i + 2]
     _, rows, _, _ = read_ledger()
+    known = {r["lane"] for r in rows}
+    if lane and lane not in known:
+        sys.exit(f"unknown lane {lane!r}; lanes: {', '.join(sorted(known - {'human'}))}")
     if cmd == "next":
-        next_task(rows)
+        sys.exit(next_task(rows, lane))
+    elif cmd == "wait":
+        sys.exit(wait_for(lane, int(args[0]) if args else 30))
+    elif cmd == "lanes":
+        lanes_report(rows)
     elif cmd == "check":
         ok = [run_check(t) for t in args]
         sys.exit(0 if ok and all(ok) else 1)
