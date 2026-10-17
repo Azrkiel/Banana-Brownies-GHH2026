@@ -1,3 +1,4 @@
+import { Button, Icon } from '../components/ui';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { RemoteTrack } from 'livekit-client';
 import { joinCall, type Call as CallT, type CallStatus } from '../lib/call';
@@ -60,22 +61,33 @@ export default function Call() {
   }
 
   return (
-    <main className="call-page home-page">
-      <MoonTrios />
+    <main className="call-page home-page" id="main-content">
       <div className="home-center">
-      <header className="call-heading">
-        <div><p className="eyebrow">A SPACE TO CONNECT · HACK TO THE MOON</p><h1>Every conversation<br />starts with you.</h1></div>
-        <p className="intro">See each other. Take your time.<br /> Keep the conversation in view.</p>
-      </header>
-
-      <form className="join-bar" onSubmit={open}>
+      <div className="home-hero">
+        <header className="call-heading">
+          <p className="eyebrow"><span /> A SPACE TO CONNECT</p>
+          <h1>Every conversation<br /><span>starts with you.</span></h1>
+          <p className="intro">See each other. Take your time.<br />Keep the conversation in view.</p>
+          <a className="hero-link" href="#/bench">Make yourself comfortable <Icon name="arrow" /></a>
+        </header>
+        <div className="home-art" aria-hidden="true"><div className="art-orbit art-orbit--one" /><div className="art-orbit art-orbit--two" /><div className="art-disc"><div className="conversation-mark"><span /><span /></div></div><div className="art-caption glass"><Icon name="captions" /><span>A little closer.</span><span className="art-wave"><i /><i /><i /><i /><i /></span></div><div className="art-icon glass"><Icon name="video" /></div><span className="art-star art-star--one">✧</span><span className="art-star art-star--two">✧</span></div>
+      </div>
+      <div className="join-heading"><h2>Your next conversation.</h2><span>Join the same room. Be yourself.</span></div>
+      <form className="join-bar glass" onSubmit={open}>
         <label>Your name<input autoComplete="given-name" placeholder="e.g. Kev" value={name} maxLength={40} required onChange={event => setName(event.target.value)} /></label>
         <label>Room name<input value={room} pattern="[a-z0-9-]{3,32}" title="3–32 lowercase letters, numbers or hyphens" required onChange={event => setRoom(event.target.value)} /></label>
         <label>I’m joining as<select value={role} onChange={event => setRole(event.target.value as Role)}><option value="signer">Signer</option><option value="hearing">Hearing participant</option></select></label>
-        <button className="primary-button" type="submit" disabled={!name.trim()}>Join room <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 13 13 3M3 3h10v10" /></svg></button>
+        <Button variant="primary" type="submit" disabled={!name.trim()}>Join room <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 13 13 3M3 3h10v10" /></svg></Button>
       </form>
       {error && <div className="error-banner" role="alert">{error}</div>}
-      <p className="home-note">Floating signs are simplified emoji sketches. Learn exact forms from Lifeprint or a Deaf signer.</p>
+      <p className="home-note"><Icon name="shield" /> Camera access starts after you join. Opens in a new tab.</p>
+      <div className="home-features">
+        <div><span className="icon-well"><Icon name="video" /></span><h3>Face to face.</h3><p>A shared space for a two-person video conversation.</p></div>
+        <div><span className="icon-well"><Icon name="captions" /></span><h3>Words, in view.</h3><p>Type captions, or opt in to browser speech captions.</p></div>
+        <div><span className="icon-well"><Icon name="shield" /></span><h3>At your pace.</h3><p>Your camera, your microphone, and your choice to share.</p></div>
+      </div>
+      <div className="home-constellation"><MoonTrios /><span>HACK TO THE MOON · MADE FOR CONNECTION</span></div>
+      <p className="home-sketch-note">Sign sketches are illustrative. Learn exact forms from Lifeprint or a Deaf signer.</p>
       </div>
     </main>
   );
@@ -85,7 +97,7 @@ export function CallRoom({ query }: { query: string }) {
   const params = readRoomParams(query);
   if (!params) {
     return (
-      <main className="call-page">
+      <main className="call-page" id="main-content">
         <div className="error-banner" role="alert">This room link is missing a valid name, room, or role. <a href="#/">Go back and join a room</a>.</div>
       </main>
     );
@@ -330,7 +342,7 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
   }
 
   return (
-    <main className="call-page">
+    <main className="call-page" id="main-content">
       <header className="room-heading">
         <div><p className="eyebrow">CONVERSATION ROOM</p><h1>{room}</h1></div>
         <p className="intro">Joined as <strong>{name}</strong> · {role === 'signer' ? 'Signer' : 'Hearing participant'}</p>
@@ -350,11 +362,11 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
             <div className="local-tile"><video ref={local} autoPlay muted playsInline className="mirror local-video" aria-label="Your camera preview" />{!busy && <span className="camera-off" aria-hidden="true">Camera off</span>}<span className="video-label">{inRoom ? name : 'You'} <span>· {role === 'signer' ? 'Signer' : 'Hearing'}</span></span></div>
             {remoteVisible && <span className="peer-label">{peer ?? 'Other participant'}</span>}
           </div>
-          <div className="call-toolbar"><p><span className="privacy-dot" />{status === 'joining' ? 'Waiting for camera access and call connection' : inRoom ? role === 'signer' ? 'Camera on · microphone off' : muted ? 'Call microphone muted · speech recognition paused' : 'Camera and call microphone enabled' : 'Camera and microphone stay off until you join.'}</p><div>{role === 'hearing' && inRoom && <button disabled={!canSend || muting} onClick={() => void toggleMicrophone()}>{muting ? 'Changing microphone…' : muted ? 'Unmute microphone' : 'Mute microphone'}</button>}{status === 'audio-blocked' && <button onClick={enableAudio}>Enable audio</button>}{busy ? <button className="leave-button" onClick={leave}>{status === 'joining' ? 'Cancel' : 'Leave room'}</button> : <button className="primary-button" onClick={() => void join()}>Rejoin</button>}</div></div>
+          <div className="call-toolbar"><p><span className="privacy-dot" />{status === 'joining' ? 'Waiting for camera access and call connection' : inRoom ? role === 'signer' ? 'Camera on · microphone off' : muted ? 'Call microphone muted · speech recognition paused' : 'Camera and call microphone enabled' : 'Camera and microphone stay off until you join.'}</p><div>{role === 'hearing' && inRoom && <Button disabled={!canSend || muting} onClick={() => void toggleMicrophone()}>{muting ? 'Changing microphone…' : muted ? 'Unmute microphone' : 'Mute microphone'}</Button>}{status === 'audio-blocked' && <Button onClick={enableAudio}>Enable audio</Button>}{busy ? <Button variant="danger" onClick={leave}>{status === 'joining' ? 'Cancel' : 'Leave room'}</Button> : <Button variant="primary" onClick={() => void join()}>Rejoin</Button>}</div></div>
           {role === 'hearing' && <section className="call-speech" aria-labelledby="call-speech-title">
             <div className="call-speech__heading"><h2 id="call-speech-title">Speech captions</h2><span role="status">{speechLabels[speechState]}</span></div>
             <label><input type="checkbox" checked={consented} onChange={event => { setConsented(event.target.checked); speech.current?.consent(event.target.checked); }} /><span>I agree to send microphone audio to my browser’s speech service and share the recognized text with this room.</span></label>
-            <div className="call-speech__actions"><button disabled={!speechEnabled && (!consented || !canSend || muted)} onClick={() => { setSpeechError(''); speech.current?.enable(!speechEnabled); }}>{speechEnabled ? 'Stop captions' : 'Start captions'}</button><p>Use desktop Chrome. Stopping captions leaves call audio on. Mute the microphone to pause both.</p></div>
+            <div className="call-speech__actions"><Button variant="primary" disabled={!speechEnabled && (!consented || !canSend || muted)} onClick={() => { setSpeechError(''); speech.current?.enable(!speechEnabled); }}>{speechEnabled ? 'Stop captions' : 'Start captions'}</Button><p>Use desktop Chrome. Stopping captions leaves call audio on. Mute the microphone to pause both.</p></div>
             {speechError && <p className="call-speech__error" role="alert">{speechError}</p>}
             {deliveryError && <p className="call-speech__error" role="alert">{deliveryError}</p>}
           </section>}
@@ -364,7 +376,7 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
         <section className="caption-panel" aria-labelledby="caption-title">
           <div className="caption-header"><div><p className="eyebrow">WORDS, IN VIEW</p><h2 id="caption-title">Conversation</h2></div><span className="text-badge" aria-hidden="true">Aa</span></div>
           <div className="caption-scroll">{captions.length ? <CaptionLane captions={captions} me={name} /> : <div className="caption-empty"><span className="caption-empty-lines" aria-hidden="true"><i /><i /><i /></span><h3>A little room for words.</h3><p>Captions you send and receive will appear here, so you can follow along at your own pace.</p></div>}</div>
-          <form className="caption-composer" onSubmit={send}><label htmlFor="caption-draft">Type a caption</label><div className="composer-input"><input id="caption-draft" value={draft} maxLength={1000} disabled={!canSend} placeholder={canSend ? 'Say something…' : 'Connect to send a caption'} onChange={event => setDraft(event.target.value)} /><button type="submit" aria-label="Send caption" disabled={!canSend || !draft.trim() || sending}>{sending ? '…' : '↑'}</button></div><p>{canSend ? 'Press Enter to send to the room.' : 'Your conversation will appear when you connect.'}</p></form>
+          <form className="caption-composer" onSubmit={send}><label htmlFor="caption-draft">Type a caption</label><div className="composer-input"><input id="caption-draft" value={draft} maxLength={1000} disabled={!canSend} placeholder={canSend ? 'Say something…' : 'Connect to send a caption'} onChange={event => setDraft(event.target.value)} /><Button type="submit" aria-label="Send caption" disabled={!canSend || !draft.trim() || sending}>{sending ? '…' : '↑'}</Button></div><p>{canSend ? 'Press Enter to send to the room.' : 'Your conversation will appear when you connect.'}</p></form>
         </section>
       </div>
       <footer className="call-footer"><span>Built for connection. Designed with care.</span><span>Limited vocabulary · No medical, legal, or emergency use</span></footer>

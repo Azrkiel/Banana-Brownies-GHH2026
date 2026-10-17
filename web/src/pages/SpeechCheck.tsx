@@ -1,3 +1,4 @@
+import { Button } from '../components/ui';
 import { useEffect, useRef, useState } from 'react';
 import { startWebSpeech, type Stt, type SttState } from '../lib/stt';
 import './SpeechCheck.css';
@@ -135,7 +136,7 @@ export default function SpeechCheck() {
             <div className="speech-check__phrases" role="log" aria-live="polite" aria-relevant="additions" aria-label="Finished speech captions">
               {phrases.length ? phrases.map(phrase => <p key={phrase.id} className="speech-check__phrase">{phrase.text}</p>) : <div className="speech-check__empty"><span aria-hidden="true">Aa</span><p>A sentence starts here.</p><small>Finished phrases will stay in this tab until you clear them or leave.</small></div>}
             </div>
-            <div className="speech-check__history-footer"><span>Latest {HISTORY_LIMIT} phrases · This tab only</span><button className="speech-check__clear" disabled={!phrases.length && !draft} onClick={() => { setDraft(''); setPhrases([]); }}>Clear text</button></div>
+            <div className="speech-check__history-footer"><span>Latest {HISTORY_LIMIT} phrases · This tab only</span><Button className="speech-check__clear" disabled={!phrases.length && !draft} onClick={() => { setDraft(''); setPhrases([]); }}>Clear text</Button></div>
           </section>
         </div>
 
@@ -148,8 +149,8 @@ export default function SpeechCheck() {
             {message && <p className="speech-check__notice" role={state === 'failed' ? 'alert' : 'status'}>{message}</p>}
             <label className="speech-check__consent"><input type="checkbox" checked={consented} onChange={event => { setConsented(event.target.checked); if (!event.target.checked && running.current) stop(); }} /><span>I understand my microphone audio may be sent to my browser’s speech service for recognition.</span></label>
             <div className="speech-check__buttons">
-              <button className="speech-check__start" disabled={busy || !consented || !supported || !secure} onClick={start}><MicIcon />Start captions</button>
-              <button className="speech-check__stop" disabled={!busy} onClick={stop}><span aria-hidden="true" />Stop</button>
+              <Button variant="primary" className="speech-check__start" disabled={busy || !consented || !supported || !secure} onClick={start}><MicIcon />Start captions</Button>
+              <Button className="speech-check__stop" disabled={!busy} onClick={stop}><span aria-hidden="true" />Stop</Button>
             </div>
             <p className="speech-check__privacy">This page saves no audio or captions. Recognition needs your browser’s permission and may need an internet connection.</p>
           </section>

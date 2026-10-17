@@ -1,32 +1,6 @@
-.moon-trios { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
-
-/* One trio = sign sequence ─✦─ English word ─✦─ picture, sharing one accent color and outline. */
-.trio { position: absolute; display: flex; align-items: center; padding: .4rem .7rem; border: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--accent) 6%, #fff); box-shadow: 0 6px 22px -14px var(--accent); opacity: 0; animation: trio-life var(--life) ease-in-out forwards; }
-.trio-top-a { top: 5%; left: 2%; }
-.trio-top-b { top: 13%; left: 27%; }
-.trio-top-c { top: 4%; left: 52%; }
-.trio-top-d { top: 12%; right: 2%; }
-.trio-bottom-a { bottom: 11%; left: 4%; }
-.trio-bottom-b { bottom: 3%; left: 29%; }
-.trio-bottom-c { bottom: 12%; left: 54%; }
-.trio-bottom-d { bottom: 4%; right: 3%; }
-
-.trio-sign { display: flex; flex-direction: column; align-items: center; gap: .3rem; }
-.trio-steps { display: flex; align-items: center; gap: .15rem; font-size: 1.1rem; line-height: 1; }
-.trio-step + .trio-step::before { content: '›'; margin-right: .15rem; color: var(--accent); font-size: .7rem; opacity: .7; }
-.trio-word { color: var(--accent); font-size: .78rem; font-weight: 650; letter-spacing: .12em; line-height: 1; }
-.trio-sign small { display: block; color: #6c6673; font-size: .58rem; font-weight: 500; line-height: 1; white-space: nowrap; }
-.trio-visual { display: inline-flex; align-items: center; justify-content: center; width: 1.85rem; height: 1.85rem; border-radius: 50%; background: color-mix(in srgb, var(--accent) 14%, #fff); border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent); font-size: 1.05rem; color: var(--accent); }
-
-/* Constellation link: a dashed line with a star in the middle. */
-.trio-link { position: relative; width: 1.5rem; height: 1px; margin: 0 .35rem; border-top: 1px dashed var(--accent); opacity: .7; }
-.trio-link i { position: absolute; left: 50%; top: 50%; width: 5px; height: 5px; background: var(--accent); transform: translate(-50%, -50%) rotate(45deg); border-radius: 1px; }
-
-@keyframes trio-life {
-  0% { opacity: 0; transform: translateY(10px) scale(.96); }
-  12% { opacity: 1; transform: none; }
-  85% { opacity: 1; transform: none; }
-  100% { opacity: 0; transform: translateY(-8px) scale(.98); }
-}
-@media (prefers-reduced-motion: reduce) { .trio { animation: none; opacity: 1; } }
-
+.moon-trios { position: absolute; inset: 0 0 20px; pointer-events: none; z-index: 0; overflow: hidden; }
+.trio { position: absolute; display: flex; align-items: center; padding: .45rem .7rem; border: 1px solid #ffffffd9; border-radius: 999px; background: #ffffff8c; box-shadow: 0 4px 15px -8px #516c9a26; opacity: 0; animation: trio-life var(--life) ease-in-out forwards; }
+.trio-top-a { top: 13%; left: 1%; }.trio-top-b { top: 22%; left: 28%; }.trio-top-c { top: 8%; left: 55%; }.trio-top-d { top: 45%; right: 1%; }.trio-bottom-a { bottom: 12%; left: 4%; }.trio-bottom-b { bottom: 2%; left: 29%; }.trio-bottom-c { bottom: 7%; left: 55%; }.trio-bottom-d { bottom: 4%; right: 2%; }
+.trio-sign { display: flex; flex-direction: column; align-items: center; gap: .3rem; }.trio-steps { display: flex; align-items: center; gap: .15rem; font-size: .9rem; line-height: 1; }.trio-step + .trio-step::before { content: '›'; margin-right: .15rem; color: var(--color-muted); font-size: .7rem; }.trio-word { color: var(--color-accent); font-size: .625rem; font-weight: 650; letter-spacing: .08em; line-height: 1; }.trio-sign small { display: none; }.trio-visual { display: inline-flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem; border-radius: 50%; background: #e3edfa; font-size: .875rem; color: var(--color-accent); }.trio-link { width: 1rem; height: 1px; margin: 0 .3rem; border-top: 1px solid #a5bbd9; }.trio-link i { display: none; }
+@keyframes trio-life { 0% { opacity: 0; transform: translateY(6px); } 15%, 80% { opacity: .8; transform: none; } 100% { opacity: 0; transform: translateY(-6px); } }
+@media (prefers-reduced-motion: reduce) { .trio { animation: none; opacity: .8; } }
