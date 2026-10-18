@@ -30,6 +30,8 @@ const WORD_END_MS = 1200;
 /** In letter mode, with no hand for this long, the sentence so far goes to review. */
 const SENTENCE_END_MS = 3000;
 const FS = 'fs-';
+/** Two Enter presses within this window send the sentence right away (no preview countdown). */
+const DOUBLE_ENTER_MS = 700;
 /** Sentence chips show a spelled word as its letters (K-E-V); everywhere else it reads as a name ("Kev"). */
 const chipLabel = (key: string) => key.startsWith(FS) ? key.slice(FS.length).split('').join('-') : signLabel(key);
 
@@ -97,6 +99,10 @@ export function SignerWords({ camera, connected, reconnecting = false, onPending
   /** Teaching: any steady hold (10 still frames) is saved; the next needs a move or a lowered hand first. */
   const teachHold = useRef<{ frames: number; locked: boolean }>({ frames: 0, locked: false });
   const frameRef = useRef(onFrame);
+  const sentencePanel = useRef<HTMLDivElement>(null);
+  const lastEnterAt = useRef(0);
+  /** Set by a double Enter: the next sentence is sent as soon as it is ready instead of after the countdown. */
+  const sendWhenReady = useRef(false);
   const dictatingRef = useRef(true);
   const connectedRef = useRef(connected);
   const sentenceRef = useRef(onSentence);
@@ -115,6 +121,24 @@ export function SignerWords({ camera, connected, reconnecting = false, onPending
     setSpell([]);
     const words = [...dictation.current.words, { label: FS + letters.join(''), score: 1 }];
     dictation.current.load(words); setSigned(dictation.current.words);
+  }
+  /** Clears everything signed so far (words, the letter word in progress, a waiting preview) to start again. */
+  function startOver() {
+    generation.current++;
+    previewRef.current = null; setPreview(null); sendWhenReady.current = false;
+    dictation.current.clear(); setSigned([]); setSpell([]); speller.current?.reset();
+    holdStreak.current = { letter: null, frames: 0 }; setHold(0); handGoneAt.current = null;
+    setSentStatus('Cleared. Start signing again.');
+  }
+  /** Double Enter: finish any spelled word and send the sentence now. */
+  function sendNow() {
+    endWord();
+    const entry = previewRef.current;
+    if (entry?.text) { void confirmPreview(); return; }
+    if (entry) { sendWhenReady.current = true; return; }
+    const words = dictation.current.flush()?.words ?? [];
+    if (!words.length) return;
+    sendWhenReady.current = true; startPreview(words);
   }
   function chooseMode(next: 'words' | 'letters') {
     if (next === modeRef.current) return;
@@ -141,8 +165,16 @@ export function SignerWords({ camera, connected, reconnecting = false, onPending
     const key = (event: KeyboardEvent) => {
       if (typingField(document.activeElement) || event.metaKey || event.ctrlKey || event.altKey || !stopLive.current) return;
       if (event.key === 'l' || event.key === 'L') { chooseMode(modeRef.current === 'words' ? 'letters' : 'words'); event.preventDefault(); return; }
+      if (event.key === 'Escape') { startOver(); event.preventDefault(); return; }
+      if (event.key === 'Enter' && !event.repeat) {
+        const now = performance.now();
+        if (now - lastEnterAt.current < DOUBLE_ENTER_MS) { lastEnterAt.current = 0; sendNow(); event.preventDefault(); return; }
+        lastEnterAt.current = now;
+        if (!(document.activeElement instanceof HTMLButtonElement)) { if (modeRef.current === 'letters') endWord(); event.preventDefault(); }
+        return;
+      }
       if (modeRef.current !== 'letters') return;
-      if ((event.key === ' ' || event.key === 'Enter') && !(document.activeElement instanceof HTMLButtonElement)) { endWord(); event.preventDefault(); }
+      if (event.key === ' ' && !(document.activeElement instanceof HTMLButtonElement)) { endWord(); event.preventDefault(); }
       if (event.key === 'Backspace') { setSpell(spellingRef.current.slice(0, -1)); event.preventDefault(); }
     };
     window.addEventListener('keydown', key);
@@ -166,6 +198,7 @@ export function SignerWords({ camera, connected, reconnecting = false, onPending
       if (attempt !== generation.current || previewRef.current !== entry) return;
       const ready: Preview = { words, text: sentenceOrFallback(text, words, signLabel) };
       previewRef.current = ready; setPreview(ready); setRemaining(PREVIEW_SECONDS);
+      if (sendWhenReady.current) { sendWhenReady.current = false; void confirmPreview(); }
     });
   }
   async function confirmPreview() {
@@ -260,6 +293,7 @@ export function SignerWords({ camera, connected, reconnecting = false, onPending
     if (!connected || !recognizer || stopLive.current) return;
     setPrediction(null); setError(''); setState('live');
     dictation.current.clear(); setSigned([]);
+    requestAnimationFrame(() => sentencePanel.current?.focus({ preventScroll: true }));
     stopLive.current = recognizer.watch((frame, guess) => {
       frameRef.current?.(frame);
       setTracked(frame.hands.length); setLive(guess);
@@ -399,8 +433,9 @@ export function SignerWords({ camera, connected, reconnecting = false, onPending
         </details>
       </div>
 
-      <div className="signer-words__sentence" aria-labelledby="signer-words-sentence-title">
-        <h3 id="signer-words-sentence-title">Your sentence</h3>
+      <div className="signer-words__sentence" aria-labelledby="signer-words-sentence-title" ref={sentencePanel} tabIndex={-1}>
+        <div className="signer-words__sentence-head"><h3 id="signer-words-sentence-title">Your sentence</h3>
+          {(signed.length > 0 || spelling.length > 0 || preview || live_) && <Button size="small" onClick={startOver} aria-keyshortcuts="Escape">Start over <kbd className="key-hint" aria-hidden="true">Esc</kbd></Button>}</div>
         {!preview && <>
           <p className="signer-words__signed">{signed.map(word => chipLabel(word.label)).join(' ')}{spelling.length > 0 && <span className="signer-words__spelling">{signed.length ? ' ' : ''}{spelling.join('-')}<span aria-hidden="true">_</span></span>}</p>
           {!signed.length && !spelling.length && <p className="note">{live_ ? (mode === 'letters' ? 'Spelled letters appear here. End the word with the button, Space, or by lowering your hand.' : 'Signed words appear here as you sign.') : 'Start live signing to build a sentence.'}</p>}
@@ -410,8 +445,9 @@ export function SignerWords({ camera, connected, reconnecting = false, onPending
           </div>}
           {(signed.length > 0 || spelling.length > 0) && <div className="button-row">
             <Button variant={mode === 'letters' ? undefined : 'primary'} onClick={() => { endWord(); startPreview(dictation.current.flush()?.words ?? []); }}>Review sentence</Button>
-            <Button onClick={() => { dictation.current.clear(); setSigned([]); setSpell([]); }}>Clear</Button>
+            <Button onClick={sendNow} aria-keyshortcuts="Enter Enter">Send now <kbd className="key-hint" aria-hidden="true">Enter ×2</kbd></Button>
           </div>}
+          {live_ && <p className="note">Press <kbd>Enter</kbd> twice to send right away · <kbd>Esc</kbd> to start over.</p>}
         </>}
         {preview && <div className="signer-words__preview" role="group" aria-label="Sentence ready to send">
           {preview.text ? <>
