@@ -15,3 +15,7 @@ ml/checkpoints/
 
 # Local Supabase CLI metadata
 supabase/.temp/
+
+# Training weights are local; browser ONNX bundles are intentional release assets.
+*.pt
+*.pth

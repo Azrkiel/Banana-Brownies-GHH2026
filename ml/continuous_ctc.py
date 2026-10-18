@@ -212,7 +212,7 @@ def datasets(args, labels=None):
             result.append(StitchedSignStreamDataset(isolated,args.seq_len,
                 args.min_signs if split=='train' else max(3,args.min_signs),
                 args.max_signs if split=='train' else max(3,args.max_signs),
-                samples=args.samples,seed=args.seed+{'train':0,'val':10000,'test':20000}[split]))
+                samples=args.samples if split=='train' else getattr(args, 'eval_samples', None) or args.samples,seed=args.seed+{'train':0,'val':10000,'test':20000}[split]))
     if labels[0]!='<blank>' or len(set(labels))!=len(labels):
         raise ValueError('Unique labels and blank=0 required')
     return result,labels,tier,signers
@@ -241,15 +241,16 @@ def train(args):
     if tier=='research':
         out = out/'research_only'
     out.mkdir(parents=True,exist_ok=True)
-    model_kwargs = dict(d_model=192,num_layers=4,dropout=.1)
+    model_kwargs = dict(d_model=192,num_layers=getattr(args, 'num_layers', 4),dropout=.1)
     device = 'cuda' if args.device=='auto' and torch.cuda.is_available() else 'cpu' if args.device=='auto' else args.device
     model = SignContinuousCTC(len(labels),**model_kwargs).to(device)
     initialized = initialize_encoder(model,args.init_from,tier) if args.init_from else 0
-    ema = ModelEMA(model)
+    ema = ModelEMA(model,decay=getattr(args, 'ema_decay', .995))
     optimizer = torch.optim.AdamW(model.parameters(),lr=args.lr,weight_decay=.01)
     config = dict(stage='d2_continuous_ctc',source_stage=args.stage,dataset=args.dataset,license_tier=tier,
         non_commercial=tier=='research',feature_schema='xy174',blank=0,num_classes=len(labels),model_kwargs=model_kwargs,
         seq_len=args.seq_len,min_signs=args.min_signs,max_signs=args.max_signs,samples=args.samples,seed=args.seed,
+        eval_samples=getattr(args, 'eval_samples', None),ema_decay=getattr(args, 'ema_decay', .995),
         signers=signers,initialized_encoder_tensors=initialized,synthetic=args.smoke_test,torch_version=str(torch.__version__))
     best = float('inf')
     for epoch in range(args.epochs):
@@ -293,7 +294,7 @@ def evaluate_checkpoint(checkpoint,manifest,license_tier='commercial',split='tes
         raise ValueError('Continuous checkpoint and matching explicit research opt-in required')
     args = argparse.Namespace(manifest=manifest,shards=shards,gloss_manifest=gloss_manifest,
         dataset=cfg['dataset'],stage=cfg['source_stage'],license_tier=license_tier,
-        seq_len=cfg['seq_len'],min_signs=cfg['min_signs'],max_signs=cfg['max_signs'],samples=cfg['samples'],seed=cfg['seed'])
+        seq_len=cfg['seq_len'],min_signs=cfg['min_signs'],max_signs=cfg['max_signs'],samples=cfg['samples'],seed=cfg['seed'],eval_samples=cfg.get('eval_samples'))
     sets,labels,tier,_ = datasets(args,ckpt['labels'])
     if tier!=cfg['license_tier']:
         raise ValueError('Evaluation tier must match checkpoint provenance')
@@ -317,6 +318,7 @@ def main():
     p.add_argument('--min-signs',type=int,default=2)
     p.add_argument('--max-signs',type=int,default=5)
     p.add_argument('--samples',type=int)
+    p.add_argument('--eval-samples',type=int,help='Independent signer-held-out streams per validation/test split')
     p.add_argument('--epochs',type=int)
     p.add_argument('--batch-size',type=int,default=16)
     p.add_argument('--lr',type=float,default=1.5e-3)
@@ -325,12 +327,14 @@ def main():
     p.add_argument('--device',choices=['auto','cpu','cuda'],default='auto')
     p.add_argument('--init-from',type=Path)
     p.add_argument('--out-dir',type=Path,default=Path('ml/checkpoints/stage_d2_continuous_ctc'))
+    p.add_argument('--num-layers',type=int,default=4,choices=[1,2,3,4])
+    p.add_argument('--ema-decay',type=float,default=.995)
     p.add_argument('--smoke-test',action='store_true')
     a=p.parse_args()
     a.epochs = a.epochs if a.epochs is not None else 2 if a.smoke_test else 30
     if a.smoke_test and a.samples is None:
         a.samples=12
-    if a.epochs<1 or a.batch_size<1 or a.lr<=0 or a.cpu_threads<1 or (a.samples is not None and a.samples<1):
+    if a.epochs<1 or a.batch_size<1 or a.lr<=0 or a.cpu_threads<1 or not 0 <= a.ema_decay < 1 or (a.samples is not None and a.samples<1) or (a.eval_samples is not None and a.eval_samples<1):
         p.error('epochs, batch size, learning rate, threads and samples must be positive')
     train(a)
 

@@ -59,7 +59,7 @@ def _init(path):
 
 
 def _convert(job):
-    row, aspect = job
+    row, aspect, max_frames = job
     name = row['rel_path']
     if name.endswith('.npy'):
         frames = npy_frames(np.load(io.BytesIO(_source.read(name)), allow_pickle=False), aspect, _columns)
@@ -79,13 +79,17 @@ def _convert(job):
         frames = to_frames(table, aspect) if 'type' in table else wide_frames(table, aspect)
     if not frames:
         raise ValueError('Empty fingerspelling sequence')
+    if max_frames is not None and len(frames) > max_frames:
+        frames = [frames[i] for i in np.rint(np.linspace(0, len(frames)-1, max_frames)).astype(int)]
     features = sequence_features(frames)
     if not np.isfinite(features).all():
         raise ValueError('Non-finite fingerspelling features')
     return features
 
 
-def convert(path, out, workers=1, aspect=0.75, license_tier='commercial', manifest=None):
+def convert(path, out, workers=1, aspect=0.75, license_tier='commercial', manifest=None, max_frames=None):
+    if max_frames is not None and max_frames < 1:
+        raise ValueError('max_frames must be positive')
     if workers < 1 or not np.isfinite(aspect) or aspect <= 0:
         raise ValueError('workers/aspect must be positive')
     with Source(path) as source:
@@ -99,7 +103,7 @@ def convert(path, out, workers=1, aspect=0.75, license_tier='commercial', manife
     out.mkdir(parents=True, exist_ok=True)
     offsets = [0]
     part = out / 'X.f32.part'
-    jobs = [(r, aspect) for r in rows]
+    jobs = [(r, aspect, max_frames) for r in rows]
     def consume(iterator, f):
         for tensor in iterator:
             f.write(tensor.astype('<f4').tobytes())
@@ -124,7 +128,7 @@ def convert(path, out, workers=1, aspect=0.75, license_tier='commercial', manife
     (out / 'y_chars.json').write_text(json.dumps([[chars[c] for c in r['raw_label']] for r in rows]) + '\n')
     return write_meta(out, rows, sorted({r['canonical_gloss'] for r in rows}), T=None, F=90,
                       phrases=[r['raw_label'] for r in rows], character_to_prediction_index=chars,
-                      offsets='offsets.i64', aspect=aspect, query_license_tier=license_tier)
+                      offsets='offsets.i64', aspect=aspect, query_license_tier=license_tier, max_frames=max_frames)
 
 
 def main():
@@ -135,8 +139,9 @@ def main():
     p.add_argument('--aspect', type=float, default=0.75)
     p.add_argument('--license-tier', choices=['commercial', 'research'], default='commercial')
     p.add_argument('--manifest', type=Path)
+    p.add_argument('--max-frames', type=int, help='Uniformly select raw frames before deriving velocities; targets are unchanged')
     a = p.parse_args()
-    result = convert(a.dir, a.out, a.workers, a.aspect, a.license_tier, a.manifest)
+    result = convert(a.dir, a.out, a.workers, a.aspect, a.license_tier, a.manifest, a.max_frames)
     print(f'Wrote {result["n"]} sequences -> {a.out}')
 
 

@@ -126,7 +126,8 @@ def train(args):
     if args.stage=='c2_research_2731' and num_classes>2732:
         raise ValueError('C2 exceeds 2731 signs plus idle')
     # Smoke uses the full production architecture; only data/epochs are smaller.
-    model_kwargs={}
+    model_kwargs = ({'d_model': getattr(args, 'd_model', 192),
+                     'num_layers': getattr(args, 'num_layers', 4)} if args.arch == 'conformer' else {})
     model=build_model(args.arch,args.stage,num_classes,**model_kwargs).to(device)
     if args.init_from:
         previous=torch.load(args.init_from,map_location='cpu',weights_only=True)
@@ -136,7 +137,7 @@ def train(args):
             raise ValueError('Initialization architecture/feature schema mismatch')
         state={k:v for k,v in previous['model'].items() if not k.startswith('head.')}
         model.load_state_dict(state,strict=False)
-    ema=ModelEMA(model)
+    ema=ModelEMA(model, decay=getattr(args, 'ema_decay', .995))
     optimizer=torch.optim.AdamW(model.parameters(),lr=args.lr,weight_decay=1e-2)
     scaler=torch.amp.GradScaler('cuda',enabled=device=='cuda')
     generator=torch.Generator().manual_seed(args.seed)
@@ -147,6 +148,7 @@ def train(args):
     epochs=args.epochs if args.epochs is not None else (2 if args.smoke_test else 60)
     config=dict(stage=args.stage,arch=args.arch,num_classes=num_classes,model_kwargs=model_kwargs,
                 license_tier=tier,seed=args.seed,epochs=epochs,manifest=str(manifest),signers=signers,
+                synthetic=bool(args.smoke_test),ema_decay=getattr(args, 'ema_decay', .995),
                 feature_schema='aslfr90' if ctc else 'xy174',torch_version=str(torch.__version__))
     (out/'config.json').write_text(json.dumps(config,indent=2),encoding='utf-8')
     tracker=None
@@ -189,7 +191,7 @@ def train(args):
             z,y,n,ny,_=collect_outputs(ema.model,val_set,args.batch_size,device)
             if ctc:
                 val_loss=float(F.ctc_loss(z.log_softmax(-1).transpose(0,1),y,n,ny,zero_infinity=False))
-                values=sequence_metrics(z,val_set.targets,n)
+                values=sequence_metrics(z,val_set.targets,n) if (epoch+1) % getattr(args, 'metrics_interval', 1) == 0 or epoch+1 == epochs else {}
                 accuracy={k:None for k in ('top1','top5','macro_f1','ece')}
             else:
                 val_loss=float(F.cross_entropy(z,y)); accuracy=isolated_metrics(z,y)[0]; values={}
@@ -238,9 +240,13 @@ def main():
     p.add_argument('--out-dir',type=Path)
     p.add_argument('--init-from',type=Path)
     p.add_argument('--wandb',action='store_true')
+    p.add_argument('--d-model',type=int,default=192,choices=[128,192])
+    p.add_argument('--num-layers',type=int,default=4,choices=[1,2,3,4])
+    p.add_argument('--ema-decay',type=float,default=.995)
+    p.add_argument('--metrics-interval',type=int,default=1,help='Decode validation CTC metrics every N epochs; loss selection still runs every epoch')
     p.add_argument('--smoke-test',action='store_true')
     a=p.parse_args()
-    if a.batch_size<1 or a.lr<=0 or a.cpu_threads<1 or (a.epochs is not None and a.epochs<1):
+    if a.batch_size<1 or a.lr<=0 or a.cpu_threads<1 or a.metrics_interval<1 or not 0 <= a.ema_decay < 1 or (a.epochs is not None and a.epochs<1):
         p.error('batch-size, learning rate, threads and epochs must be positive')
     train(a)
 
