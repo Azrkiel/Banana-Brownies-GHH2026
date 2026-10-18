@@ -13,144 +13,89 @@ Girls Hoo Hack 2026; the Devpost deadline is **Sun Oct 18, 17:00 EDT**.
 
 ---
 
-## 0. Read this first: the app is NOT built yet
+## 0. Read this first: current state
 
-### Current snapshot — updated October 17, 2026 at `13b6b5d`
+### Snapshot — updated October 18, 2026 at `8239bb7`
 
-The repo contains the scaffold, FastAPI routes, Gemini prompt/evaluation script, database schema, deployment
-templates, stats page, feature extraction, segmenter, Bench/Recorder pages, separate lobby/room screens,
-and opt-in speech captions integrated into LiveKit calls.
+**Direction change (owner, October 18).** The canonical v2 recognizer (ONNX classifier, canonical features, GISLR/Kaggle
+training, fingerspelling, recorded datasets and the ASL switch screen) is no longer being built. SignLine instead uses
+**Lisa Ou's committed seven-word model** (commit `405afe0`, exported to `web/public/trained-words.json`), plus
+**personal signs** each user teaches in the browser. No new model will be trained. Gemini is used only to turn signed
+words into an English sentence. The ledger in §3 marks the abandoned cards `DROPPED` and the cards whose goal shipped
+another way `SUPERSEDED` (see §2).
 
-An additional recovery integration now exposes the original seven-word random
-forest in signer calls: explicit local capture, confidence/hand-presence gates,
-review into the typed-caption draft, and manual Send. See `ml/README.md`. This
-does not complete or replace the canonical v2 classifier, ONNX training, ASL
-switch or real-camera/two-laptop acceptance cards; their ledger statuses remain
-unchanged.
-The **server lane's code is complete; its live checks are not**. There is still **no canonical ASL switch,
-ONNX sign classifier, call voice output or GISLR/CNN training pipeline**. Vocabulary v2 is published (0.4); shared Frame/Session
-types still need task 1.0. The additive speech Caption/Ctrl protocol is already implemented.
+**Working now, deployed at https://signline-api.fly.dev:**
 
-The ledger currently has **3 DONE, 7 NEEDS-HUMAN, 3 PARTIAL, 16 TODO, and 12 HUMAN** rows. That means
-**19 coding cards remain open**, plus seven live acceptance checks and twelve human-owned tasks. Open cards can
-contain completed subsets, including STT in 2.A2. §3 remains the authoritative card-status record.
-Refresh with `python plan/verify.py status` and `lanes`.
+- **Two-person LiveKit call** with typed captions, and **ElevenLabs Scribe speech captions** for the hearing participant.
+- **Signer recognition** (`web/src/components/SignerWords.tsx`): Lisa's forest (DEMO, FOOD, GOODBYE, HELLO, LISA, MY,
+  NAME), or "Shared words + my signs", which checks personal signs first and then falls back to the shared forest
+  (`d16f79c`, `7a54221`). One personal sign with three examples is enough.
+- **Live view** (`3ce3d68`, `56b7ae9`): the frame the hand model sees, with its landmarks, and a running guess that
+  updates every frame. Held-back guesses say why (too few tracked frames, or low score).
+- **Live dictation** (`0f36b58`, `web/src/lib/dictation.ts`): confident signs are added as they are signed (about
+  350 ms hold; repeats need a pause). Lowering the hand for 1.5 s sends the sentence with no button press. Send now and
+  Clear remain, and dictation can be turned off for the confirm-each-word flow.
+- **Gemini sentence polish** (`web/src/lib/signedSentence.ts`): `/api/gloss` turns `MY NAME LISA` into
+  "My name is Lisa.", with recent hearing captions as context. Below 0.6 confidence, on error, or after 5 s, the
+  signed words are sent unchanged, so Gemini never adds content that was not signed.
+- **ASL to speech** (`4c9b4a7`, `web/src/lib/signerVoice.ts`): each sent signer caption is spoken with an ElevenLabs
+  voice into a WebAudio track published as the signer's call microphone, so the hearing side hears it through the
+  call. A `tts` control pauses the listener's speech captions during playback. The signer can turn it off and pick a
+  voice.
+- **Personal signs** (`#/training`, `3d8733e`): GitHub sign-in through Supabase, private per-user samples with
+  row-level security, and an in-browser nearest-neighbour model.
+- Server routes, Gemini prompt/eval, Tiger Data schema and the stats page (`#/stats`), as before.
 
-This update records published speech work and reconciles counts with `verify.py status`; it is not a fresh
-whole-repository audit. Call preflight passed. The feature validation passed 158 frontend tests, 10 backend
-tests, build, lint and pip check. No ledger status is promoted by this documentation update.
+**Verified in this session (Oct 18):** 224 frontend tests, type-check, lint and build pass, and
+`python plan/verify.py ledger` passes for every DONE/NEEDS-HUMAN row. On the live site, headless Chromium and Brave
+with a fake camera tracked a hand and ran the live guess; a still, non-signing hand dictated nothing in 8 s; and with
+two browsers in one room, a signer caption reached the hearing side as text and as audio. A real signed sentence
+through dictation has not been run automatically, because a fake camera cannot sign. The two-laptop golden path is a
+human check.
 
-### Speech-caption integration — published in `13b6b5d`
+**Not built (known gaps):** "That was wrong" caption retraction, latency/event logging into `#/stats` (`metrics.ts`,
+so the dashboard stays empty), an offline TTS fallback (if ElevenLabs is down, the caption is still sent as text),
+and measured recognition accuracy. Lisa's model was trained on 105 samples of one signer, so it is rarely confident
+on other people; the demo should rely on taught personal signs.
 
-The hearing participant can explicitly consent and start captions inside the room. Interim/final captions use
-ordered, sender-scoped messages; disabling, muting, reconnecting and leaving clean up recognition and drafts.
-The standalone speech check is at `#/speech-check` (linked in the nav; live on Fly too).
-See the separate [voice-to-captions sub-plan](docs/subplans/voice-to-captions/README.md) and
-[integration evidence](docs/subplans/voice-to-captions/phase-5-handoff.md); its six phases stay in that sub-plan.
+### Deployment
 
-User-reported desktop Chrome checks passed for standalone speech, repeated phrases, Stop/microphone release and
-navigation cleanup. The ten-minute stability test was deferred. Accuracy/latency measurements, integrated
-two-laptop captions, live mute/reconnect behavior, accessibility and generated-voice echo checks remain pending.
-Codex embedded recognition failed; use desktop Chrome for microphone testing. This work has been pushed to
-GitHub; deployment of the caption commit to Fly.io has not been performed by this work.
+Hosting is **Fly.io only** (the Vultr VM was never created; GitHub Pages was removed on October 17). Fly app
+`signline-api` (root `Dockerfile`, `fly.toml`) serves the API and its own build of the web app on one origin. Server
+keys are Fly secrets. The Supabase URL and publishable key are public browser config and live in `fly.toml`
+`[build.args]` (`56b7ae9`): earlier deploys without them (v14, v17) silently broke GitHub sign-in. Pushing does
+**not** redeploy: run `flyctl deploy --remote-only --depot=false` from the repo root. The machine sleeps when idle, so
+the first request takes about 2.5 s, and the first recognition start downloads about 21 MB of hand model and runtime.
 
-Task 2.A2 remains open: metrics.ts, Chips.tsx and the full product Consent.tsx are still absent. Its existing
-acceptance block was not changed. The attempted card check could not execute under the available WSL Bash
-because the Windows temporary script path was not recognized; this is not a passing card check. Restore a
-compatible Git Bash environment before rerunning it. Other project tasks and optional Scribe remain open.
+### What is left
 
-### Deployment — live since October 17, 2026 (`86df6f7`)
+The only open agent row is **2.A2** (`PARTIAL`): metrics logging and Chips. `python plan/verify.py next` selects it.
+It is optional for the demo; drop it if the team will not build it.
 
-The Vultr VM was never created. Hosting is **Fly.io only**, replacing the VM plan in 1.C4/4.1 (GitHub Pages was
-tried and removed on October 17):
+Optional work, if time allows (none of it is a ledger card):
 
-- **App (web + API):** https://signline-api.fly.dev — Fly app `signline-api` (root `Dockerfile`, `fly.toml`) serves
-  the API and its own build of the web app on one origin (`WEB_DIR`). Keys are Fly secrets, not files. The machine
-  sleeps when idle, so the first request takes a few seconds. Pushing does **not** redeploy: run
-  `fly deploy --remote-only` from the repo root (add `--depot=false` behind TLS-intercepting antivirus). After
-  changing a key in `server/.env`, also run `fly secrets set NAME=value -a signline-api`.
-- **Local fallback** still works: `server` on port 8000 plus `npm --prefix web run dev`.
+- [ ] "That was wrong": let the signer retract a sent sentence (`Caption.retracted` already exists in `types.ts`).
+- [ ] Log utterance latency events so `#/stats` shows real numbers (the 2.A2 metrics subset).
+- [ ] Tune the dictation timings in `web/src/lib/dictation.ts` after rehearsal (hold 350 ms, end 1.5 s).
+- [ ] Add the live view to the My signs page's "Test a fresh sign".
 
-### Current to-do list — coding
+Human checks and tasks, in working order:
 
-**Start now:** recog **1.0**, call **2.A1**, and ml **2.B4** are independently eligible. The global runner selects
-**1.0** first. There is no open server coding card; finish its human checks below rather than rebuilding its routes.
+- [ ] **0.3:** learn Lisa's seven words and the personal signs you will teach for the demo.
+- [ ] **Teach demo signs** on `#/training` with three to five examples each, using the hand and framing you will
+  use on stage.
+- [ ] **1.A1 / 3.3:** two-laptop golden path: teach signs, dictate a sentence, hear the voice and read the caption on
+  the other laptop. If the hearing laptop shows **Enable audio**, click it.
+- [ ] **1.B1:** Bench FPS on both laptops.
+- [ ] **1.C1 / 1.C5 / 1.C4:** mark VERIFIED (live health, token, stats and HTTPS checks already pass; see Evidence).
+- [ ] **1.C2:** run the 12-case Gemini eval and record p50 in the README.
+- [ ] **1.C3:** pick the demo voice in the call.
+- [ ] **4.2:** after a golden-path run, check the stats page.
+- [ ] **4.1 / 4.6 / 4.7 / 5:** golden path on the deployed URL, pitch and slides (include the limitations slide),
+  backup video, failure drills, then freeze, rehearse and submit by Sun Oct 18, 17:00 EDT.
 
-Follow this dependency order:
-
-1. Vocabulary v2 (0.4) is published. Finish shared types (1.0), classifier interfaces (2.B1), and canonical features (1.B2).
-   These unblock most browser work and the Python feature twin.
-2. Update Recorder (1.B4), implement letters (2.B2), build datasets (2.B3), and add Bench recognition (2.B5).
-   In the ML lane, finish parity (1.B5) before the Kaggle converter (1.B6). Start recording once Recorder is ready.
-3. In the call lane, finish voice (2.A1), gloss buffering/offline English (2.C1), and the remaining
-   metrics/Chips/product Consent in 2.A2, then the ASL switch screen (2.A3). Preserve the integrated STT,
-   confidence holds, correction controls, and offline fallbacks.
-4. Build the signer pipeline (3.1), wire it to the ASL switch (3.2), train on real data, and run the two-laptop
-   golden path (3.3). Synthetic training checks do not establish real recognition accuracy.
-5. Only after the core demo works, consider the stretch cards below. Use `plan/context.md` §10 if time is short.
-
-Each checkbox below points to a ledger row; use that row's dependencies and card acceptance checks before working.
-Keep this checklist in sync when a task changes; only `verify.py done <ID>` may promote a ledger status.
-
-**Recognition — 9 core tasks, 1 stretch:**
-
-- [x] [0.4](plan/tasks/0.4.md): shared `vocab.json`, v2 exports, TypeScript JSON support, dataset/fixture scripts.
-- [ ] [1.0](plan/tasks/1.0.md): v2 shared types, including the ASL control message and updated Session shape.
-- [ ] [2.B1](plan/tasks/2.B1.md): classifier, ONNX loader, and kNN fallback.
-- [ ] [1.B2](plan/tasks/1.B2.md): canonical handedness and body-centered features.
-- [ ] [1.B4](plan/tasks/1.B4.md): Recorder on v2 vocabulary/types; remove the old `leftHanded` output.
-- [ ] [2.B2](plan/tasks/2.B2.md): fingerspelling K, E, V.
-- [ ] [2.B3](plan/tasks/2.B3.md): dataset builder and synthetic sessions.
-- [ ] [2.B5](plan/tasks/2.B5.md): Bench live recognition readout.
-- [ ] [3.1](plan/tasks/3.1.md): signer pipeline with pause/resume and confidence gating.
-- [ ] [4.3](plan/tasks/4.3.md): optional eyebrows/headshake integration (stretch).
-
-**Call — 5 core tasks, 2 stretch:**
-
-- [ ] [2.A1](plan/tasks/2.A1.md): voice into the call, cache-generation script, and fallback cache index.
-- [ ] [2.C1](plan/tasks/2.C1.md): gloss buffer and offline English rules.
-- [ ] [2.A2](plan/tasks/2.A2.md): STT integrated in `13b6b5d`; metrics, Chips, and full product Consent remain.
-- [ ] [2.A3](plan/tasks/2.A3.md): ASL switch screen, sentence holds, correction, and auto-speak behavior.
-- [ ] [3.2](plan/tasks/3.2.md): connect the recognizer to the ASL switch.
-- [ ] [4.4](plan/tasks/4.4.md): optional Scribe captions with fallback (stretch).
-- [ ] [4.5](plan/tasks/4.5.md): optional teach-my-sign flow (stretch).
-
-**ML — 3 core tasks:**
-
-- [ ] [2.B4](plan/tasks/2.B4.md): training/evaluation/ONNX export with an isolated synthetic CPU smoke test.
-- [ ] [1.B5](plan/tasks/1.B5.md): Python feature twin and browser/Python parity fixtures.
-- [ ] [1.B6](plan/tasks/1.B6.md): Kaggle GISLR converter and synthetic conversion test.
-
-### Current to-do list — live checks and human work
-
-Code-complete rows still awaiting acceptance:
-
-- [ ] **1.B1:** check Bench FPS on both laptops (face on: at least 20 FPS on signer laptop) and one/two-hand tracking.
-- [ ] **1.A1:** join `demo-room` on two laptops; verify video and typed captions in both directions.
-- [ ] **1.C1:** verify configured API providers live, including LiveKit token issuance. *Oct 17: on
-  signline-api.fly.dev, health showed all five keys `true`, `/api/token` returned a LiveKit JWT (`eyJ…`), and
-  `/api/voices` returned 200. Awaiting a person to mark VERIFIED.*
-- [ ] **1.C2:** run the 12-case Gemini eval; inspect confidence for nonsense and record measured p50 in README.
-- [ ] **1.C5:** correct database access, apply `server/sql/schema.sql`, and verify configured stats. *Oct 17: the
-  `InvalidPasswordError` is gone; live `/api/stats` returns `{"configured":true,...}` with 0 utterances, so the
-  credentials work and the schema's tables exist. Awaiting a person to mark VERIFIED.*
-- [ ] **1.C4:** ~~deploy the systemd/Caddy templates on the VM~~ superseded: the API is deployed on Fly.io instead
-  (see Deployment above) and HTTPS health passes. `server/deploy/` stays as an unused alternative.
-- [ ] **4.2:** run the golden path twice and check dashboard counts, latency, and trend; complete browser visual QA.
-  *Oct 17: database access fixed; the deployed `#/stats` page loads live (empty) data. Event logging and
-  dashboard numbers still need a real golden-path run.*
-
-Human-owned tasks, in useful working order:
-
-- [ ] **0.1 / 0.2 / 0.3:** validate accounts/keys, download Kaggle data and prepare CUDA on the MSI, learn the signs.
-- [ ] **1.C3:** check ElevenLabs live and choose the demo voice; after 2.A1, generate and verify the demo MP3 cache.
-- [ ] **1.D1:** after Recorder is updated, record signs, idle, and letters with the required signers/repetitions.
-- [ ] **2.B4 human check:** run real training/evaluation on the MSI, publish model artifacts, and record held-out accuracy.
-- [ ] **3.3:** rehearse the full golden path on two laptops; retain a recoverable `golden-path` tag when proven.
-- [ ] **4.1 / 4.6 / 4.7 / 5:** deploy the web app or rehearse the local fallback, prepare pitch/slides and a backup
-  video, run failure drills, then freeze, rehearse, and submit by the deadline. *4.1: the app is deployed (Fly.io,
-  see Deployment above); its "Done when" still needs one golden-path run on the deployed URL.*
-- [ ] **4.8:** add more Kaggle signs only if time permits (stretch). **6:** post-event work stays deferred.
+Dropped in the current direction (see each ledger row): 1.0, 1.B2, 1.B4, 2.B2, 2.B3, 4.3, 2.B4, 1.B5, 1.B6, 0.2,
+1.D1, 4.8. Superseded by shipped work: 2.B1, 2.B5, 3.1, 2.A1, 2.C1, 2.A3, 3.2, 4.4, 4.5.
 
 ### Status rules
 
@@ -283,9 +228,15 @@ manager prompt, and the subagent prompt are in [`plan/managers/README.md`](plan/
 | `BLOCKED` | The agent cannot finish. The reason is in Evidence. | agent, by hand |
 | `HUMAN` | A person must do this (accounts, recording, training on the GPU, demo). It is never an agent's job. | — |
 | `VERIFIED` | A human did the live check. | human, by hand |
+| `SUPERSEDED` | The card's goal shipped through a different implementation; Evidence names the commits. Its card checks were not run against the new code. | owner decision, by hand |
+| `DROPPED` | Abandoned in the current direction; Evidence gives the reason. | owner decision, by hand |
 
 Owner `AGENT` means only code. `AGENT then HUMAN-CHECK` means the agent does the code and a person does a live check
 afterwards. `HUMAN` means people only.
+
+`SUPERSEDED` and `DROPPED` rows are closed: `verify.py next` skips them. A superseded row satisfies its dependents
+(its goal shipped); a dropped row does not.
+Only the owner sets them. Reopen a row by setting it back to `TODO` or `PARTIAL`.
 
 ---
 
@@ -305,17 +256,17 @@ Owns: `web/src/vocab.*`, `web/src/lib/{types,features,segmenter,landmarks,useCam
 | ID | Task | Owner | Depends on | Status | Evidence |
 |---|---|---|---|---|---|
 | [0.4](plan/tasks/0.4.md) | Repo scaffold + vocabulary v2 | AGENT | — | DONE | verify PASS 2026-10-17 on 0a3d55f+ |
-| [1.0](plan/tasks/1.0.md) | Shared types v2 | AGENT | 0.4 | PARTIAL | no asl Ctrl; extra Session.leftHanded |
-| [2.B1](plan/tasks/2.B1.md) | Classifier, ONNX loader, kNN | AGENT | 0.4 | TODO |  |
-| [1.B2](plan/tasks/1.B2.md) | Features with canonical handedness | AGENT | 1.0 | PARTIAL | canonicalize/bodyCenterX missing |
+| [1.0](plan/tasks/1.0.md) | Shared types v2 | AGENT | 0.4 | DROPPED | owner 2026-10-18: no v2 ONNX/ASL-switch pipeline; recognition runs on the existing types |
+| [2.B1](plan/tasks/2.B1.md) | Classifier, ONNX loader, kNN | AGENT | 0.4 | SUPERSEDED | Lisa's 7-word random forest in wordModel.ts (d16f79c) + personal kNN in personalModel.ts (3d8733e, 7a54221); no ONNX |
+| [1.B2](plan/tasks/1.B2.md) | Features with canonical handedness | AGENT | 1.0 | DROPPED | owner 2026-10-18: features are the recovered trainer's 30x42 wrist-relative layout (wordModel.ts) |
 | [1.B3](plan/tasks/1.B3.md) | Segmenter | AGENT | 1.B2 | DONE | audit 2026-10-17 on 9dced31 |
 | [1.B1](plan/tasks/1.B1.md) | Tracker + benchmark | AGENT then HUMAN-CHECK | 1.0 | NEEDS-HUMAN | code on 9dced31; FPS check on laptops pending |
-| [1.B4](plan/tasks/1.B4.md) | Recorder page on vocab v2 | AGENT then HUMAN-CHECK | 1.0 | PARTIAL | writes leftHanded (removed in 1.0) |
-| [2.B2](plan/tasks/2.B2.md) | Fingerspelling letters K E V | AGENT | 1.B2 | TODO |  |
-| [2.B3](plan/tasks/2.B3.md) | Dataset builder + synthetic sessions | AGENT then HUMAN-CHECK | 1.0, 1.B2, 2.B2 | TODO |  |
-| [2.B5](plan/tasks/2.B5.md) | Bench live readout | AGENT then HUMAN-CHECK | 1.B2, 2.B1 | TODO |  |
-| [3.1](plan/tasks/3.1.md) | Signer pipeline with pause/resume | AGENT | 1.B2, 1.B3, 2.B1, 2.B2, 2.A2 | TODO |  |
-| [4.3](plan/tasks/4.3.md) | Eyebrows + headshake (Presage / MediaPipe) | AGENT then HUMAN-CHECK | 3.2, 2.C1 | TODO | stretch |
+| [1.B4](plan/tasks/1.B4.md) | Recorder page on vocab v2 | AGENT then HUMAN-CHECK | 1.0 | DROPPED | owner 2026-10-18: shared-model recording replaced by per-user teaching on #/training (3d8733e) |
+| [2.B2](plan/tasks/2.B2.md) | Fingerspelling letters K E V | AGENT | 1.B2 | DROPPED | owner 2026-10-18: fingerspelling cut; a name can be taught as a personal sign |
+| [2.B3](plan/tasks/2.B3.md) | Dataset builder + synthetic sessions | AGENT then HUMAN-CHECK | 1.0, 1.B2, 2.B2 | DROPPED | owner 2026-10-18: no dataset build or retraining |
+| [2.B5](plan/tasks/2.B5.md) | Bench live readout | AGENT then HUMAN-CHECK | 1.B2, 2.B1 | SUPERSEDED | live hand skeleton + running guess in the call signer panel (3ce3d68, 56b7ae9) |
+| [3.1](plan/tasks/3.1.md) | Signer pipeline with pause/resume | AGENT | 1.B2, 1.B3, 2.B1, 2.B2, 2.A2 | SUPERSEDED | dictation.ts: confident-only words after ~350 ms hold, hand down 1.5 s ends the sentence (0f36b58) |
+| [4.3](plan/tasks/4.3.md) | Eyebrows + headshake (Presage / MediaPipe) | AGENT then HUMAN-CHECK | 3.2, 2.C1 | DROPPED | owner 2026-10-18: stretch cut |
 
 ### Lane call — the call screen: captions, voice, speech-to-text, ASL switch, auto-speak, wiring the recognizer in
 
@@ -323,14 +274,14 @@ Owns: `web/src/lib/{api,call,captions,voice,stt,metrics,gloss}.ts`, `web/src/com
 
 | ID | Task | Owner | Depends on | Status | Evidence |
 |---|---|---|---|---|---|
-| [1.A1](plan/tasks/1.A1.md) | Call skeleton: API client, LiveKit, captions, routes | AGENT then HUMAN-CHECK | 1.0 | NEEDS-HUMAN | verify PASS 2026-10-17 on ee9f61f+ |
-| [2.A1](plan/tasks/2.A1.md) | Voice into the call + TTS cache script | AGENT then HUMAN-CHECK | 1.A1 | TODO |  |
-| [2.C1](plan/tasks/2.C1.md) | Gloss buffer + offline English | AGENT | 0.4, 2.B1 | TODO |  |
-| [2.A2](plan/tasks/2.A2.md) | STT, metrics, Chips, Consent | AGENT | 1.A1, 2.C1 | TODO | STT subset published in 13b6b5d: 158 frontend/10 backend tests, build/lint PASS; metrics/Chips/product Consent absent; full card and live speech acceptance pending; see voice-to-captions sub-plan |
-| [2.A3](plan/tasks/2.A3.md) | Call screen with the ASL → voice switch | AGENT then HUMAN-CHECK | 1.0, 2.A1, 2.A2, 2.C1 | TODO |  |
-| [3.2](plan/tasks/3.2.md) | Recognizer on the ASL switch | AGENT then HUMAN-CHECK | 3.1, 2.A3 | TODO |  |
-| [4.4](plan/tasks/4.4.md) | Scribe captions with fallback | AGENT then HUMAN-CHECK | 2.A3 | TODO | stretch |
-| [4.5](plan/tasks/4.5.md) | Teach my sign | AGENT then HUMAN-CHECK | 3.2 | TODO | stretch |
+| [1.A1](plan/tasks/1.A1.md) | Call skeleton: API client, LiveKit, captions, routes | AGENT then HUMAN-CHECK | 1.0 | NEEDS-HUMAN | verify PASS 2026-10-18 on 8239bb7; two headless browsers on live site: join + signer caption and voice reach hearing side; two-laptop check pending |
+| [2.A1](plan/tasks/2.A1.md) | Voice into the call + TTS cache script | AGENT then HUMAN-CHECK | 1.A1 | SUPERSEDED | signerVoice.ts plays ElevenLabs audio into a published call mic track (4c9b4a7); 2-browser live test heard it; MP3 cache + cache_tts.py dropped |
+| [2.C1](plan/tasks/2.C1.md) | Gloss buffer + offline English | AGENT | 0.4, 2.B1 | SUPERSEDED | Gemini /api/gloss via signedSentence.ts, used only at confidence >= 0.6, else the signed words (0f36b58); offline English rules not built |
+| [2.A2](plan/tasks/2.A2.md) | STT, metrics, Chips, Consent | AGENT | 1.A1, 2.C1 | PARTIAL | STT done: ElevenLabs Scribe call captions (13b6b5d, 766c965); consent = per-feature checkboxes; metrics.ts (event logging for #/stats) and Chips not built |
+| [2.A3](plan/tasks/2.A3.md) | Call screen with the ASL → voice switch | AGENT then HUMAN-CHECK | 1.0, 2.A1, 2.A2, 2.C1 | SUPERSEDED | no ASL switch: live dictation, Send now/Clear, speak toggle, voice picker in the signer panel (0f36b58, 4c9b4a7); "That was wrong" retraction not built |
+| [3.2](plan/tasks/3.2.md) | Recognizer on the ASL switch | AGENT then HUMAN-CHECK | 3.1, 2.A3 | SUPERSEDED | live dictation wired into Call.tsx; sentences sent and spoken without a button (0f36b58) |
+| [4.4](plan/tasks/4.4.md) | Scribe captions with fallback | AGENT then HUMAN-CHECK | 2.A3 | SUPERSEDED | ElevenLabs Scribe in speech check + call captions (766c965); differs from the card's startScribe/fallback API |
+| [4.5](plan/tasks/4.5.md) | Teach my sign | AGENT then HUMAN-CHECK | 3.2 | SUPERSEDED | My signs: GitHub sign-in, private Supabase samples, in-browser kNN that extends the shared words (3d8733e, 7a54221) |
 
 ### Lane server — FastAPI server, Gemini prompt, database schema, deploy files, stats page
 
@@ -351,24 +302,24 @@ Owns: `ml/`, `web/scripts/export-fixtures.ts`
 
 | ID | Task | Owner | Depends on | Status | Evidence |
 |---|---|---|---|---|---|
-| [2.B4](plan/tasks/2.B4.md) | Train + eval + ONNX export (smoke-tested) | AGENT then HUMAN-CHECK | — | TODO |  |
-| [1.B5](plan/tasks/1.B5.md) | Python features + parity test | AGENT | 1.B2 | TODO |  |
-| [1.B6](plan/tasks/1.B6.md) | Kaggle GISLR converter + synthetic test | AGENT then HUMAN-CHECK | 1.B5 | TODO |  |
+| [2.B4](plan/tasks/2.B4.md) | Train + eval + ONNX export (smoke-tested) | AGENT then HUMAN-CHECK | — | DROPPED | owner 2026-10-18: no new model training; use Lisa's committed model (405afe0). Unmerged branch feat/word-retraining kept for reference |
+| [1.B5](plan/tasks/1.B5.md) | Python features + parity test | AGENT | 1.B2 | DROPPED | owner 2026-10-18: no Python feature twin needed without training |
+| [1.B6](plan/tasks/1.B6.md) | Kaggle GISLR converter + synthetic test | AGENT then HUMAN-CHECK | 1.B5 | DROPPED | owner 2026-10-18: no GISLR/Kaggle data in the current direction |
 
 ### Lane human — people only: accounts, recording, GPU training runs, live checks, demo
 
 | ID | Task | Owner | Depends on | Status | Evidence |
 |---|---|---|---|---|---|
-| [0.1](plan/tasks/0.1.md) | Accounts and keys | HUMAN | — | HUMAN | server/.env exists on the dev machine; live provider checks pending |
-| [0.2](plan/tasks/0.2.md) | Kaggle download + CUDA PyTorch on the MSI | HUMAN | — | HUMAN |  |
-| [0.3](plan/tasks/0.3.md) | Learn the signs | HUMAN | — | HUMAN |  |
-| [1.C3](plan/tasks/1.C3.md) | TTS live check + pick voice | HUMAN | 1.C1 | HUMAN |  |
-| [1.D1](plan/tasks/1.D1.md) | Record our signs, idle, letters | HUMAN | 1.B4 | HUMAN |  |
-| [3.3](plan/tasks/3.3.md) | Golden path on two laptops | HUMAN | 3.2, 2.B4, 1.D1, 1.C3 | HUMAN |  |
+| [0.1](plan/tasks/0.1.md) | Accounts and keys | HUMAN | — | HUMAN | all five server keys true on Fly /api/health; Supabase GitHub sign-in works on the live site 2026-10-18 |
+| [0.2](plan/tasks/0.2.md) | Kaggle download + CUDA PyTorch on the MSI | HUMAN | — | DROPPED | owner 2026-10-18: no Kaggle data or GPU training |
+| [0.3](plan/tasks/0.3.md) | Learn the signs | HUMAN | — | HUMAN | now: learn Lisa's 7 words and the personal signs taught for the demo |
+| [1.C3](plan/tasks/1.C3.md) | TTS live check + pick voice | HUMAN | 1.C1 | HUMAN | live /api/tts 200 (~0.4 s to first audio), 8 voices; voice is chosen in the call; MP3 cache dropped with 2.A1 |
+| [1.D1](plan/tasks/1.D1.md) | Record our signs, idle, letters | HUMAN | 1.B4 | DROPPED | owner 2026-10-18: replaced by teaching personal signs on #/training |
+| [3.3](plan/tasks/3.3.md) | Golden path on two laptops | HUMAN | 3.2, 2.B4, 1.D1, 1.C3 | HUMAN | golden path is now: teach signs -> live dictation -> Gemini sentence -> voice + captions on two laptops |
 | [4.1](plan/tasks/4.1.md) | Deploy web app to Vultr | HUMAN | 1.C4, 3.3 | HUMAN | deployed to Fly.io (https://signline-api.fly.dev) instead of Vultr; golden-path run on the deployed URL pending |
 | [4.6](plan/tasks/4.6.md) | Pitch + slides | HUMAN | — | HUMAN |  |
 | [4.7](plan/tasks/4.7.md) | Failure drills | HUMAN | 3.3 | HUMAN |  |
-| [4.8](plan/tasks/4.8.md) | More Kaggle signs (retrain) | HUMAN | 2.B4 | HUMAN |  |
+| [4.8](plan/tasks/4.8.md) | More Kaggle signs (retrain) | HUMAN | 2.B4 | DROPPED | owner 2026-10-18: no retraining |
 | [5](plan/tasks/5.md) | Freeze, rehearse, submit | HUMAN | 3.3 | HUMAN |  |
 | [6](plan/tasks/6.md) | After the event | HUMAN | 5 | HUMAN |  |
 
@@ -383,7 +334,8 @@ Owns: `ml/`, `web/scripts/export-fixtures.ts`
 | CP3 | Sun 02:00 | 3.1, 3.2, 3.3 | full demo script live; `git tag golden-path` |
 | CP4 | Sun 13:00 | 4.x as time allows | deployed URL or a rehearsed local fallback; backup video recorded |
 
-If the team falls behind, follow the cut order in `plan/context.md` §10. **Never cut:** the consent screen, the ASL
+*2026-10-18: of this list, the ASL switch and cached MP3s were dropped (see 2.A1/2.A3); holding unsure signs is
+covered by confidence-only dictation, and "That was wrong" is not built.* If the team falls behind, follow the cut order in `plan/context.md` §10. **Never cut:** the consent screen, the ASL
 switch, holding unsure sentences, "That was wrong", the offline fallbacks, the cached MP3s, the backup video, and the
 limitations slide.
 

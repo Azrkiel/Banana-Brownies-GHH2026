@@ -37,6 +37,10 @@ TASKS = ROOT / "plan" / "tasks"
 START, END = "<!-- LEDGER:START -->", "<!-- LEDGER:END -->"
 SATISFIED = {"DONE", "NEEDS-HUMAN", "VERIFIED"}
 OPEN = {"TODO", "PARTIAL"}
+# Owner decisions, set by hand: the card's goal shipped another way, or the direction was abandoned.
+# Closed rows are not agent work. A superseded goal shipped, so it satisfies dependencies; a dropped one does not.
+CLOSED = {"SUPERSEDED", "DROPPED"}
+DEPS_MET = SATISFIED | {"SUPERSEDED"}
 
 PRELUDE = r'''set -euo pipefail
 fail() { echo "FAIL: $*" >&2; exit 1; }
@@ -142,12 +146,12 @@ def pick(rows: list[dict], lane: str | None) -> tuple[dict | None, list[str], li
     for r in mine:
         if r["status"] not in OPEN:
             continue
-        unmet = [d for d in r["deps"] if status.get(d) not in SATISFIED]
+        unmet = [d for d in r["deps"] if status.get(d) not in DEPS_MET]
         if not unmet:
             return r, waits, []
         waits.append(f"{r['id']} waits on " + ", ".join(f"{d} ({lanes.get(d, '?')} lane, {status.get(d, '?')})"
                                                           for d in unmet))
-    return None, waits, [r for r in mine if r["status"] not in SATISFIED]
+    return None, waits, [r for r in mine if r["status"] not in SATISFIED | CLOSED]
 
 
 def next_task(rows: list[dict], lane: str | None) -> int:
@@ -166,7 +170,7 @@ def next_task(rows: list[dict], lane: str | None) -> int:
                 print(f"  {r2['id']} BLOCKED: {r2['cells'][5]}")
         print(f"Run: python plan/verify.py wait{' --lane ' + lane if lane else ''}")
         return 2
-    print(f"NO AGENT TASKS LEFT ({scope}). Every AGENT row is DONE or NEEDS-HUMAN.")
+    print(f"NO AGENT TASKS LEFT ({scope}). Every AGENT row is DONE, NEEDS-HUMAN, or closed by the owner (SUPERSEDED/DROPPED).")
     status_report(rows if lane is None else [x for x in rows if x["lane"] == lane])
     return 0
 
