@@ -1,6 +1,7 @@
 import { Button } from '../components/ui';
 import { useEffect, useRef, useState } from 'react';
-import { startWebSpeech, type Stt, type SttState } from '../lib/stt';
+import { type Stt, type SttState } from '../lib/stt';
+import { startScribe } from '../lib/scribe';
 import './SpeechCheck.css';
 
 type ViewState = SttState | 'idle';
@@ -27,8 +28,7 @@ export default function SpeechCheck() {
   const [phrases, setPhrases] = useState<Phrase[]>([]);
   const [message, setMessage] = useState('');
   const [supported] = useState(() => {
-    const browser = window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
-    return typeof browser.SpeechRecognition === 'function' || typeof browser.webkitSpeechRecognition === 'function';
+    return typeof navigator.mediaDevices?.getUserMedia === 'function';
   });
   const [secure] = useState(() => window.isSecureContext);
   const session = useRef<Stt | null>(null);
@@ -73,12 +73,12 @@ export default function SpeechCheck() {
     if (running.current || !consented || !supported || !secure) return;
     const attempt = ++generation.current;
     const current = () => mounted.current && generation.current === attempt;
-    // Reserve ownership before startWebSpeech: callbacks can happen synchronously.
+    // Reserve ownership before startScribe: callbacks can happen synchronously.
     running.current = true;
     setDraft('');
     setMessage('');
     setState('starting');
-    const handle = startWebSpeech((text, final) => {
+    const handle = startScribe((text, final) => {
       if (!current()) return;
       if (final && text) {
         const phrase = { id: nextPhrase.current++, text };
@@ -137,7 +137,7 @@ export default function SpeechCheck() {
             <div className="speech-check__mic" aria-hidden="true"><MicIcon /></div>
             <div role="status" aria-live="polite"><h2>{stateText[state].label}</h2>{stateText[state].detail && state !== 'idle' && <p className="speech-check__detail">{stateText[state].detail}</p>}</div>
             {!secure && <p className="speech-check__notice" role="alert">Open this page on localhost or HTTPS to use a microphone.</p>}
-            {!supported && <p className="speech-check__notice" role="alert">Speech recognition is unavailable in this browser. Open this address in desktop Chrome to try it.</p>}
+            {!supported && <p className="speech-check__notice" role="alert">Microphone streaming is unavailable in this browser. Use a current browser on HTTPS or localhost.</p>}
             {message && <p className="speech-check__notice" role={state === 'failed' ? 'alert' : 'status'}>{message}</p>}
             <label className="speech-check__consent"><input type="checkbox" checked={consented} onChange={event => { setConsented(event.target.checked); if (!event.target.checked && running.current) stop(); }} /><span>I understand my microphone audio may be sent to my browser’s speech service for recognition.</span></label>
             <div className="speech-check__buttons">

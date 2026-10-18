@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { RemoteTrack } from 'livekit-client';
 import { joinCall, type Call as CallT, type CallStatus } from '../lib/call';
 import { CaptionLane } from '../components/CaptionLane';
+import { PreCall } from '../components/PreCall';
 import { createCaptionHistory } from '../lib/captions';
 import { createSpeechCaptions } from '../lib/speechCaptions';
 import { createCallSpeech, type CallSpeechState } from '../lib/callSpeech';
@@ -80,6 +81,7 @@ export default function Call() {
 }
 
 export function CallRoom({ query }: { query: string }) {
+  const [checked, setChecked] = useState(false);
   const params = readRoomParams(query);
   if (!params) {
     return (
@@ -88,10 +90,10 @@ export function CallRoom({ query }: { query: string }) {
       </main>
     );
   }
-  return <RoomSession {...params} />;
+  return checked ? <RoomSession {...params} onRecheck={() => setChecked(false)} /> : <PreCall {...params} onJoin={() => setChecked(true)} />;
 }
 
-function RoomSession({ room, name, role }: { room: string; name: string; role: Role }) {
+function RoomSession({ room, name, role, onRecheck }: { room: string; name: string; role: Role; onRecheck(): void }) {
   const [captions, setCaptions] = useState<Caption[]>([]);
   const [status, setStatus] = useState<Status>('idle');
   const [draft, setDraft] = useState('');
@@ -348,11 +350,11 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
             <div className="local-tile"><video ref={local} autoPlay muted playsInline className="mirror local-video" aria-label="Your camera preview" />{!busy && <span className="camera-off" aria-hidden="true">Camera off</span>}<span className="video-label">{inRoom ? name : 'You'} <span>· {role === 'signer' ? 'Signer' : 'Hearing'}</span></span></div>
             {remoteVisible && <span className="peer-label">{peer ?? 'Other participant'}</span>}
           </div>
-          <div className="call-toolbar"><p><span className="privacy-dot" />{status === 'joining' ? 'Waiting for camera access and call connection' : inRoom ? role === 'signer' ? 'Camera on · microphone off' : muted ? 'Call microphone muted · speech recognition paused' : 'Camera and call microphone enabled' : 'Camera and microphone stay off until you join.'}</p><div className="call-actions">{role === 'hearing' && inRoom && <Button disabled={!canSend || muting} onClick={() => void toggleMicrophone()}>{muting ? 'Changing microphone…' : muted ? 'Unmute microphone' : 'Mute microphone'}</Button>}{status === 'audio-blocked' && <Button onClick={enableAudio}>Enable audio</Button>}{busy ? <Button variant="danger" onClick={leave}>{status === 'joining' ? 'Cancel' : 'Leave room'}</Button> : <Button variant="primary" onClick={() => void join()}>Rejoin</Button>}</div></div>
+          <div className="call-toolbar"><p><span className="privacy-dot" />{status === 'joining' ? 'Waiting for camera access and call connection' : inRoom ? role === 'signer' ? 'Camera on · microphone off' : muted ? 'Call microphone muted · speech recognition paused' : 'Camera and call microphone enabled' : 'Camera and microphone stay off until you join.'}</p><div className="call-actions">{role === 'hearing' && inRoom && <Button disabled={!canSend || muting} onClick={() => void toggleMicrophone()}>{muting ? 'Changing microphone…' : muted ? 'Unmute microphone' : 'Mute microphone'}</Button>}{status === 'audio-blocked' && <Button onClick={enableAudio}>Enable audio</Button>}{busy ? <Button variant="danger" onClick={leave}>{status === 'joining' ? 'Cancel' : 'Leave room'}</Button> : <Button variant="primary" onClick={onRecheck}>Rejoin</Button>}</div></div>
           {role === 'hearing' && <section className="call-speech" aria-labelledby="call-speech-title">
             <div className="call-speech__heading"><h2 id="call-speech-title">Speech captions</h2><span role="status">{speechLabels[speechState]}</span></div>
             <label><input type="checkbox" checked={consented} onChange={event => { setConsented(event.target.checked); speech.current?.consent(event.target.checked); }} /><span>I agree to send microphone audio to my browser’s speech service and share the recognized text with this room.</span></label>
-            <div className="call-speech__actions"><Button variant="primary" disabled={!speechEnabled && (!consented || !canSend || muted)} onClick={() => { setSpeechError(''); speech.current?.enable(!speechEnabled); }}>{speechEnabled ? 'Stop captions' : 'Start captions'}</Button><p>Use desktop Chrome. Stopping captions leaves call audio on. Mute the microphone to pause both.</p></div>
+            <div className="call-speech__actions"><Button variant="primary" disabled={!speechEnabled && (!consented || !canSend || muted)} onClick={() => { setSpeechError(''); speech.current?.enable(!speechEnabled); }}>{speechEnabled ? 'Stop captions' : 'Start captions'}</Button><p>Powered by ElevenLabs Scribe. Stopping captions leaves call audio on. Mute the microphone to pause both.</p></div>
             {speechError && <p className="call-speech__error" role="alert">{speechError}</p>}
             {deliveryError && <p className="call-speech__error" role="alert">{deliveryError}</p>}
           </section>}

@@ -1,4 +1,5 @@
-import { startWebSpeech, type Stt, type SttState } from './stt';
+import { type Stt, type SttState } from './stt';
+import { startScribe } from './scribe';
 import type { Role } from './types';
 
 export type CallSpeechState = SttState | 'disabled' | 'paused';
@@ -8,7 +9,7 @@ type Options = {
   clearDraft(): void;
   onState(state: CallSpeechState): void;
   onError(message: string): void;
-  start?: typeof startWebSpeech;
+  start?: (text: (text: string, final: boolean) => void, error: (message: string) => void, state?: (state: SttState) => void) => Stt | null;
 };
 
 /** Explicit user intent is separate from current permission/connectivity. One owner
@@ -38,7 +39,7 @@ export function createCallSpeech(o: Options) {
     const attempt = ++epoch;
     const current = () => active && epoch === attempt;
     running = true;
-    const handle = (o.start ?? startWebSpeech)(
+    const handle = (o.start ?? startScribe)(
       (text, final) => { if (current() && running) o.transcript(text, final); },
       message => { if (current()) o.onError(message); },
       state => {

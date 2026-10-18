@@ -102,9 +102,12 @@ The dataset script is not registered until its implementation arrives in Phase 2
    from the repository root; on macOS/Linux use the backend command above from `server/`.
 2. Open the frontend in desktop Chrome on localhost or HTTPS. Enter a display
    name and a room (3–32 lowercase letters, numbers or hyphens), then select a role.
-3. Choose **Join room** and allow camera access. The hearing participant also
-   grants microphone access; the signer's microphone stays off. The same camera
-   track supplies the local preview and LiveKit publication; only the preview is mirrored.
+3. Choose **Check devices** to open a pre-call screen in a new tab. Start the camera
+   to check framing. Hearing participants choose **Test microphone** and speak to
+   check the local level meter; signers never request microphone access. Checks
+   stay local and do not connect to LiveKit. Choose **Join conversation** when
+   ready. Test devices stop before the call reacquires the browser defaults.
+   If permissions fail, retry; stopping a check disables joining until it passes again.
 4. Join the same room on another laptop with a different name. Each frontend
    needs a reachable API. When sharing one API over the LAN, bind Uvicorn to
    `0.0.0.0` and start the second laptop's frontend with
@@ -117,8 +120,17 @@ The dataset script is not registered until its implementation arrives in Phase 2
    use stops. Navigation away and cancellation also stop camera tracks.
 
 Typed captions remain in memory only, with the latest eight displayed. A failed
-send retains the draft for retry. The ASL voice switch and speech recognition
-arrive in later tasks, so typing is the available caption input for now.
+send retains the draft for retry. The ASL voice switch is still being built.
+Hearing participants can opt in to ElevenLabs Scribe captions; typed captions
+remain available when live transcription is unavailable.
+
+Speech check (`#/speech-check`) and in-call captions share `web/src/lib/scribe.ts`.
+After consent and Start, the browser fetches a single-use token from
+`/api/scribe-token` and streams microphone audio to ElevenLabs `scribe_v2_realtime`.
+The API key stays in the server environment / Fly secrets. Scribe access, account
+credits, microphone permission and an internet connection are required. Stop,
+consent revocation, mute, disconnect and navigation close transcription. Stopping
+captions leaves call audio on. There is no silent browser-provider fallback.
 
 ### Camera benchmark and recording
 
