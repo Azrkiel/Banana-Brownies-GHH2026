@@ -53,3 +53,8 @@
 .signer-words__alphabet .chip .x { min-width: 28px; color: var(--color-muted); border-left: 1px solid var(--color-field-border); }
 .signer-words__options { margin-top: 8px; }
 @media (max-width: 900px) { .signer-words__grid { grid-template-columns: 1fr; } .signer-words__sentence { position: static; } }
+
+.signer-words__sentence:focus { outline: none; }
+.signer-words__sentence:focus-visible { outline: 3px solid var(--color-focus, var(--color-ink)); outline-offset: 2px; }
+.signer-words__sentence-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.signer-words__sentence-head h3 { margin: 0; }
