@@ -132,7 +132,7 @@ export default function Call({ welcomeFlight = false, onLanded }: { welcomeFligh
               </fieldset>
               <div className="join-submit">
                 <Button variant="primary" type="submit" disabled={!canJoin} aria-describedby="join-hint">Join <Icon name="arrow" /></Button>
-                <p className="join-help" id="join-hint">{hint ? `${hint}. ` : ''}Next: a quick camera and microphone check.</p>
+                <p className="join-help" id="join-hint">{hint ? `${hint}. ` : ''}Next: a quick {role === 'signer' ? 'camera' : 'camera and microphone'} check.</p>
               </div>
             </form>
           </section>
@@ -263,7 +263,7 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
 
   function openLeave() {
     const active = document.activeElement;
-    leaveOpener.current = active instanceof HTMLElement && active !== document.body ? active : null;
+    leaveOpener.current = active instanceof HTMLElement && active !== document.body && active.tagName !== 'MAIN' ? active : null;
     setConfirmLeave(true);
   }
   // While in the call, the site nav is hidden (CSS), the brand link and browser Back/hash changes ask first.
