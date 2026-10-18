@@ -1,5 +1,4 @@
 .personal-page .page-heading .ui-badge { white-space: normal; }
-.personal-page .ui-button { min-height: 52px; padding: 12px 20px; font-size: 1rem; line-height: 1.5; }
 .personal-intro { max-width: 76ch; margin: 0 0 32px; }
 .personal-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); gap: 24px; align-items: start; }
 .personal-layout > div { display: grid; gap: 24px; }
@@ -7,9 +6,9 @@
 .personal-layout .field { margin-bottom: 24px; }
 .personal-layout .check-field { align-items: start; margin: 24px 0; }
 .personal-layout .check-field input { flex-shrink: 0; margin-top: 5px; }
-.personal-camera { position: relative; aspect-ratio: 4 / 3; border: 1px solid var(--color-field-border); border-radius: var(--radius-control); overflow: hidden; background: var(--color-surface); }
+.personal-camera { position: relative; aspect-ratio: 4 / 3; border: 1px solid var(--color-field-border); border-radius: var(--radius-panel); overflow: hidden; background: transparent; }
 .personal-camera video { width: 100%; height: 100%; object-fit: cover; }
-.personal-camera-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px; color: var(--color-muted); }
+.personal-camera-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 24px; text-align: center; color: var(--color-muted); }
 .personal-camera-placeholder .bird-scene { width: min(80%, 300px); }
 .personal-layout .button-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 20px 0; }
 .personal-layout .button-row .ui-button, .personal-model-test > .ui-button { width: 100%; }
@@ -26,5 +25,10 @@
 .account-bird { width: 100%; }
 .account-welcome h2 { font-size: clamp(2rem, 4vw, 3rem); }
 .account-welcome .ui-button { margin-block: 12px; }
-@media (max-width: 850px) { .personal-layout { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .personal-layout { grid-template-columns: 1fr; } }
 @media (max-width: 600px) { .account-welcome { grid-template-columns: 1fr; gap: 16px; } .account-bird { max-width: 260px; margin: auto; } .personal-layout .button-row { grid-template-columns: 1fr; } }
+.personal-hint { font-size: 1rem; color: var(--color-muted); margin: 0 0 8px; }
+.personal-warn { font-size: 1rem; color: var(--color-warning); margin: -12px 0 24px; }
+.inline-confirm { flex-basis: 100%; padding: 16px; margin: 4px 0 0; border: 1px solid var(--color-field-border); border-radius: var(--radius-control); }
+.inline-confirm p { margin: 0 0 12px; }
+.inline-confirm .button-row { margin: 0; }

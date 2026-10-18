@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useCameraTracker } from '../lib/useCameraTracker';
 import { Segmenter } from '../lib/segmenter';
 import { LETTERS, RECORD_LABELS } from '../vocab';
+import { signLabel } from '../lib/signLabels';
 import type { Clip, ClipKind, Frame, Session } from '../lib/types';
 import './Studio.css';
 
@@ -30,6 +31,7 @@ export default function Recorder() {
   const [holding, setHolding] = useState(false);
   const [clips, setClips] = useState<Clip[]>([]);
   const [message, setMessage] = useState('');
+  const [downloaded, setDownloaded] = useState(0);
   const segmenter = useRef(new Segmenter());
   const letter = useRef<{ label: string; frames: Frame[] } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -42,13 +44,24 @@ export default function Recorder() {
       if (event?.kind === 'end') {
         const saved: Clip = { kind: 'sign', label: state.current.label, frames: event.frames };
         setClips((current) => [...current, saved]);
-        setMessage(`Saved ${saved.label} (${saved.frames.length} frames)`);
+        setMessage(`Saved ${signLabel(saved.label)} (${saved.frames.length} frames)`);
       }
     }
     if (letter.current && frame.hands.length) letter.current.frames.push(frame);
   }, []);
   const { video, previewReady, ready, error } = useCameraTracker(camera && consent, false, onFrame);
   const busy = armed || holding;
+  const unsaved = clips.length > downloaded;
+  useEffect(() => {
+    if (!unsaved) return;
+    const guard = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', guard);
+    return () => window.removeEventListener('beforeunload', guard);
+  }, [unsaved]);
+  const cameraHint = !consent ? 'Tick the consent box first.' : '';
+  const startHint = !consent ? 'Tick the consent box first.' : !signer ? 'Enter a signer ID first.' : !ready ? 'Start the camera first.' : '';
+  const undoHint = busy ? 'Stop recording first.' : !clips.length ? 'No clips to undo yet.' : '';
+  const downloadHint = busy ? 'Stop recording first.' : !clips.length ? 'Record a clip first.' : !signer ? 'Enter a signer ID first.' : '';
   const labels = kind === 'sign' ? RECORD_LABELS : LETTERS;
   const count = (value: string) => clips.filter((clip) => clip.kind === kind && clip.label === value).length;
 
@@ -83,14 +96,15 @@ export default function Recorder() {
         return;
       }
       setClips((current) => [...current, { kind: 'letter', ...captured }]);
-      setMessage(`Saved ${captured.label} (${captured.frames.length} frames)`);
+      setMessage(`Saved ${signLabel(captured.label)} (${captured.frames.length} frames)`);
     }, LETTER_HOLD_MS);
   }
 
   return (
     <main className="studio-page" id="main-content">
-      <PageHeader title="Recorder"
+      <PageHeader title="Record"
         accessory={<Badge tone={busy ? 'warning' : ready ? 'positive' : 'neutral'}>{busy ? 'Recording in progress' : ready ? 'Camera ready' : 'Local capture'}</Badge>} />
+      <p className="recorder-note"><Icon name="record" />Developer tool: records dataset clips for the research vocabulary. These are separate from the seven shared call words (Demo, Food, Goodbye, Hello, Lisa, My, Name).</p>
       <div className="recorder-consent ui-surface"><Icon name="shield" /><div><h2>Consent</h2><p>Landmarks only, no video. Used to train this project’s model; not published.</p>
         <label className="check-field"><input type="checkbox" checked={consent} onChange={(event) => {
           stopRecording(); setCamera(false); setConsent(event.target.checked);
@@ -103,17 +117,18 @@ export default function Recorder() {
             {(!camera || !consent || error) && <div className="camera-stage__placeholder"><BirdScene scene="preening" className="camera-illustration" /></div>}
             <span className="camera-stage__label"><span className="status-dot" />{busy ? 'Recording landmarks' : previewReady ? 'Local preview · Mirrored' : camera && consent && !error ? 'Starting camera…' : 'Camera off'}</span>
           </section>
-          <div className="recorder-camera-controls"><p role="status">{error || (camera && !ready ? previewReady ? 'Loading tracking models…' : 'Starting camera…' : ready ? 'Camera ready' : '')}</p><Button disabled={!consent} onClick={() => { stopRecording(); setCamera(!camera); }}><Icon name="camera" />{camera ? 'Stop camera' : 'Start camera'}</Button></div>
+          <div className="recorder-camera-controls"><p role="status">{error || (camera && !ready ? previewReady ? 'Loading tracking models…' : 'Starting camera…' : ready ? 'Camera ready' : '')}</p><div className="recorder-camera-controls__end"><Button aria-describedby={cameraHint ? 'hint-camera' : undefined} disabled={!consent} onClick={() => { stopRecording(); setCamera(!camera); }}><Icon name="camera" />{camera ? 'Stop camera' : 'Start camera'}</Button>{cameraHint && <p id="hint-camera" className="studio-hint">{cameraHint}</p>}</div></div>
           <Surface className="clip-library" aria-labelledby="clip-library-title"><div className="panel-heading"><h2 id="clip-library-title">Clips</h2><Badge>{clips.length} clips</Badge></div>
-            <div className="clip-counts" aria-label="Label counts">{labels.map(value => <span key={value}><b>{value}</b><span>{count(value)}</span></span>)}</div>
+            <div className="clip-counts" aria-label="Label counts">{labels.map(value => <span key={value}><b>{signLabel(value)}</b><span>{count(value)}</span></span>)}</div>
             <p className="studio-status" role="status">{message || 'No clips'}</p>
-            <div className="button-row"><Button disabled={busy || !clips.length} onClick={() => setClips((current) => current.slice(0, -1))}>Undo last</Button><Button disabled={busy || !clips.length || !signer} onClick={() => download({ version: 1, signer, leftHanded, recordedAt: new Date().toISOString(), clips })}><Icon name="download" />Download ({clips.length})</Button></div>
-            <p className="note">Download before leaving; clips are not saved online.</p>
+            <div className="button-row"><Button aria-describedby={undoHint ? 'hint-undo' : undefined} disabled={busy || !clips.length} onClick={() => setClips((current) => current.slice(0, -1))}>Undo last</Button><Button aria-describedby={downloadHint ? 'hint-download' : undefined} disabled={busy || !clips.length || !signer} onClick={() => { download({ version: 1, signer, leftHanded, recordedAt: new Date().toISOString(), clips }); setDownloaded(clips.length); }}><Icon name="download" />Download ({clips.length})</Button></div>
+            <div className="clip-hints">{undoHint && <p id="hint-undo" className="studio-hint">Undo: {undoHint}</p>}{downloadHint && <p id="hint-download" className="studio-hint">Download: {downloadHint}</p>}</div>
+            <p className="note">Download before leaving; clips are not saved online. The browser asks you to confirm if you leave with undownloaded clips.</p>
           </Surface>
         </div>
         <aside className="studio-sidebar">
           <Surface aria-labelledby="recorder-settings"><h2 id="recorder-settings">Session</h2>
-            <label className="field">Signer ID <input placeholder="e.g. liv" value={signer} disabled={busy || clips.length > 0} onChange={(event) => setSigner(event.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))} /></label>
+            <label className="field">Signer ID <input placeholder="e.g. signer-01" value={signer} disabled={busy || clips.length > 0} onChange={(event) => setSigner(event.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))} /></label>
             <label className="check-field"><input type="checkbox" checked={leftHanded} disabled={busy || clips.length > 0} onChange={(event) => setLeftHanded(event.target.checked)} /><span>Left-handed signer</span></label>
             <p className="note">Use a pseudonym. Locks after the first clip.</p>
           </Surface>
@@ -125,15 +140,16 @@ export default function Recorder() {
             }}><option value="sign">Signs</option><option value="letter">Letters</option></select></label>
             <label className="field">Label <select aria-label="Label" value={label} disabled={busy} onChange={(event) => {
               setLabel(event.target.value); segmenter.current = new Segmenter();
-            }}>{labels.map((value) => <option key={value} value={value}>{value} ({count(value)})</option>)}</select></label>
+            }}>{labels.map((value) => <option key={value} value={value}>{signLabel(value)} ({count(value)})</option>)}</select></label>
             {kind === 'sign'
-              ? <Button variant={armed ? 'danger' : 'primary'} disabled={!armed && (!ready || !signer || !consent)} onClick={() => {
+              ? <Button aria-describedby={!armed && startHint ? 'hint-start' : undefined} variant={armed ? 'danger' : 'primary'} disabled={!armed && (!ready || !signer || !consent)} onClick={() => {
                 if (armed) { stopRecording(); return; }
                 segmenter.current = new Segmenter();
                 state.current.armed = true;
-                setArmed(true); setMessage(`Recording ${label}. Sign, then lower your hands or pause.`);
-              }}><Icon name="record" />{armed ? 'Stop' : 'Start'} recording {label}</Button>
-              : <Button variant="primary" disabled={!ready || !signer || !consent || holding} onClick={holdLetter}>{holding ? 'Holding…' : `Hold ${label} for 2 s`}</Button>}
+                setArmed(true); setMessage(`Recording ${signLabel(label)}. Sign, then lower your hands or pause.`);
+              }}><Icon name="record" />{armed ? 'Stop' : 'Start'} recording {signLabel(label)}</Button>
+              : <Button aria-describedby={!holding && startHint ? 'hint-start' : undefined} variant="primary" disabled={!ready || !signer || !consent || holding} onClick={holdLetter}>{holding ? 'Holding…' : `Hold ${label} for 2 s`}</Button>}
+            {!busy && startHint && <p id="hint-start" className="studio-hint">{startHint}</p>}
             {holding && <Button variant="ghost" onClick={() => { stopRecording(); setMessage('Letter recording cancelled.'); }}>Cancel hold</Button>}
             <p className="note">{kind === 'sign' ? 'Sign once, then lower your hands or pause to save a clip.' : 'Hold still for two seconds with your hand in view.'}</p>
           </Surface>

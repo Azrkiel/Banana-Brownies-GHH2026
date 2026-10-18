@@ -29,5 +29,15 @@
 .clip-library .button-row { margin-top: 24px; }
 .clip-library > .note { font-size: 1rem; margin-top: 20px; }
 @media (max-width: 900px) { .studio-layout { grid-template-columns: minmax(0,1fr) 260px; gap: 24px; } }
-@media (max-width: 760px) { .studio-layout { grid-template-columns: 1fr; } .studio-sidebar { grid-template-columns: repeat(2,minmax(0,1fr)); } .camera-stage, .camera-stage > video { min-height: 360px; } .recorder-layout > .studio-sidebar { order: -1; } }
-@media (max-width: 540px) { .studio-sidebar { grid-template-columns: 1fr; } .camera-stage, .camera-stage > video { min-height: 320px; } .recorder-consent { gap: 12px; } .clip-library .button-row { align-items: flex-start; } }
+@media (max-width: 900px) { .studio-layout { grid-template-columns: 1fr; } .studio-sidebar { grid-template-columns: repeat(2,minmax(0,1fr)); } .camera-stage, .camera-stage > video { min-height: 360px; } .recorder-layout > .studio-sidebar { order: -1; } }
+@media (max-width: 600px) { .studio-sidebar { grid-template-columns: 1fr; } .camera-stage, .camera-stage > video { min-height: 320px; } .recorder-consent { gap: 12px; } .clip-library .button-row { align-items: flex-start; } }
+.studio-lead { max-width: 70ch; margin: 0 0 24px; color: var(--color-muted); }
+.studio-details > summary { cursor: pointer; font-size: 1.25rem; min-height: 44px; display: flex; align-items: center; }
+.studio-hint { font-size: 1rem; color: var(--color-muted); margin: 8px 0 0; }
+.recorder-camera-controls { align-items: flex-start; }
+.recorder-camera-controls__end { display: grid; gap: 4px; justify-items: end; }
+.clip-library .studio-hint { margin-top: 12px; }
+.clip-hints { display: grid; gap: 4px; }
+.recorder-note { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 24px; }
+.recorder-note > .ui-icon { flex-shrink: 0; margin-top: 4px; color: var(--color-muted); }
+.recorder-note p { margin: 0; max-width: 70ch; color: var(--color-muted); font-size: 1rem; }

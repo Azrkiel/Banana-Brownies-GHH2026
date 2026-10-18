@@ -21,28 +21,32 @@ export default function Bench() {
     }
   }, []);
   const { video, previewReady, ready, error } = useCameraTracker(enabled, withFace, onFrame);
+  const status = error || (enabled && !ready ? previewReady ? 'Loading tracking models…' : 'Starting camera…' : info);
   return (
     <main className="studio-page" id="main-content">
-      <PageHeader title="Camera"
-        accessory={<Badge tone={previewReady ? 'positive' : 'neutral'}>{previewReady ? 'Camera ready' : enabled && !error ? 'Starting camera' : 'Camera standby'}</Badge>} />
+      <PageHeader title="Camera check"
+        accessory={<Badge tone={previewReady ? 'positive' : 'neutral'}>{previewReady ? 'Camera ready' : enabled && !error ? 'Starting camera' : 'Camera off'}</Badge>} />
+      <p className="studio-lead">Make sure your hands are in frame and tracked smoothly.</p>
       <div className="studio-layout">
-        <section className="camera-stage" aria-label="Camera benchmark preview">
-          <video ref={video} muted playsInline className="mirror" width={480} />
-          {(!enabled || error) && <div className="camera-stage__placeholder"><BirdScene scene="flight" className="camera-illustration" /></div>}
-          <span className="camera-stage__label"><span className="status-dot" />{previewReady ? 'Local preview · Mirrored' : enabled && !error ? 'Starting camera…' : 'Camera off'}</span>
-        </section>
+        <div className="recorder-workspace">
+          <section className="camera-stage" aria-label="Camera preview">
+            <video ref={video} muted playsInline className="mirror" width={480} />
+            {(!enabled || error) && <div className="camera-stage__placeholder"><BirdScene scene="flight" className="camera-illustration" /></div>}
+            {previewReady && <span className="camera-stage__label"><span className="status-dot" />Local preview · Mirrored</span>}
+          </section>
+          <div className="recorder-camera-controls"><p role="status">{error}</p><Button variant={enabled ? 'secondary' : 'primary'} onClick={() => {
+            stats.current = { count: 0, ms: 0, start: 0 };
+            setEnabled(!enabled);
+          }}><Icon name="camera" />{enabled ? 'Stop camera' : 'Start camera'}</Button></div>
+        </div>
         <aside className="studio-sidebar">
-          <Surface aria-label="Camera controls">
+          <Surface aria-labelledby="bench-details"><details className="studio-details"><summary id="bench-details">Technical details</summary>
             <label className="check-field"><input type="checkbox" checked={withFace} onChange={(e) => {
               stats.current = { count: 0, ms: 0, start: 0 };
               setWithFace(e.target.checked);
             }} /><span>Include face model</span></label>
-            <Button variant={enabled ? 'secondary' : 'primary'} onClick={() => {
-              stats.current = { count: 0, ms: 0, start: 0 };
-              setEnabled(!enabled);
-            }}><Icon name="camera" />{enabled ? 'Stop camera' : 'Start camera'}</Button>
-          </Surface>
-          <Surface aria-labelledby="bench-performance"><h2 id="bench-performance">Tracking</h2><p className="studio-target">20<span> FPS target</span></p><p className="studio-status" role="status">{error || (enabled && !ready ? previewReady ? 'Loading tracking models…' : 'Starting camera…' : info)}</p></Surface>
+            <p className="studio-target">20<span> FPS target</span></p><p className="studio-status" role="status">{status}</p>
+          </details></Surface>
         </aside>
       </div>
       <p className="studio-privacy"><Icon name="shield" />On-device processing. Nothing recorded.</p>
