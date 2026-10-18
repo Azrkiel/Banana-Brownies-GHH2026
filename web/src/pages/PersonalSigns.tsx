@@ -4,7 +4,7 @@ import { useAuth } from '../lib/auth';
 import { Badge, Button, PageHeader, Surface } from '../components/ui';
 import { BirdScene } from '../components/BirdScene';
 import { loadPersonalSamples, savePersonalSample, deletePersonalSamples } from '../lib/personalSigns';
-import { MAX_PERSONAL_SAMPLES, MIN_SIGN_EXAMPLES, signLabel, predictPersonalSign, trainPersonalModel, validateWordSample, type PersonalSample, type WordSample } from '../lib/personalModel';
+import { MAX_PERSONAL_SAMPLES, MIN_SIGN_EXAMPLES, signLabel, trainPersonalModel, validateWordSample, type PersonalSample, type WordSample } from '../lib/personalModel';
 import { useSignCapture } from '../lib/useSignCapture';
 import { loadWordForest, predictSharedAndPersonal } from '../lib/wordRecognition';
 import type { WordForest, WordPrediction } from '../lib/wordModel';
@@ -113,7 +113,7 @@ function TrainingWorkspace({ userId, name }: { userId: string; name: string }) {
       validateWordSample(sample);
       if (test) {
         if (!trained.model) return;
-        setPrediction(sample.featureVersion && sample.featureVersion !== 'word-v1' ? predictPersonalSign(trained.model, sample) : predictSharedAndPersonal(shared, trained.model, sample));
+        setPrediction(predictSharedAndPersonal(shared, trained.model, sample));
         setMessage('Test capture only. This example was not saved or used for training.');
       } else {
         setPending({ ...sample, id: crypto.randomUUID(), label: captureLabel });
@@ -159,7 +159,7 @@ function TrainingWorkspace({ userId, name }: { userId: string; name: string }) {
   const captureHint = !consent ? 'Tick the consent box first.' : !ready ? 'Start the camera first.' : !loaded ? 'Waiting for your saved examples to load.' : !typed ? 'Enter a sign name first.' : pending ? 'Save or discard the captured example first.' : samples.length >= MAX_PERSONAL_SAMPLES ? 'You have reached the example limit. Delete some first.' : '';
   const testHint = !ready ? 'Start the camera first.' : !trained.model ? 'Save enough examples first (see above).' : !loaded ? 'Waiting for your saved examples to load.' : pending ? 'Save or discard the captured example first.' : '';
   return <>
-    <p className="personal-intro">Signed in as <strong>{name}</strong>. Teach isolated signs with one or both hands in your own small vocabulary. In calls, your signs extend the shared words for you only. Your examples are saved privately to your account and are not added to the shared model for everyone. Recognition can make mistakes; always review a suggestion.</p>
+    <p className="personal-intro">Signed in as <strong>{name}</strong>. Teach one-handed, isolated signs in your own small vocabulary. In calls, your signs extend the shared words for you only. Your examples are saved privately to your account and are not added to the shared model for everyone. Recognition can make mistakes; always review a suggestion.</p>
     <div className="personal-layout">
       <div>
         <Surface aria-labelledby="teach-title">
@@ -167,7 +167,7 @@ function TrainingWorkspace({ userId, name }: { userId: string; name: string }) {
           <p>Save at least {MIN_SIGN_EXAMPLES} varied examples of each sign. Keep the same hand and framing when using your model.</p>
           <label className="field">Sign name<input value={label} placeholder="e.g. Water" aria-describedby={duplicate ? 'sign-name-note' : undefined} maxLength={40} disabled={busy || Boolean(pending)} onChange={event => { setLabel(event.target.value); setPrediction(null); }} /></label>
           {duplicate && <p id="sign-name-note" className="personal-warn" role="status">{duplicate}</p>}
-          <label className="check-field"><input type="checkbox" checked={consent} disabled={saving} onChange={event => { stopCamera(); setConsent(event.target.checked); }} /><span>I agree to save my hand landmarks or model embeddings to my private account for personal recognition. No video or audio is uploaded.</span></label>
+          <label className="check-field"><input type="checkbox" checked={consent} disabled={saving} onChange={event => { stopCamera(); setConsent(event.target.checked); }} /><span>I agree to save my hand landmarks to my private account for personal recognition. No video or audio is uploaded.</span></label>
           <div className="personal-camera">
             <video ref={video} muted playsInline className="mirror" aria-label="Training camera preview" />
             {!camera && <div className="personal-camera-placeholder"><BirdScene scene="nest" className="camera-illustration" /></div>}

@@ -54,12 +54,6 @@
 .signer-words__options { margin-top: 8px; }
 @media (max-width: 900px) { .signer-words__grid { grid-template-columns: 1fr; } .signer-words__sentence { position: static; } }
 
-.v2-gloss-strip { display: flex; flex-wrap: wrap; gap: .6rem; margin-block: 1rem; }
-.v2-gloss { border-radius: .8rem; padding: .5rem .7rem; color: #112920; }
-.v2-gloss.high { background: #8ce1b6; }
-.v2-gloss.medium { background: #f4cd78; }
-.v2-gloss select { max-width: 12rem; margin-inline-start: .4rem; }
-.v2-nmm { display: inline-block; font-weight: 650; margin-inline: .4rem; }
 .signer-words__sentence:focus { outline: none; }
 .signer-words__sentence:focus-visible { outline: 3px solid var(--color-focus, var(--color-ink)); outline-offset: 2px; }
 .signer-words__sentence-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }

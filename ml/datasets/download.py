@@ -182,8 +182,10 @@ def download(dataset, dest, license_tier='commercial', offline=False, dead_links
         ok = fetch_url(info['download_url'], target_dir / filename, dead_links)
         return 0 if ok else 2
     local_cli = Path(sys.executable).parent / (cmd[0] + ('.exe' if os.name == 'nt' else ''))
+    if local_cli.exists():
+        cmd[0] = str(local_cli)
     try:
-        subprocess.run(cmd, check=True, executable=str(local_cli) if local_cli.exists() else None)
+        subprocess.run(cmd, check=True)
     except (OSError, subprocess.CalledProcessError) as e:
         print(f'Download unavailable: {e}\n' + instructions(str(dest)))
         return 2

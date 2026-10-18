@@ -31,9 +31,7 @@ export function useSignCapture(enabled: boolean, onHidden: () => void) {
         element.srcObject = stream;
         await element.play();
         controller.signal.throwIfAborted();
-        let capture: WordCapture;
-        try { const { createV2Capture } = await import('./v2Recognition'); capture = await createV2Capture(element, controller.signal); }
-        catch { controller.signal.throwIfAborted(); capture = await createWordCapture(element, controller.signal); }
+        const capture = await createWordCapture(element, controller.signal);
         if (controller.signal.aborted) { capture.close(); return; }
         ownedCapture = capture;
         engine.current = capture;

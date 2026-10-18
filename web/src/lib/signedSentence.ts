@@ -14,7 +14,7 @@ export async function glossToEnglish(words: DictatedWord[], context: string[], t
   // If Gemini is unsure or unavailable, the signed words are sent as signed; a spelled word reads as a name (fs-KEV -> Kev).
   const signed = words.map(word => word.label.startsWith('fs-') ? signLabel(word.label) : word.label).join(' ');
   try {
-    const result = await translate(words.map(word => ({ gloss: word.label, p: word.score, alts: word.alternatives ?? [] })), [...new Set(words.flatMap(word => word.nmmTags ?? []))], context, GLOSS_TIMEOUT_MS);
+    const result = await translate(words.map(word => ({ gloss: word.label, p: word.score, alts: [] })), [], context, GLOSS_TIMEOUT_MS);
     const english = result.english.trim();
     return english && result.confidence >= MIN_GLOSS_CONFIDENCE ? english : signed;
   } catch {

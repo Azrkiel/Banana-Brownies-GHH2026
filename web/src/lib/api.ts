@@ -47,16 +47,3 @@ export async function getVoices(): Promise<VoiceInfo[]> {
 }
 
 export const getScribeToken = () => post<{ token: string }>('/api/scribe-token', {});
-
-export async function inferLandmarks(features: Float32Array, signal: AbortSignal, consent: () => boolean, modelSha256: string) {
-  if (!consent()) throw new Error('Landmark sharing is off.');
-  const { encodeLandmarks, parseInference } = await import('./landmarkInference');
-  signal.throwIfAborted();
-  if (!consent()) throw new Error('Landmark sharing is off.');
-  const response = await fetch(API_BASE + '/api/infer', {
-    method: 'POST', headers: { 'Content-Type': 'application/octet-stream', 'X-Landmark-Consent': 'true', 'X-Model-SHA256': modelSha256 },
-    body: encodeLandmarks(features), signal: AbortSignal.any([signal, AbortSignal.timeout(3000)]),
-  });
-  if (!response.ok) throw new Error('Server assistance is unavailable.');
-  return parseInference(await response.json());
-}

@@ -5,63 +5,6 @@
 **Audit & Plan Date:** October 18, 2026  
 **Target Executors:** Autonomous AI Coding Agents (Google Antigravity, OpenAI Codex, Claude Code) and Human Maintainers  
 
-## Real-data CPU baseline — October 18, 2026
-
-Model artifact commit: `fdaf97d2fd6ca41035b529dc425c0483a9072d43`.
-
-Training code: `fdde3755e11a77cfa424b17eb5db7b78f9a48d5c` (started from `0464dd8`); Phase 6 has not started.
-The browser bundle in `web/public/models/manifest.json` now has `deployable=true`,
-250 real GISLR sign labels plus `_idle`, calibrated C1/B heads, and single-file FP16 weights.
-
-| Held-out result | Measured value |
-|---|---:|
-| C1 Top-1 / Top-5, including no-hand background | 35.55% / 61.45% |
-| C1 sign-only Top-1 / Top-5 | 29.10% / 57.60% |
-| C1 macro F1 / ECE | 26.48% / 0.050577 |
-| C1 idle false positives (tracking absence only) | 0.00% |
-| C1 / B validation temperature | 1.51282299 / 1.09210696 |
-| B greedy CER / WER | 45.23% / 95.93% |
-| B beam-10 CER / WER | 43.88% / 94.31% |
-| D2 stitched greedy / beam-10 gloss WER | 100.00% / 100.00% |
-
-This is a bounded CPU run: GISLR uses 32/4/4 clips per sign in train/val/test,
-plus 100 no-hand background windows in each split. All 250 labels occur in each split.
-GISLR has 16/4/1 signers; ASLFR has 73/9/10 signers, with zero pairwise overlap within each dataset.
-ASLFR has 1,528/77/77 eligible phrases after 78 impossible original CTC alignments were rejected;
-phrases retain their text, use the existing supported alphabet, and raw frames are capped at 128
-before velocities are computed. Ampersand has no training support. No individual GISLR Parquet files were extracted.
-Data attribution: Google Research, Georgia Tech and DPAN GISLR/PopSign;
-Google Research and collaborators ASLFR/FSboard (CC BY 4.0 per the reviewed dataset registry),
-using the darraghdog NPY preprocessing mirror. Original sources:
-[GISLR](https://www.kaggle.com/competitions/asl-signs/data),
-[ASLFR](https://www.kaggle.com/competitions/asl-fingerspelling/data).
-
-C1: 2 Conformer blocks of width 192, 40 epochs, batch 64, AdamW learning rate 0.0015.
-B: 2 blocks of width 128, 60 epochs, batch 32, learning rate 0.002. Both use seed 42, EMA 0.95,
-four CPU threads, validation-selected checkpoints and validation-only scalar calibration baked once
-(runtime temperature 1). D2: 2 blocks of width 192 initialized from real C1, 8 epochs of 512
-same-signer stitched streams, 12 independent validation/test streams, batch 16, two CPU threads.
-D2 is experimental and fails the 28% WER acceptance target.
-
-Export sizes: C1 2,580,338 bytes; B 1,162,437 bytes;
-D2 2,580,768 bytes. Each is inline, below 5 MB, with no `.onnx.data` sidecar.
-C1/B also satisfy the existing 4 MB/2 MB production limits. The real Stage B FP16 export initially failed parity at 0.0014935; preserving its output/normalization parameters in FP32 reduced the error to below 0.001 without relaxing that threshold. Export checks compare 100 clips per model
-at probability error below 0.001. The real lab at http://127.0.0.1:8765 exposes every trained sign.
-
-Accuracy acceptance remains unmet: C1 sign-only Top-1/Top-5 is below the 82%/94%
-target, and this deterministic split has one test signer rather than the planned four.
-Stage B CER is above 15%; isolated-character/J/Z accuracy has no held-out examples here.
-
-`deployable` records exporter provenance/format eligibility. These subset metrics do not establish
-physical-webcam accuracy or visible-hand rest rejection; first-party rest/transition recordings,
-natural continuous signing and target-laptop/two-person QA remain outstanding.
-Complete configs, checkpoint hashes, independent evaluations, confusion reports and acquisition/split evidence:
-[real-v1 reports](reports/real-v1/training-report.json).
-
-Automated validation: 169 ML/server tests and 316 frontend tests pass; the final web
-production build passes. Chromium verifies all three real models, 251 C1 labels,
-192-dimensional embeddings and no page errors using generated inputs with the camera off.
-
 ---
 
 ## 1. Executive Overview
@@ -193,7 +136,7 @@ Executing agents must work through these phases sequentially, updating the statu
 | **Phase 2** | [phase-02-dataset-acquisition-preprocessing.md](https://www.google.com/search?q=phase-02-dataset-acquisition-preprocessing.md) | Build automated downloaders, checksum verifiers, license-tier manifests, and offline landmark extraction/reconciliation pipelines for GISLR, ASLFR, How2Sign Holistic, and ASL Citizen. | Topics 2 & 3 (Dataset acquisition, verification, dead-link handling, manifest, offline preprocessing cache) | - [x] Complete - 45 Python tests, 259 frontend tests; synthetic pipeline verified; full dataset runs pending human action |
 | **Phase 3** | [phase-03-fingerspelling-and-expanded-isolated-model.md](https://www.google.com/search?q=phase-03-fingerspelling-and-expanded-isolated-model.md) | Train and evaluate the Stage B fingerspelling model (A–Z, 0–9, continuous phrases) and Stage C isolated sign models (250-sign Commercial Core + 1,000–2,731-sign Research Extended) with signer-independent splits. | Topics 4 & 5 (Model architectures, augmentations, signer-independent training, confusion & webcam eval) | - [x] Tasks 3.1-3.4 implemented - 76 ML tests, 259 frontend tests, CPU C1/CTC training/calibration/ONNX verified; real-data AC-3.3 through AC-3.6 pending |
 | **Phase 4** | [phase-04-continuous-signing-and-gloss-translation.md](https://www.google.com/search?q=phase-04-continuous-signing-and-gloss-translation.md) | Implement Stage D sliding-window + CTC continuous sign segmentation, non-manual facial grammar markers (`Q-YN`, `Q-WH`, `NEG`), top-K lattice rescoring in `/api/gloss`, and offline fallback rules. | Topics 1, 4 & 5 (Continuous CTC/encoder-decoder, non-manual markers, language layer) | - [x] Tasks 4.1-4.4 implemented - 51 backend, 99 ML, 295 frontend tests; synthetic segmentation/NMM and CPU CTC verified; live AC-4.3 and real-data AC-4.4 pending |
-| **Phase 5** | [phase-05-browser-onnx-deployment-and-call-integration.md](https://www.google.com/search?q=phase-05-browser-onnx-deployment-and-call-integration.md) | Export quantized `< 5 MB` ONNX models, run inference in a browser Web Worker (`onnxruntime-web`), wire live top-K chips and caption retraction into the LiveKit call, and migrate Supabase personal signs to v2. | Topics 6 & 7 (Browser ONNX deployment, latency/FPS budgets, server fallback, LiveKit data channels, privacy/consent) | - [x] Tasks 5.1-5.5 implemented on testing branch - 316 frontend, 61 backend, 103 ML tests; worker/cache and 144.9 MB local API RSS verified; production budgets/live acceptance pending |
+| **Phase 5** | [phase-05-browser-onnx-deployment-and-call-integration.md](https://www.google.com/search?q=phase-05-browser-onnx-deployment-and-call-integration.md) | Export quantized `< 5 MB` ONNX models, run inference in a browser Web Worker (`onnxruntime-web`), wire live top-K chips and caption retraction into the LiveKit call, and migrate Supabase personal signs to v2. | Topics 6 & 7 (Browser ONNX deployment, latency/FPS budgets, server fallback, LiveKit data channels, privacy/consent) | - [ ] Pending |
 | **Phase 6** | [phase-06-testing-qa-and-documentation.md](https://www.google.com/search?q=phase-06-testing-qa-and-documentation.md) | Complete unit/regression/latency benchmark suites, two-person call QA protocol, Model Card, dataset attributions, changelog, and the long-term research backlog. | Topics 8, 9 & 10 (Testing & QA, documentation, model card, attributions, research backlog) | - [ ] Pending |
 
 ### Companion Documents in `docs/subplans/model-v2/`

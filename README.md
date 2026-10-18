@@ -8,68 +8,10 @@ for the implementation roadmap, consent requirements, and limitations.
 
 The **ledger in [plan.md](plan.md) §3** is the single source of truth for what is done.
 Run `python plan/verify.py status` for counts and `python plan/verify.py next` for the next
-task. Real-data v2 C1/B browser exports are now included alongside the recovered seven-word
-model and personal-sign fallback. The local comparison lab exposes the expanded vocabulary;
-measured results and remaining webcam checks are below. See also
+task. The canonical ASL switch, general sign recognition, call voice output and
+ONNX/GISLR training pipeline remain open. A recovered seven-word model is now
+available in the signer call as an opt-in capture-and-confirm feature; see
 [recovered training/model instructions](ml/README.md).
-
-## Real-data CPU baseline — October 18, 2026
-
-Model artifact commit: `fdaf97d2fd6ca41035b529dc425c0483a9072d43`.
-
-Training code: `fdde3755e11a77cfa424b17eb5db7b78f9a48d5c` (started from `0464dd8`); Phase 6 has not started.
-The browser bundle in `web/public/models/manifest.json` now has `deployable=true`,
-250 real GISLR sign labels plus `_idle`, calibrated C1/B heads, and single-file FP16 weights.
-
-| Held-out result | Measured value |
-|---|---:|
-| C1 Top-1 / Top-5, including no-hand background | 35.55% / 61.45% |
-| C1 sign-only Top-1 / Top-5 | 29.10% / 57.60% |
-| C1 macro F1 / ECE | 26.48% / 0.050577 |
-| C1 idle false positives (tracking absence only) | 0.00% |
-| C1 / B validation temperature | 1.51282299 / 1.09210696 |
-| B greedy CER / WER | 45.23% / 95.93% |
-| B beam-10 CER / WER | 43.88% / 94.31% |
-| D2 stitched greedy / beam-10 gloss WER | 100.00% / 100.00% |
-
-This is a bounded CPU run: GISLR uses 32/4/4 clips per sign in train/val/test,
-plus 100 no-hand background windows in each split. All 250 labels occur in each split.
-GISLR has 16/4/1 signers; ASLFR has 73/9/10 signers, with zero pairwise overlap within each dataset.
-ASLFR has 1,528/77/77 eligible phrases after 78 impossible original CTC alignments were rejected;
-phrases retain their text, use the existing supported alphabet, and raw frames are capped at 128
-before velocities are computed. Ampersand has no training support. No individual GISLR Parquet files were extracted.
-Data attribution: Google Research, Georgia Tech and DPAN GISLR/PopSign;
-Google Research and collaborators ASLFR/FSboard (CC BY 4.0 per the reviewed dataset registry),
-using the darraghdog NPY preprocessing mirror. Original sources:
-[GISLR](https://www.kaggle.com/competitions/asl-signs/data),
-[ASLFR](https://www.kaggle.com/competitions/asl-fingerspelling/data).
-
-C1: 2 Conformer blocks of width 192, 40 epochs, batch 64, AdamW learning rate 0.0015.
-B: 2 blocks of width 128, 60 epochs, batch 32, learning rate 0.002. Both use seed 42, EMA 0.95,
-four CPU threads, validation-selected checkpoints and validation-only scalar calibration baked once
-(runtime temperature 1). D2: 2 blocks of width 192 initialized from real C1, 8 epochs of 512
-same-signer stitched streams, 12 independent validation/test streams, batch 16, two CPU threads.
-D2 is experimental and fails the 28% WER acceptance target.
-
-Export sizes: C1 2,580,338 bytes; B 1,162,437 bytes;
-D2 2,580,768 bytes. Each is inline, below 5 MB, with no `.onnx.data` sidecar.
-C1/B also satisfy the existing 4 MB/2 MB production limits. The real Stage B FP16 export initially failed parity at 0.0014935; preserving its output/normalization parameters in FP32 reduced the error to below 0.001 without relaxing that threshold. Export checks compare 100 clips per model
-at probability error below 0.001. The real lab at http://127.0.0.1:8765 exposes every trained sign.
-
-Accuracy acceptance remains unmet: C1 sign-only Top-1/Top-5 is below the 82%/94%
-target, and this deterministic split has one test signer rather than the planned four.
-Stage B CER is above 15%; isolated-character/J/Z accuracy has no held-out examples here.
-
-`deployable` records exporter provenance/format eligibility. These subset metrics do not establish
-physical-webcam accuracy or visible-hand rest rejection; first-party rest/transition recordings,
-natural continuous signing and target-laptop/two-person QA remain outstanding.
-Complete configs, checkpoint hashes, independent evaluations, confusion reports and acquisition/split evidence:
-[real-v1 reports](docs/subplans/model-v2/reports/real-v1/training-report.json).
-
-
-Automated validation: 169 ML/server tests and 316 frontend tests pass; the final web
-production build passes. Chromium verifies all three real models, 251 C1 labels,
-192-dimensional embeddings and no page errors using generated inputs with the camera off.
 
 ## Development setup
 

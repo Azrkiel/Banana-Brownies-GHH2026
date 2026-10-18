@@ -1,9 +1,0 @@
-{
-  "n": 12,
-  "reference_glosses": 49,
-  "gloss_errors": 49,
-  "wer": 1.0,
-  "beam_gloss_errors": 49,
-  "beam_wer": 1.0,
-  "val_loss": 5.849894046783447
-}

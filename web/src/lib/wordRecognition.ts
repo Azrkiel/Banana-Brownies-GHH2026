@@ -53,7 +53,6 @@ export async function createPersonalRecognizer(video: HTMLVideoElement, signal: 
 
 /** `image` is the mirrored frame the hand model saw; `sample` is null until 30 frames have been seen. */
 export type LiveFrame = {
-  overlayPalette?: 'v2';
   points: Pt[] | null; // Primary image-left hand: unchanged word-v1 adapter.
   hands: Pt[][];
   pose: Pt[] | null;

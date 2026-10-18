@@ -54,7 +54,7 @@ export class KinematicSegmenter {
     this.a = anchors(frame, this.a);
     return this.push(this.a ? frameFeatures(frame, this.a) : new Array(174).fill(0), fingerspellMode);
   }
-  push(input: ArrayLike<number>, fingerspellMode = false, automaticSpelling = true): SegmentDecision {
+  push(input: ArrayLike<number>, fingerspellMode = false): SegmentDecision {
     if (!valid(input)) { this.reset(); return { state: 'REST', energy: 0, trigger: null, frames: [] }; }
     const x = Array.from(input), prev = this.previous;
     const energy = prev ? kinetic(x, prev) : 0;
@@ -69,7 +69,7 @@ export class KinematicSegmenter {
     const monotonic = this.deltas.length === 3 && [0,2].some(s => this.deltas.slice(1).every((d,i) => {
       const p=this.deltas[i]; return d[s]*p[s]+d[s+1]*p[s+1] > .8*Math.hypot(d[s],d[s+1])*Math.hypot(p[s],p[s+1]);
     }));
-    const fs = fingerspellMode || (automaticSpelling && isFingerspellingCandidate(this.history));
+    const fs = fingerspellMode || isFingerspellingCandidate(this.history);
     if (fs) {
       this.state = 'STROKE_HOLD'; this.idle = 0; this.fsTick++;
       return result(this.history.length >= 64 && (this.fsTick === 1 || this.fsTick % 16 === 0) ? 'fingerspelling' : null);
