@@ -1,4 +1,5 @@
 .personal-page .page-heading .ui-badge { white-space: normal; }
+.personal-page .ui-button { min-height: 52px; padding: 12px 20px; font-size: 1rem; line-height: 1.5; }
 .personal-intro { max-width: 76ch; margin: 0 0 32px; }
 .personal-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); gap: 24px; align-items: start; }
 .personal-layout > div { display: grid; gap: 24px; }
@@ -10,7 +11,9 @@
 .personal-camera video { width: 100%; height: 100%; object-fit: cover; }
 .personal-camera-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px; color: var(--color-muted); }
 .personal-camera-placeholder .bird-scene { width: min(80%, 300px); }
-.personal-layout .button-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 20px 0; }
+.personal-layout .button-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 20px 0; }
+.personal-layout .button-row .ui-button, .personal-model-test > .ui-button { width: 100%; }
+.personal-model-test > .ui-button { margin-bottom: 16px; }
 .personal-layout progress { width: 100%; accent-color: var(--color-ink); }
 .sample-review { padding: 20px; margin: 24px 0; border: 1px solid var(--color-field-border); border-radius: var(--radius-control); }
 .sample-review h3 { font-size: 1.5rem; margin: 0 0 12px; overflow-wrap: anywhere; }
@@ -24,4 +27,4 @@
 .account-welcome h2 { font-size: clamp(2rem, 4vw, 3rem); }
 .account-welcome .ui-button { margin-block: 12px; }
 @media (max-width: 850px) { .personal-layout { grid-template-columns: 1fr; } }
-@media (max-width: 600px) { .account-welcome { grid-template-columns: 1fr; gap: 16px; } .account-bird { max-width: 260px; margin: auto; } }
+@media (max-width: 600px) { .account-welcome { grid-template-columns: 1fr; gap: 16px; } .account-bird { max-width: 260px; margin: auto; } .personal-layout .button-row { grid-template-columns: 1fr; } }

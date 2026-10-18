@@ -168,7 +168,23 @@ function TrainingWorkspace({ userId, name }: { userId: string; name: string }) {
           </div></div>}
           <p role="status">{message}</p>
         </Surface>
-        <Surface aria-labelledby="try-title"><h2 id="try-title">Try your model</h2>
+      </div>
+      <div className="personal-sidebar">
+        <Surface aria-labelledby="examples-title"><div className="panel-heading"><h2 id="examples-title">Your examples</h2><Badge>{samples.length} / {MAX_PERSONAL_SAMPLES}</Badge></div>
+          <p>Your saved landmarks are private to this account. They are not added to the shared model. Deleting a sign removes its examples from your personal model.</p>
+          {loading ? <p role="status">Loading your examples…</p> : <>
+            {!samples.length && loaded && <p>No examples yet. Start with HELLO and a second sign you use.</p>}
+            <ul className="personal-labels">{counts.map(([value, count]) => <li key={value}>
+              <div><strong>{value}</strong><span>{count} examples · {count < MIN_SIGN_EXAMPLES ? `${MIN_SIGN_EXAMPLES - count} more needed` : 'Ready'}</span></div>
+              <Button variant="ghost" size="small" disabled={busy || !loaded || Boolean(pending)} onClick={() => setConfirmDelete(value)}>Delete {value}</Button>
+            </li>)}</ul>
+            <div className="button-row"><Button disabled={busy || Boolean(pending)} onClick={() => void refresh()}>Reload examples</Button>
+              <Button variant="danger" disabled={!samples.length || busy || !loaded || Boolean(pending)} onClick={() => setConfirmDelete('*')}>Delete all examples</Button></div>
+          </>}
+          {confirmDelete && <div className="sample-review"><p>{confirmDelete === '*' ? 'Delete all your saved training examples?' : `Delete every example of ${confirmDelete}?`} This cannot be undone.</p><div className="button-row"><Button variant="danger" disabled={busy} onClick={() => void remove(confirmDelete)}>Confirm deletion</Button><Button disabled={busy} onClick={() => setConfirmDelete(null)}>Cancel</Button></div></div>}
+          {error && <p className="error-banner" role="alert">{error}</p>}
+        </Surface>
+        <Surface className="personal-model-test" aria-labelledby="try-title"><h2 id="try-title">Try your model</h2>
           <p>{trained.model ? `Ready for ${trained.model.labels.length} of your signs${shared ? ` plus the shared words` : ''}: ${sharedAndPersonalLabels(shared, trained.model).join(', ')}. It rebuilds when your examples change.` : trained.reason}</p>
           <Button disabled={!ready || !trained.model || !loaded || busy || Boolean(pending)} onClick={() => void capture(true)}>Test a fresh sign</Button>
           {prediction && <div className="sample-review" role="status">{prediction.accepted ? <><h3>{prediction.label}</h3><p>{trained.model?.labels.includes(prediction.label) ? 'One of your signs.' : 'A shared word.'} Does this match your sign? This is a suggestion, not a measured accuracy result.</p></> : <p>No confident match. Try different examples or keep using typed captions.</p>}</div>}
@@ -176,20 +192,6 @@ function TrainingWorkspace({ userId, name }: { userId: string; name: string }) {
           <a href="#/conversation">Go to calls</a>
         </Surface>
       </div>
-      <Surface aria-labelledby="examples-title"><div className="panel-heading"><h2 id="examples-title">Your examples</h2><Badge>{samples.length} / {MAX_PERSONAL_SAMPLES}</Badge></div>
-        <p>Your saved landmarks are private to this account. They are not added to the shared model. Deleting a sign removes its examples from your personal model.</p>
-        {loading ? <p role="status">Loading your examples…</p> : <>
-          {!samples.length && loaded && <p>No examples yet. Start with HELLO and a second sign you use.</p>}
-          <ul className="personal-labels">{counts.map(([value, count]) => <li key={value}>
-            <div><strong>{value}</strong><span>{count} examples · {count < MIN_SIGN_EXAMPLES ? `${MIN_SIGN_EXAMPLES - count} more needed` : 'Ready'}</span></div>
-            <Button variant="ghost" size="small" disabled={busy || !loaded || Boolean(pending)} onClick={() => setConfirmDelete(value)}>Delete {value}</Button>
-          </li>)}</ul>
-          <div className="button-row"><Button disabled={busy || Boolean(pending)} onClick={() => void refresh()}>Reload examples</Button>
-            <Button variant="danger" disabled={!samples.length || busy || !loaded || Boolean(pending)} onClick={() => setConfirmDelete('*')}>Delete all examples</Button></div>
-        </>}
-        {confirmDelete && <div className="sample-review"><p>{confirmDelete === '*' ? 'Delete all your saved training examples?' : `Delete every example of ${confirmDelete}?`} This cannot be undone.</p><div className="button-row"><Button variant="danger" disabled={busy} onClick={() => void remove(confirmDelete)}>Confirm deletion</Button><Button disabled={busy} onClick={() => setConfirmDelete(null)}>Cancel</Button></div></div>}
-        {error && <p className="error-banner" role="alert">{error}</p>}
-      </Surface>
     </div>
   </>;
 }
