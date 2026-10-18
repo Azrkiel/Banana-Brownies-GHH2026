@@ -24,3 +24,32 @@
 .signer-words__preview progress { height: 8px; margin: 4px 0; }
 .signer-words__preview .button-row { margin: 8px 0 0; }
 .signer-words__dictate { min-height: 44px; align-items: center; }
+
+/* Controls on the left, the live sentence beside them (stacked on narrow screens). */
+.signer-words__grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.signer-words__grid .button-row { margin: 0 0 12px; }
+.signer-words__sentence { position: sticky; top: 16px; padding: 16px 20px; min-height: 180px; background: var(--color-surface); border: 1px solid var(--color-field-border); border-radius: var(--radius-panel); }
+.signer-words__sentence h3 { margin: 0 0 8px; font-size: var(--text-sm); letter-spacing: .04em; text-transform: uppercase; color: var(--color-muted); }
+.signer-words__sentence > .signer-words__signed { font-size: 1.75rem; line-height: 1.3; min-height: 1.4em; margin: 0 0 12px; overflow-wrap: anywhere; }
+.signer-words__spelling { color: var(--color-accent, var(--color-ink)); text-decoration: underline dotted; text-underline-offset: 6px; }
+.signer-words__modes { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+.signer-words__modes button { min-height: 44px; padding: 8px 16px; border: 1px solid var(--color-field-border); border-radius: 999px; background: var(--color-surface); color: var(--color-ink); font: inherit; cursor: pointer; }
+.signer-words__modes button[aria-pressed="true"] { background: var(--color-ink); color: var(--color-surface); border-color: var(--color-ink); }
+.signer-words__now { padding: 12px 16px; margin: 0 0 12px; background: var(--color-surface); border: 1px solid var(--color-field-border); border-radius: var(--radius-panel); }
+.signer-words__now .signer-words__word { font-size: 2rem; margin: 4px 0; overflow-wrap: anywhere; }
+.signer-words__now .signer-words__word span { font-size: var(--text-sm); color: var(--color-muted); }
+.signer-words__letter { font-size: 3.5rem; font-weight: 700; line-height: 1; margin: 4px 0 8px; }
+.signer-words__letter.unsure { color: var(--color-muted); }
+.signer-words__hold { height: 8px; border-radius: 4px; background: color-mix(in srgb, var(--color-border) 35%, transparent); overflow: hidden; margin-bottom: 8px; }
+.signer-words__hold span { display: block; height: 100%; background: var(--color-positive, #176c51); transition: width .08s linear; }
+.signer-words__teach { margin-top: 12px; }
+.signer-words__teach summary, .signer-words__options summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; font-size: var(--text-sm); }
+.signer-words__alphabet { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
+.signer-words__alphabet .chip { display: inline-flex; border: 1px solid var(--color-field-border); border-radius: 8px; overflow: hidden; background: var(--color-surface); }
+.signer-words__alphabet .chip.has { border-color: var(--color-positive, #176c51); }
+.signer-words__alphabet .chip.active { outline: 3px solid var(--color-ink); outline-offset: 1px; }
+.signer-words__alphabet .chip button { min-width: 40px; min-height: 40px; border: 0; background: transparent; font: inherit; font-weight: 600; cursor: pointer; color: var(--color-ink); }
+.signer-words__alphabet .chip button small { margin-left: 3px; font-size: .7em; color: var(--color-positive, #176c51); }
+.signer-words__alphabet .chip .x { min-width: 28px; color: var(--color-muted); border-left: 1px solid var(--color-field-border); }
+.signer-words__options { margin-top: 8px; }
+@media (max-width: 900px) { .signer-words__grid { grid-template-columns: 1fr; } .signer-words__sentence { position: static; } }

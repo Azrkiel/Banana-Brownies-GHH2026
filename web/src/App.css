@@ -199,3 +199,21 @@ body[data-in-call] .site-header nav { display: none; }
 .voice-settings[open] summary { margin-bottom: 0; }
 @media (max-width: 900px) { .caption-panel { max-height: none; overflow-y: visible; } }
 @media (max-width: 600px) { .call-speech[data-consented] > label span { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; } }
+
+/* Sign tracking on the signer's own tile, and FaceTime-style swap of the large and small video. */
+.local-tile { cursor: zoom-in; transition: inset .2s ease, width .2s ease; }
+.tracking-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.swap-video { position: absolute; top: 6px; right: 6px; z-index: 3; min-height: 32px; padding: 4px 10px; border: 1px solid var(--color-field-border); border-radius: 999px; background: var(--color-surface); color: var(--color-ink); font: inherit; font-size: .85rem; cursor: pointer; opacity: .92; }
+.swap-video:hover, .swap-video:focus-visible { opacity: 1; }
+.tracking-badge { position: absolute; top: 8px; left: 8px; z-index: 3; padding: 2px 8px; border-radius: 999px; background: #176c51; color: #fff; font-size: .8rem; }
+.tracking-badge::before { content: ''; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: #3ddc84; vertical-align: 1px; }
+.stage.tracking .local-tile { border-color: #3ddc84; box-shadow: 0 0 0 2px #3ddc8466; }
+.stage.self-large .local-tile { inset: 0; width: 100%; height: 100%; aspect-ratio: auto; border-radius: 0; border: 0; box-shadow: none; z-index: 1; cursor: default; }
+.stage.self-large .remote-video.visible { inset: auto; bottom: 16px; right: 16px; width: clamp(200px, 30%, 320px); height: auto; aspect-ratio: 4 / 3; z-index: 4; border: 1px solid var(--color-field-border); border-radius: var(--radius-control); cursor: zoom-in; object-fit: cover; }
+.stage.self-large .peer-label { display: none; }
+.stage.self-large .stage-placeholder { display: none; }
+.stage.self-large .stage-top { z-index: 5; }
+@media (prefers-reduced-motion: reduce) { .local-tile { transition: none; } }
+/* When my video is the large one, keep its badge and swap button clear of the room name and status. */
+.stage.self-large .tracking-badge { top: 60px; left: 16px; }
+.stage.self-large .swap-video { top: 60px; right: 16px; }
