@@ -47,7 +47,7 @@ export default function Recorder() {
     }
     if (letter.current && frame.hands.length) letter.current.frames.push(frame);
   }, []);
-  const { video, ready, error } = useCameraTracker(camera && consent, false, onFrame);
+  const { video, previewReady, ready, error } = useCameraTracker(camera && consent, false, onFrame);
   const busy = armed || holding;
   const labels = kind === 'sign' ? RECORD_LABELS : LETTERS;
   const count = (value: string) => clips.filter((clip) => clip.kind === kind && clip.label === value).length;
@@ -100,10 +100,10 @@ export default function Recorder() {
         <div className="recorder-workspace">
           <section className="camera-stage" aria-label="Recording camera preview">
             <video ref={video} muted playsInline className="mirror" width={480} />
-            {!ready && <div className="camera-stage__placeholder"><BirdScene scene="preening" className="camera-illustration" />{camera && consent && <p>Loading camera…</p>}</div>}
-            <span className="camera-stage__label"><span className="status-dot" />{busy ? 'Recording landmarks' : ready ? 'Local preview · Mirrored' : 'Camera off'}</span>
+            {(!camera || !consent || error) && <div className="camera-stage__placeholder"><BirdScene scene="preening" className="camera-illustration" /></div>}
+            <span className="camera-stage__label"><span className="status-dot" />{busy ? 'Recording landmarks' : previewReady ? 'Local preview · Mirrored' : camera && consent && !error ? 'Starting camera…' : 'Camera off'}</span>
           </section>
-          <div className="recorder-camera-controls"><p role="status">{error || (camera && !ready ? 'Starting camera and models…' : ready ? 'Camera ready' : '')}</p><Button disabled={!consent} onClick={() => { stopRecording(); setCamera(!camera); }}><Icon name="camera" />{camera ? 'Stop camera' : 'Start camera'}</Button></div>
+          <div className="recorder-camera-controls"><p role="status">{error || (camera && !ready ? previewReady ? 'Loading tracking models…' : 'Starting camera…' : ready ? 'Camera ready' : '')}</p><Button disabled={!consent} onClick={() => { stopRecording(); setCamera(!camera); }}><Icon name="camera" />{camera ? 'Stop camera' : 'Start camera'}</Button></div>
           <Surface className="clip-library" aria-labelledby="clip-library-title"><div className="panel-heading"><h2 id="clip-library-title">Clips</h2><Badge>{clips.length} clips</Badge></div>
             <div className="clip-counts" aria-label="Label counts">{labels.map(value => <span key={value}><b>{value}</b><span>{count(value)}</span></span>)}</div>
             <p className="studio-status" role="status">{message || 'No clips'}</p>

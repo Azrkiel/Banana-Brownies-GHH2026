@@ -20,16 +20,16 @@ export default function Bench() {
       stats.current = { count: 0, ms: 0, start: frame.t };
     }
   }, []);
-  const { video, ready, error } = useCameraTracker(enabled, withFace, onFrame);
+  const { video, previewReady, ready, error } = useCameraTracker(enabled, withFace, onFrame);
   return (
     <main className="studio-page" id="main-content">
       <PageHeader title="Camera"
-        accessory={<Badge tone={ready ? 'positive' : 'neutral'}>{ready ? 'Camera ready' : 'Camera standby'}</Badge>} />
+        accessory={<Badge tone={previewReady ? 'positive' : 'neutral'}>{previewReady ? 'Camera ready' : enabled && !error ? 'Starting camera' : 'Camera standby'}</Badge>} />
       <div className="studio-layout">
         <section className="camera-stage" aria-label="Camera benchmark preview">
           <video ref={video} muted playsInline className="mirror" width={480} />
-          {!ready && <div className="camera-stage__placeholder"><BirdScene scene="flight" className="camera-illustration" />{enabled && <p>Loading camera…</p>}</div>}
-          <span className="camera-stage__label"><span className="status-dot" />{ready ? 'Local preview · Mirrored' : 'Camera off'}</span>
+          {(!enabled || error) && <div className="camera-stage__placeholder"><BirdScene scene="flight" className="camera-illustration" /></div>}
+          <span className="camera-stage__label"><span className="status-dot" />{previewReady ? 'Local preview · Mirrored' : enabled && !error ? 'Starting camera…' : 'Camera off'}</span>
         </section>
         <aside className="studio-sidebar">
           <Surface aria-label="Camera controls">
@@ -42,7 +42,7 @@ export default function Bench() {
               setEnabled(!enabled);
             }}><Icon name="camera" />{enabled ? 'Stop camera' : 'Start camera'}</Button>
           </Surface>
-          <Surface aria-labelledby="bench-performance"><h2 id="bench-performance">Tracking</h2><p className="studio-target">20<span> FPS target</span></p><p className="studio-status" role="status">{error || (enabled && !ready ? 'Starting camera and models…' : info)}</p></Surface>
+          <Surface aria-labelledby="bench-performance"><h2 id="bench-performance">Tracking</h2><p className="studio-target">20<span> FPS target</span></p><p className="studio-status" role="status">{error || (enabled && !ready ? previewReady ? 'Loading tracking models…' : 'Starting camera…' : info)}</p></Surface>
         </aside>
       </div>
       <p className="studio-privacy"><Icon name="shield" />On-device processing. Nothing recorded.</p>

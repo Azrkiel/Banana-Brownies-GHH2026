@@ -66,7 +66,9 @@ errors and data-loss notices remain. The local camera/video itself is displayed
 without an illustration filter; drawings appear only in standby states.
 
 Each working page has its own static vignette instead of repeating the hand
-illustration. Camera and Recorder artwork clears when the local preview is ready.
+illustration. Camera and Recorder artwork clears as soon as Start camera is
+selected. Startup and model-loading status stays outside the preview; the local
+preview label follows video playback, while recording waits for tracking readiness.
 My signs uses the nest on its account welcome and while its training camera is
 off. Speech shows the singing pair only while its live draft is empty and the
 microphone session is inactive; live text takes its place. `BirdScene` is
@@ -79,6 +81,11 @@ camera/speech checks verify that artwork clears for active content and returns
 after stopping. The mocked account capture/save/reload/isolation suite, all 207
 frontend tests, lint and production build pass. Live providers and real camera
 inference were not repeated for this artwork change.
+
+Run `cd web && node scripts/check-camera-startup.mjs` for the startup regression
+check. Synthetic video and deliberately delayed models verify unobscured playback,
+recording readiness, stop/restart, late model completion, and permission/model
+failures on both Camera and Recorder without accessing physical devices.
 
 Primary actions use solid graphite fills, cream text and irregular pencil frames.
 Begin, Join, Join conversation and Rejoin share the same size and interaction

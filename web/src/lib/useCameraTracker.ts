@@ -5,6 +5,7 @@ import type { Frame } from './types';
 /** One owner for the camera, model instances, and animation loop. */
 export function useCameraTracker(enabled: boolean, withFace: boolean, onFrame: (frame: Frame, detectMs: number) => void) {
   const video = useRef<HTMLVideoElement>(null);
+  const [previewReady, setPreviewReady] = useState(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
 
@@ -20,11 +21,12 @@ export function useCameraTracker(enabled: boolean, withFace: boolean, onFrame: (
       tracker?.close();
       tracker = null;
       stream?.getTracks().forEach((track) => track.stop());
-      if (element) element.srcObject = null;
+      if (element && element.srcObject === stream) element.srcObject = null;
     };
     void (async () => {
       await Promise.resolve();
       if (stopped) return;
+      setPreviewReady(false);
       setReady(false);
       setError('');
       try {
@@ -36,6 +38,8 @@ export function useCameraTracker(enabled: boolean, withFace: boolean, onFrame: (
         element.srcObject = stream;
         await element.play();
         if (stopped) { release(); return; }
+        // Live video is available before the tracking models finish loading.
+        setPreviewReady(true);
         tracker = await createTracker({ withFace });
         if (stopped) { release(); return; }
         setReady(true);
@@ -52,6 +56,7 @@ export function useCameraTracker(enabled: boolean, withFace: boolean, onFrame: (
             raf = requestAnimationFrame(loop);
           } catch {
             release();
+            setPreviewReady(false);
             setReady(false);
             setError('Tracking stopped. Restart the camera and try again.');
           }
@@ -60,6 +65,7 @@ export function useCameraTracker(enabled: boolean, withFace: boolean, onFrame: (
       } catch (cause) {
         release();
         if (!stopped) {
+          setPreviewReady(false);
           setReady(false);
           setError(cause instanceof DOMException && cause.name === 'NotAllowedError'
             ? 'Camera access was denied. Allow camera access, then try again.'
@@ -70,5 +76,5 @@ export function useCameraTracker(enabled: boolean, withFace: boolean, onFrame: (
     return () => { stopped = true; release(); };
   }, [enabled, withFace, onFrame]);
 
-  return { video, ready: enabled && ready, error: enabled ? error : '' };
+  return { video, previewReady: enabled && previewReady, ready: enabled && ready, error: enabled ? error : '' };
 }
