@@ -12,3 +12,6 @@ web/public/models/*.task
 web/public/ort/
 
 ml/checkpoints/
+
+# Local Supabase CLI metadata
+supabase/.temp/
