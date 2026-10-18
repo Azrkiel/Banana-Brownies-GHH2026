@@ -1,6 +1,7 @@
 import { Button } from '../components/ui';
 import { useEffect, useRef, useState } from 'react';
-import { startWebSpeech, type Stt, type SttState } from '../lib/stt';
+import { type Stt, type SttState } from '../lib/stt';
+import { startScribe } from '../lib/scribe';
 import './SpeechCheck.css';
 
 type ViewState = SttState | 'idle';
@@ -27,8 +28,7 @@ export default function SpeechCheck() {
   const [phrases, setPhrases] = useState<Phrase[]>([]);
   const [message, setMessage] = useState('');
   const [supported] = useState(() => {
-    const browser = window as unknown as { SpeechRecognition?: unknown; webkitSpeechRecognition?: unknown };
-    return typeof browser.SpeechRecognition === 'function' || typeof browser.webkitSpeechRecognition === 'function';
+    return typeof navigator.mediaDevices?.getUserMedia === 'function';
   });
   const [secure] = useState(() => window.isSecureContext);
   const session = useRef<Stt | null>(null);
@@ -73,12 +73,12 @@ export default function SpeechCheck() {
     if (running.current || !consented || !supported || !secure) return;
     const attempt = ++generation.current;
     const current = () => mounted.current && generation.current === attempt;
-    // Reserve ownership before startWebSpeech: callbacks can happen synchronously.
+    // Reserve ownership before startScribe: callbacks can happen synchronously.
     running.current = true;
     setDraft('');
     setMessage('');
     setState('starting');
-    const handle = startWebSpeech((text, final) => {
+    const handle = startScribe((text, final) => {
       if (!current()) return;
       if (final && text) {
         const phrase = { id: nextPhrase.current++, text };
@@ -115,7 +115,7 @@ export default function SpeechCheck() {
           <h1>Speech check</h1>
           <p className="speech-check__intro">A little space to try live captions.<br />Speak naturally. Take your time.</p>
         </div>
-        <div className="speech-check__environment"><span /> Local microphone check<br /><small>English (US) · Browser recognition</small></div>
+        <div className="speech-check__environment"><span /> Live transcription check<br /><small>English (US) · Browser recognition</small></div>
       </header>
 
       <div className="speech-check__layout">
@@ -128,7 +128,7 @@ export default function SpeechCheck() {
             <div className="speech-check__draft" aria-live="off">
               {draft || <p className="speech-check__placeholder">Your words will appear here<br />while you speak.</p>}
             </div>
-            <p className="speech-check__draft-note">This line updates as the browser recognizes your speech.</p>
+            <p className="speech-check__draft-note">This line updates as ElevenLabs recognizes your speech.</p>
           </section>
 
           <section className="speech-check__history" aria-labelledby="speech-history-title">
@@ -145,7 +145,7 @@ export default function SpeechCheck() {
             <div className="speech-check__mic" aria-hidden="true"><MicIcon /></div>
             <div role="status" aria-live="polite"><h2>{stateText[state].label}</h2><p className="speech-check__detail">{stateText[state].detail}</p></div>
             {!secure && <p className="speech-check__notice" role="alert">Open this page on localhost or HTTPS to use a microphone.</p>}
-            {!supported && <p className="speech-check__notice" role="alert">Speech recognition is unavailable in this browser. Open this address in desktop Chrome to try it.</p>}
+            {!supported && <p className="speech-check__notice" role="alert">Microphone streaming is unavailable in this browser. Use a current browser on HTTPS or localhost.</p>}
             {message && <p className="speech-check__notice" role={state === 'failed' ? 'alert' : 'status'}>{message}</p>}
             <label className="speech-check__consent"><input type="checkbox" checked={consented} onChange={event => { setConsented(event.target.checked); if (!event.target.checked && running.current) stop(); }} /><span>I understand my microphone audio may be sent to my browser’s speech service for recognition.</span></label>
             <div className="speech-check__buttons">
@@ -158,7 +158,7 @@ export default function SpeechCheck() {
           <section className="speech-check__guide" aria-labelledby="speech-guide-title"><p className="speech-check__eyebrow">TRY IT OUT</p><h2 id="speech-guide-title">One phrase at a time.</h2><ol><li>Allow the microphone when your browser asks.</li><li>Wait for <strong>Listening</strong>, then say a short sentence.</li><li>Pause to let the phrase finish. Choose Stop when you’re done.</li></ol><blockquote>“Hello. I’m testing live captions today.”</blockquote><p>Try saying it twice. Both phrases should appear.</p></section>
         </aside>
       </div>
-      <footer className="speech-check__footer"><span>Browser speech can make mistakes. Check the words as you go.</span><a href="#/conversation">Back to SignLine <span aria-hidden="true">↗</span></a></footer>
+      <footer className="speech-check__footer"><span>Live transcription can make mistakes. Check the words as you go.</span><a href="#/conversation">Back to SignLine <span aria-hidden="true">↗</span></a></footer>
     </main>
   );
 }

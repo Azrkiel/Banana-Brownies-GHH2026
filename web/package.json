@@ -14,6 +14,7 @@
     "setup:assets": "python3 scripts/setup_assets.py"
   },
   "dependencies": {
+    "@elevenlabs/client": "^1.28.0",
     "@mediapipe/tasks-vision": "1.1.1",
     "livekit-client": "^2.23.0",
     "onnxruntime-web": "1.30.0",

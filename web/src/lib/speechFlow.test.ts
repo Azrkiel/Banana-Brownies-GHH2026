@@ -19,7 +19,7 @@ function setup(useSharedAdapter = false) {
     onError: error,
   });
   const start = vi.fn<typeof startWebSpeech>(() => ({ kind: 'webspeech', stop: vi.fn() }));
-  const capture = createCallSpeech({ role: 'hearing', ...(useSharedAdapter ? {} : { start }), transcript: sender.transcript, clearDraft: sender.clearDraft, onState: vi.fn(), onError: error });
+  const capture = createCallSpeech({ role: 'hearing', start: useSharedAdapter ? startWebSpeech : start, transcript: sender.transcript, clearDraft: sender.clearDraft, onState: vi.fn(), onError: error });
   sender.connection(true); capture.connection(true); capture.consent(true); capture.enable(true);
   cleanups.push(() => { capture.dispose(); sender.dispose(); });
   const say = (text: string, final: boolean) => start.mock.calls.at(-1)![0](text, final);
@@ -50,7 +50,7 @@ describe('recognition to room caption flow (mock transport)', () => {
   });
 });
 
-describe('shared Speech check adapter wired to room captions', () => {
+describe('optional browser recognizer adapter wired to room captions', () => {
   function browser() {
     const recognizers: Recognition[] = [];
     class Recognition {
@@ -72,9 +72,9 @@ describe('shared Speech check adapter wired to room captions', () => {
     return recognizers;
   }
 
-  it('delivers shared-adapter drafts and finals through the default call pipeline', async () => {
+  it('delivers browser-adapter drafts and finals through room captions', async () => {
     const recognizers = browser();
-    const flow = setup(true); // No injected recognizer: exercise production default wiring.
+    const flow = setup(true);
     expect(recognizers).toHaveLength(1);
     expect(recognizers[0]).toMatchObject({ continuous: true, interimResults: true, lang: 'en-US' });
     recognizers[0].say('hello', false);

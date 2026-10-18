@@ -367,11 +367,11 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
           {role === 'hearing' && <section className="call-speech" aria-labelledby="call-speech-title">
             <div className="call-speech__heading"><h2 id="call-speech-title">Speech captions</h2><span role="status">{speechLabels[speechState]}</span></div>
             <label><input type="checkbox" checked={consented} onChange={event => { setConsented(event.target.checked); speech.current?.consent(event.target.checked); }} /><span>I agree to send microphone audio to my browser’s speech service and share the recognized text with this room.</span></label>
-            <div className="call-speech__actions"><Button variant="primary" disabled={!speechEnabled && (!consented || !canSend || muted)} onClick={() => { setSpeechError(''); speech.current?.enable(!speechEnabled); }}>{speechEnabled ? 'Stop captions' : 'Start captions'}</Button><p>Use desktop Chrome. Stopping captions leaves call audio on. Mute the microphone to pause both.</p></div>
+            <div className="call-speech__actions"><Button variant="primary" disabled={!speechEnabled && (!consented || !canSend || muted)} onClick={() => { setSpeechError(''); speech.current?.enable(!speechEnabled); }}>{speechEnabled ? 'Stop captions' : 'Start captions'}</Button><p>Powered by ElevenLabs Scribe. Stopping captions leaves call audio on. Mute the microphone to pause both.</p></div>
             {speechError && <p className="call-speech__error" role="alert">{speechError}</p>}
             {deliveryError && <p className="call-speech__error" role="alert">{deliveryError}</p>}
           </section>}
-          <div className="scope-note"><span className="note-icon" aria-hidden="true">i</span><p><strong>Keep the words in view.</strong> Typed captions stay available. {role === 'hearing' ? 'Enable speech captions above after giving consent.' : 'The hearing participant can enable speech captions for the room.'} Browser recognition can make mistakes. Automatic sign recognition is still being built.</p></div>
+          <div className="scope-note"><span className="note-icon" aria-hidden="true">i</span><p><strong>Keep the words in view.</strong> Typed captions stay available. {role === 'hearing' ? 'Enable speech captions above after giving consent.' : 'The hearing participant can enable speech captions for the room.'} Live transcription can make mistakes. Automatic sign recognition is still being built.</p></div>
         </div>
 
         <section className="caption-panel" aria-labelledby="caption-title">
