@@ -22,6 +22,7 @@ from pydantic import BaseModel, Field, ValidationError
 load_dotenv()
 
 from . import db, gloss  # noqa: E402  (imported after .env is loaded)
+from .gloss import GlossRequest, GlossCandidate, GlossTokenSlot  # noqa: E402,F401
 
 app = FastAPI(title="SignLine API")
 # A static frontend on another origin (e.g. GitHub Pages) needs CORS; local dev uses the Vite proxy.
@@ -63,7 +64,7 @@ def token(r: TokenReq):
 
 
 @app.post("/api/gloss", response_model=gloss.GlossResult)
-async def gloss_route(r: gloss.GlossRequest):
+async def gloss_route(r: GlossRequest):
     try:
         return await asyncio.wait_for(gloss.translate(r), timeout=2.5)
     except asyncio.TimeoutError:

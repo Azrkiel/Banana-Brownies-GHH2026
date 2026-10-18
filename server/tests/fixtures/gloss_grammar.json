@@ -1,0 +1,22 @@
+[
+  {"glosses":["ME","STUDENT"],"tags":[],"english":"I am a student."},
+  {"glosses":["MY","NAME","@LISA"],"tags":[],"english":"My name is Lisa."},
+  {"glosses":["ME","NAME","fs-KEV"],"tags":[],"english":"My name is Kev."},
+  {"glosses":["YESTERDAY","ME","GO","STORE"],"tags":[],"english":"Yesterday I went to the store."},
+  {"glosses":["ME","KNOW","[NEG]"],"tags":[],"english":"I don't know."},
+  {"glosses":["YOU","WANT","WATER"],"tags":["Q-YN"],"english":"Do you want water?"},
+  {"glosses":["ME","WANT","WATER"],"tags":["Q-YN"],"english":"Do I want water?"},
+  {"glosses":["YOU","NEED","HELP"],"tags":["Q-YN"],"english":"Do you need help?"},
+  {"glosses":["YOUR","NAME","WHAT"],"tags":["Q-WH"],"english":"What is your name?"},
+  {"glosses":["YOU","HUNGRY"],"tags":["Q-YN"],"english":"Are you hungry?"},
+  {"glosses":["ME","HUNGRY"],"tags":["NEG"],"english":"I am not hungry."},
+  {"glosses":["SHE","LIKE","WATER"],"tags":[],"english":"She likes water."},
+  {"glosses":["HE","KNOW"],"tags":["NEG"],"english":"He doesn't know."},
+  {"glosses":["TOMORROW","WE","GO","STORE"],"tags":[],"english":"Tomorrow we will go to the store."},
+  {"glosses":["YOU","GO","WHERE"],"tags":[],"english":"Where do you go?"},
+  {"glosses":["HELLO"],"tags":[],"english":"Hello!"},
+  {"glosses":["THANKYOU"],"tags":[],"english":"Thank you!"},
+  {"glosses":["WATER","STORE","BYE"],"tags":[],"english":"Water store bye."},
+  {"glosses":["@MARIA"],"tags":["FS"],"english":"Maria."},
+  {"glosses":[],"tags":[],"english":""}
+]

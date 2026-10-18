@@ -51,7 +51,7 @@ Execution checklist (code verification is separate from real-data acceptance bel
 
 - [x] Task 4.1: Kinematic segmenter, spelling router and top-three decoder.
 - [x] Task 4.2: NMM extraction with a Python counterpart.
-- [ ] Task 4.3: Lattice/NMM API and shared offline grammar.
+- [x] Task 4.3: Lattice/NMM API and shared offline grammar.
 - [ ] Task 4.4: Continuous CTC stitching, training and evaluation.
 
 ### Task 4.1: Kinematic Sign Boundary Segmenter & Fingerspelling Router (`web/src/lib/segmenter.ts`)
@@ -159,6 +159,8 @@ python -m ml.continuous_ctc \
 - [ ] **AC-4.3 (Offline & LLM Gloss-to-English Quality):**
   - Without `GEMINI_API_KEY`, `POST /api/gloss` converts `{"glosses": ["ME", "WANT", "WATER"], "nmm_tags": ["Q-YN"]}` -> `"Do I want water?"` and `{"glosses": ["YOU", "NEED", "HELP"], "nmm_tags": ["Q-YN"]}` -> `"Do you need help?"` in `< 5 ms`.
   - With `GEMINI_API_KEY`, passing a 3-slot lattice where Slot 2 has `[{"gloss": "DEER", "score": 0.46}, {"gloss": "THIRSTY", "score": 0.44}]` followed by `WATER (0.91)` resolves to `"I am thirsty and want some water."`
+  - [x] Offline examples and latency; shared browser/Python fixtures; mocked lattice selection, quota, cancellation and invalid-output paths.
+  - [ ] Live Gemini semantic quality and <250ms model-service latency remain unmeasured; AC-4.3 stays open for that external check.
 - [ ] **AC-4.4 (Continuous Signing Benchmark — Stage D):** Achieves `<= 28%` Gloss Word Error Rate (`WER`) on stitched 3-to-5 sign commercial validation streams (`<= 35%` WER on [How2Sign Holistic](https://www.google.com/search?q=https%3A%2F%2Fhuggingface.co%2Fdatasets%2FPSewmuthu%2FHow2Sign_Holistic) validation sentences).
 
 ---
