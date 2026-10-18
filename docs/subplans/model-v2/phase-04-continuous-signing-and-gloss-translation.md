@@ -186,7 +186,7 @@ Tasks **4.1 through 4.4** are implemented and automated verification passes. AC-
 
 ### Implemented behavior and contract corrections
 
-- `segmenter.ts` retains the existing recorder `Segmenter` and adds `KinematicSegmenter` for continuous XY174 motion/hold/transition gating on either hand. `decoder.ts` supplies asynchronous inference adapters, ordered top-three candidate slots, NMM tags, explicit ASLFR90 spelling buffers, reset protection and one revisable FS name slot with score0 pending signer review. Actual model loading/resampling and call wiring remain later scope.
+- `segmenter.ts` retains the existing recorder `Segmenter` and adds `KinematicSegmenter` for continuous XY174 motion/hold/transition gating on either hand. `decoder.ts` supplies asynchronous inference adapters, ordered top-three candidate slots, NMM tags, explicit ASLFR90 spelling buffers, reset protection and one revisable FS name slot with score 0 pending signer review. Actual model loading/resampling and call wiring remain later scope.
 - `nmm.ts` / `ml/nmm.py` accept actual tracker brow/headYaw or explicit eight XYZ face points. The proposed `[150:174]` face slice does not exist in XY174. Rest-only neutral calibration, stability/visibility gating, ten-frame question tails and 24-frame headshake histories are implemented. See ADR-010/011 for thresholds and coordinate assumptions.
 - `/api/gloss` preserves existing signs/tags/context requests and all four response fields. Flat glosses and scored candidate lattices are additive; lattice > signs > glosses precedence is explicit. Offline rules choose top-scoring candidates; the prompt exposes every alternative and local/global markers. No key, upstream failure, invalid output or 1.5s timeout uses the shared deterministic grammar. Unknown syntax and uncertain recognition stay below auto-speak confidence. Existing route emergency error behavior and tests remain unchanged.
 - `continuous_ctc.py` supplies complete same-signer Hermite stitching, a full Conformer gloss CTC model, CPU/CUDA training, validation-selected EMA checkpoints and word-level greedy/beam evaluation. `evaluate_v2.py` has a small dispatch for the required `--mode continuous`. How2Sign consumes Phase 2 XY180 caches as XY174 plus an explicit reviewed gloss annotation manifest; English sentence labels are never treated as ASL gloss targets. Research artifacts carry non-commercial metadata and remain under `research_only`.
@@ -198,13 +198,13 @@ Tasks **4.1 through 4.4** are implemented and automated verification passes. AC-
 | `ml/.venv/Scripts/python -m pytest server/tests/ -q` with `PYTHONPATH=server` | 51 passed; original tests unchanged. |
 | `ml/.venv/Scripts/python -m pytest ml/tests/ -q` | 99 passed, including original feature parity and ONNX runtime checks; no skipped or weakened tests. |
 | Combined `pytest server/tests/ ml/tests/ -q` | 150 passed, 31 existing dependency/export warnings. |
-| `npm --prefix web test` | 295 tests in24 files passed, including original recorder tests. |
+| `npm --prefix web test` | 295 tests in 24 files passed, including original recorder tests. |
 | `npm --prefix web run build` / `npm --prefix web run lint` | Both passed; existing LiveKit chunk-size advisory remains. |
 | `ml/.venv/Scripts/python plan/verify.py preflight` | PREFLIGHT OK; pinned backend dependencies installed only into ignored ml/.venv; frontend npm ci uses the lockfile. No dependency manifests changed. |
-| Four-sign transition benchmark | Old stride3/stability2/cooldown900: 2 wrong transition emissions; continuous gate:0 (100% reduction), all4 holds emitted, 561ms between emissions with ~363ms settling holds. |
-| Segmenter microbenchmark | 0.03758ms mean per frame over10,000 local CPU updates; not a live camera/call measurement. |
-| NMM twin comparison | 1,566 identical synthetic input frames; tags identical; maximum ratio absolute difference1.1102230246251565e-16. |
-| Offline `POST /api/gloss` | 100 local TestClient requests after10 warmups: median1.31535ms/p951.75940ms. Both required question examples pass; live LLM not called. |
+| Four-sign transition benchmark | Old stride3/stability2/cooldown900: 2 wrong transition emissions; continuous gate: 0 (100% reduction), all 4 holds emitted, 561ms between emissions with ~363ms settling holds. |
+| Segmenter microbenchmark | 0.03758ms mean per frame over 10,000 local CPU updates; not a live camera/call measurement. |
+| NMM twin comparison | 1,566 identical synthetic input frames; tags identical; maximum ratio absolute difference 1.1102230246251565e-16. |
+| Offline `POST /api/gloss` | 100 local TestClient requests after 10 warmups: median 1.31535ms / p95 1.75940ms. Both required question examples pass; live LLM not called. |
 
 CPU smoke and independent checkpoint evaluation (from repository root):
 
@@ -213,19 +213,19 @@ ml/.venv/Scripts/python -m ml.continuous_ctc --smoke-test --device cpu --out-dir
 ml/.venv/Scripts/python -m ml.evaluate_v2 --mode continuous --checkpoint ml/checkpoints/phase4-smoke/best_ema.pt --manifest ml/checkpoints/phase4-smoke/synthetic_clips --split test
 ```
 
-Synthetic smoke metrics (two epochs, full four-block192-wide encoder; NOT accuracy acceptance):
+Synthetic smoke metrics (two epochs, full four-block 192-wide encoder; NOT accuracy acceptance):
 
 | Split | Streams / reference glosses | Greedy errors / WER | Beam10 errors / WER | CTC loss |
 | --- | --- | --- | --- | --- |
-| Validation | 12 /43 | 229 /532.55814% | 424 /986.04651% | 25.40484047 |
-| Test | 12 /49 | 273 /557.14286% | 462 /942.85714% | 20.66353035 |
+| Validation | 12 / 43 | 229 /532.55814% | 424 /986.04651% | 25.40484047 |
+| Test | 12 / 49 | 273 /557.14286% | 462 /942.85714% | 20.66353035 |
 
-WER can exceed100% due to insertions. These smoke weights must not be used for inference. The separate evaluation command reloads the saved checkpoint and reproduces test WER exactly. Runtime remains Windows/Python3.12.14/PyTorch2.14.1+cpu; no real datasets, recordings or model assets were committed.
+WER can exceed 100% due to insertions. These smoke weights must not be used for inference. The separate evaluation command reloads the saved checkpoint and reproduces test WER exactly. Runtime remains Windows / Python 3.12.14 / PyTorch 2.14.1+cpu; no real datasets, recordings or model assets were committed.
 
 ### Human follow-through and next scope boundary
 
 See the appended **Phase 4** section in `NEEDS_HUMAN_ACTION.md` for runnable real-data training/evaluation commands, expected artifact paths, annotation format and resume checks. Real training requires the acquired/provenance-checked Phase 2 datasets and an appropriate CUDA environment. AC-4.4 is unmet; no <=28%/35% WER claim is made. AC-4.3's offline and mocked paths pass, but the model's actual alternative selection and <250ms service latency require live evaluation. NMM occlusion and natural signing cadence require a real signer/camera check.
 
-Implementation commits so far: `2c9125e` (4.1), `f487d34` (4.2), `6d0cb82` (4.3). The continuous-training commit hash will be recorded in a documentation follow-up after commit creation. No history rewriting or AI co-author trailers are used.
+Implementation commits so far: `2c9125e` (4.1), `f487d34` (4.2), `6d0cb82` (4.3). The Task 4.4 continuous-training implementation is `c64f3a703db22e9fabacb82993266b37a0d80087`. All four implementation commits are authored/committed by Ansonii21. No history rewriting or AI co-author trailers are used.
 
-The legacy project ledger is unchanged: `DONE3 / DROPPED14 / HUMAN9 / NEEDS-HUMAN1 / SUPERSEDED10 / VERIFIED4`; `plan/verify.py next` prints `NO AGENT TASKS LEFT (all lanes)`. That ledger is separate from the open model-v2 real-data acceptance checks. Its remaining NEEDS-HUMAN row1.C2 is the live Gemini prompt/eval check. Do not start Phase 5 or ship synthetic checkpoints without a new instruction.
+The legacy project ledger is unchanged: `DONE 3 / DROPPED 14 / HUMAN 9 / NEEDS-HUMAN 1 / SUPERSEDED 10 / VERIFIED 4`; `plan/verify.py next` prints `NO AGENT TASKS LEFT (all lanes)`. That ledger is separate from the open model-v2 real-data acceptance checks. Its remaining NEEDS-HUMAN row 1.C2 is the live Gemini prompt/eval check. Do not start Phase 5 or ship synthetic checkpoints without a new instruction.
