@@ -14,6 +14,7 @@ from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from google.genai import errors as genai_errors
 from livekit import api as lk
 from pydantic import BaseModel, Field, ValidationError
@@ -178,4 +179,16 @@ async def stats():
 
 # The Fly image serves the built web app from the same origin. Mounted last so /api/* routes win.
 if (web_dir := os.environ.get("WEB_DIR")) and os.path.isdir(web_dir):
-    app.mount("/", StaticFiles(directory=web_dir, html=True), name="web")
+    class SPAFiles(StaticFiles):
+        """Unknown non-API page paths (e.g. /welcome) load the app; /api/* and missing files keep their JSON 404."""
+
+        async def get_response(self, path, scope):
+            try:
+                return await super().get_response(path, scope)
+            except StarletteHTTPException as exc:
+                last = path.rsplit("/", 1)[-1]
+                if exc.status_code != 404 or path.startswith("api") or "." in last:
+                    raise
+                return await super().get_response("index.html", scope)
+
+    app.mount("/", SPAFiles(directory=web_dir, html=True), name="web")
