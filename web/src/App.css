@@ -9,8 +9,8 @@
 main { max-width: var(--page-max-width); margin: auto; padding: 48px 40px 64px; }
 main:focus-visible { outline: none; }
 .home-page { padding-top: 24px; }
-.home-heading { margin: 0 0 8px; }
-.home-heading h1 { margin: 0; font-family: var(--font-serif); font-weight: 400; font-size: 1.25rem; color: var(--color-muted); }
+.home-heading { margin: 0 0 24px; }
+.home-heading h1 { margin: 0; }
 .home-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(300px, .8fr); align-items: center; gap: 32px; }
 .songbirds { display: block; height: auto; mix-blend-mode: multiply; pointer-events: none; }
 .home-illustration { width: 100%; margin: 0; }
@@ -18,7 +18,7 @@ main:focus-visible { outline: none; }
 .join-bar { display: grid; gap: 24px; }
 .join-bar label { display: grid; gap: 8px; font-size: 1.125rem; }
 .join-bar input, .join-bar select { font-size: 1.25rem; }
-.join-bar .ui-button { justify-self: start; margin-top: 12px; }
+.join-bar > .ui-button { justify-self: start; margin-top: 12px; }
 .home-join .error-banner { margin-top: 24px; }
 .room-page { max-width: 1600px; padding-top: 32px; }
 .room-heading { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px; }
@@ -90,3 +90,17 @@ main:focus-visible { outline: none; }
 .signer-voice__select select { min-width: 0; }
 .signer-voice p { flex-basis: 100%; margin: 0; font-size: var(--text-sm); color: var(--color-muted); }
 .signer-voice p:empty { display: none; }
+
+/* setup: call setup form */
+.join-field { display: grid; gap: 8px; }
+.join-help { margin: 0; color: var(--color-muted); font-size: var(--text-sm); line-height: 1.5; }
+.join-error { margin: 0; color: var(--color-danger); font-size: var(--text-sm); }
+.join-invite { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.join-invite .ui-button { min-height: 44px; }
+.join-roles { display: grid; gap: 12px; margin: 0; padding: 0; border: 0; min-width: 0; font-size: 1.125rem; }
+.join-roles legend { padding: 0; margin-bottom: 8px; }
+.join-bar .role-option { display: flex; align-items: flex-start; gap: 12px; min-height: 44px; cursor: pointer; }
+.join-bar .role-option input[type='radio'] { flex-shrink: 0; width: 22px; min-height: 0; height: 22px; margin: 4px 0 0; padding: 0; background: none; accent-color: var(--color-ink); cursor: pointer; }
+.role-option > span { display: grid; gap: 2px; }
+.role-option__label { font-size: 1.125rem; }
+@media (max-width: 600px) { .join-bar > .ui-button { justify-self: stretch; } }

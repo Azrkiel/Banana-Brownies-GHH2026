@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef } from 'react';
 import './CallBranch.css';
 
-/** Extend the existing perch sideways, beneath the opaque join card. */
+/** Extend the existing perch sideways, ending at the join card. */
 export function CallBranch() {
   const drawing = useRef<SVGSVGElement>(null);
   const left = useRef<SVGSVGElement>(null);
@@ -36,11 +36,15 @@ export function CallBranch() {
       };
       const sourceWidth = position(left.current!, 0, startY, startX + 3);
       mirrored.current!.setAttribute('transform', `translate(${sourceWidth} 0) scale(-1 1)`);
-      position(right.current!, endX - 3, endY, base.width - endX + 3);
+      // Stop the right-hand branch at the join card instead of running behind it.
+      const card = page.querySelector<HTMLElement>('.home-join')?.getBoundingClientRect();
+      const top = endY - 140 * scale;
+      const hitsCard = card && card.left - base.left > endX && card.top - base.top < top + height && card.bottom - base.top > top;
+      position(right.current!, endX - 3, endY, Math.max(0, (hitsCard ? card.left - base.left : base.width) - endX + 3));
     };
     draw();
     const observer = new ResizeObserver(draw);
-    [page, perch].forEach(element => observer.observe(element));
+    [page, perch, page.querySelector('.home-join')].forEach(element => element && observer.observe(element));
     return () => observer.disconnect();
   }, []);
   return <svg ref={drawing} className="call-branch" aria-hidden="true" focusable="false" preserveAspectRatio="none">
