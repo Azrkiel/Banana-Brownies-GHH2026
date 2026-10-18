@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { parseWordForest, wordProbabilities } from '../src/lib/wordModel';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
-const model = parseWordForest(JSON.parse(readFileSync(resolve(root, 'web/public/trained-words.json'), 'utf8')));
+const model = parseWordForest(JSON.parse(readFileSync(resolve(root, process.argv[3] ?? 'web/public/trained-words.json'), 'utf8')));
 const fixture = JSON.parse(readFileSync(resolve(root, process.argv[2] ?? 'data/legacy/word-parity.json'), 'utf8')) as {
   features: number[][]; probabilities: number[][];
 };

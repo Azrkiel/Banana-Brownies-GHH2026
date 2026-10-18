@@ -48,6 +48,29 @@ describe('signer word recognition lifecycle', () => {
     expect(callbacks.size).toBe(0);
     recognizer.close(); expect(close).toHaveBeenCalledTimes(1);
   });
+  it('returns the raw 1260 features and scores them with the loaded model', async () => {
+    vi.mocked(fetch).mockResolvedValue({ ok: true, json: async () => ({ ...model, sourceSha256: 'abc' }) } as Response);
+    const recognizer = await createWordRecognizer(video, new AbortController().signal);
+    expect(recognizer.modelSha256).toBe('abc');
+    const progress = vi.fn();
+    const result = recognizer.captureSample(progress);
+    for (let i = 1; i <= 30; i++) frame(i * 34);
+    const sample = await result;
+    expect(sample.features).toHaveLength(1260);
+    expect(sample.framesWithHand).toBe(30);
+    expect(sample.features.slice(0, 2)).toEqual([0, 0]);
+    expect(sample.features[2]).toBeCloseTo(0.01);
+    expect(progress).toHaveBeenLastCalledWith(30);
+    expect(recognizer.predict(sample.features, sample.framesWithHand)).toMatchObject({ label: 'HELLO', accepted: true });
+    expect(recognizer.predict(sample.features, 3).accepted).toBe(false);
+    expect(callbacks.size).toBe(0);
+    recognizer.close();
+  });
+  it('reports no model hash when the model file has none', async () => {
+    const recognizer = await createWordRecognizer(video, new AbortController().signal);
+    expect(recognizer.modelSha256).toBeNull();
+    recognizer.close();
+  });
   it('rejects a no-hand capture rather than accepting the model’s default class', async () => {
     detect.mockReturnValue({ landmarks: [] });
     const recognizer = await createWordRecognizer(video, new AbortController().signal);
