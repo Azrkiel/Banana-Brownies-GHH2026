@@ -1,5 +1,6 @@
 import type { GlossResult, GlossSign } from './api';
 import type { DictatedWord } from './dictation';
+import { signLabel } from './signLabels';
 
 /** Gemini's own estimate below this means the signs did not form a clear sentence; keep the signed words. */
 export const MIN_GLOSS_CONFIDENCE = 0.6;
@@ -10,7 +11,8 @@ type Translate = (signs: GlossSign[], tags: string[], context: string[], timeout
 
 /** ASL word order differs from English, so Gemini rewrites the glosses; any doubt falls back to the signs themselves. */
 export async function glossToEnglish(words: DictatedWord[], context: string[], translate: Translate): Promise<string> {
-  const signed = words.map(word => word.label).join(' ');
+  // If Gemini is unsure or unavailable, the signed words are sent as signed; a spelled word reads as a name (fs-KEV -> Kev).
+  const signed = words.map(word => word.label.startsWith('fs-') ? signLabel(word.label) : word.label).join(' ');
   try {
     const result = await translate(words.map(word => ({ gloss: word.label, p: word.score, alts: [] })), [], context, GLOSS_TIMEOUT_MS);
     const english = result.english.trim();

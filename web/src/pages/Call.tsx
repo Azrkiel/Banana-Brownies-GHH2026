@@ -12,6 +12,9 @@ import { createSpeechCaptions } from '../lib/speechCaptions';
 import { createCallSpeech, type CallSpeechState } from '../lib/callSpeech';
 import { getVoices, translateGloss, type VoiceInfo } from '../lib/api';
 import { glossToEnglish } from '../lib/signedSentence';
+import { signLabel } from '../lib/signLabels';
+import { drawTileOverlay } from '../lib/landmarks';
+import type { LiveFrame } from '../lib/wordRecognition';
 import { createSignerVoice, speakToRoom, spokenText, MAX_SPOKEN_CHARS, type SignerVoice } from '../lib/signerVoice';
 import type { Caption, Role } from '../lib/types';
 import './CallSpeech.css';
@@ -198,6 +201,11 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
   const delivery = useRef<ReturnType<typeof createSpeechCaptions> | null>(null);
   const mutingRef = useRef(false);
   const local = useRef<HTMLVideoElement>(null);
+  // Sign tracking is drawn on the signer's own tile; either video can be the large one (tap to swap).
+  const overlay = useRef<HTMLCanvasElement>(null);
+  const [selfLarge, setSelfLarge] = useState(false);
+  const [tracking, setTracking] = useState(false);
+  const drawTracking = (frame: LiveFrame | null) => { setTracking(Boolean(frame)); drawTileOverlay(overlay.current, local.current, frame); };
   const remote = useRef<HTMLVideoElement>(null);
   const remoteTrack = useRef<RemoteTrack | null>(null);
   const call = useRef<CallT | null>(null);
@@ -515,7 +523,7 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
   /** Turns dictated signs into the sentence the signer sees in the preview before anything is sent. */
   async function prepareSigned(words: { label: string; score: number }[]): Promise<string> {
     const context = captions.filter(caption => caption.role === 'hearing' && caption.final && !caption.retracted).slice(-3).map(caption => caption.text);
-    return spokenText(polish ? await glossToEnglish(words, context, translateGloss) : words.map(word => word.label).join(' '));
+    return spokenText(polish ? await glossToEnglish(words, context, translateGloss) : words.map(word => word.label.startsWith('fs-') ? signLabel(word.label) : word.label).join(' '));
   }
 
   /** Sends a sentence the signer confirmed (or let the preview countdown confirm): only confident signs reach here. */
@@ -605,15 +613,17 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
       </div>
       <div className="call-workspace">
         <div className="stage-column">
-          <div className="stage" aria-label="Video call">
+          <div className={`stage${selfLarge ? ' self-large' : ''}${tracking ? ' tracking' : ''}`} aria-label="Video call">
             <div className="stage-top"><span className="room-label">{room}</span><span className="connection-status" role="status"><Badge tone={statusTone(status)}>{statusText[status]}</Badge></span></div>
-            <video ref={remote} autoPlay playsInline className={`remote-video ${remoteVisible ? 'visible' : ''}`} aria-label="The other person’s video" />
+            <video ref={remote} autoPlay playsInline className={`remote-video ${remoteVisible ? 'visible' : ''}`} aria-label="The other person’s video" onClick={() => { if (selfLarge) setSelfLarge(false); }} />
             {!remoteVisible && <div className="stage-placeholder">
               <Songbirds className="stage-illustration" />
               <h2 ref={stageHeading} tabIndex={-1}>{inRoom ? peer ? `${peer} is here` : peerLeft ? `${peerLeft} left the call` : 'Waiting for the other person to join' : status === 'joining' ? 'Connecting…' : status === 'disconnected' ? 'Call ended' : 'Not connected'}</h2>
               <p>{inRoom ? peer ? 'Their video will appear when their camera is on.' : peerLeft ? 'They can rejoin with the same link.' : 'Ask someone to join this call to get started.' : status === 'joining' ? 'Allow camera access when your browser asks.' : status === 'disconnected' ? `${endReason === 'dropped' ? 'The call ended.' : 'You left the call.'} Rejoin when you’re ready, or check your devices first.` : 'Choose Rejoin to try connecting again.'}</p>
             </div>}
-            <div className="local-tile"><video ref={local} autoPlay muted playsInline className="mirror local-video" aria-label="Your camera preview" />{!busy && <span className="camera-off" aria-hidden="true"><Badge>Camera off</Badge></span>}<span className="video-label">{inRoom ? name : 'You'} <span>· {role === 'signer' ? 'Signer' : 'Hearing participant'}</span></span></div>
+            <div className="local-tile" onClick={() => { if (!selfLarge) setSelfLarge(true); }}><video ref={local} autoPlay muted playsInline className="mirror local-video" aria-label="Your camera preview" /><canvas ref={overlay} className="tracking-overlay" aria-hidden="true" />
+              {busy && <button type="button" className="swap-video" aria-pressed={selfLarge} onClick={event => { event.stopPropagation(); setSelfLarge(large => !large); }}>{selfLarge ? 'Make theirs large' : 'Make mine large'}</button>}
+              {tracking && <span className="tracking-badge" aria-hidden="true">Tracking</span>}{!busy && <span className="camera-off" aria-hidden="true"><Badge>Camera off</Badge></span>}<span className="video-label">{inRoom ? name : 'You'} <span>· {role === 'signer' ? 'Signer' : 'Hearing participant'}</span></span></div>
             {remoteVisible && <span className="peer-label">{peer ?? 'The other person'}</span>}
           </div>
           <div className="call-toolbar"><p><span className="privacy-dot" />{status === 'joining' ? 'Waiting for camera access and call connection' : inRoom ? role === 'signer' ? spokenAloud ? 'Camera on · captions spoken aloud' : 'Camera on · captions are text only' : muted ? 'Call microphone muted · speech recognition paused' : 'Camera and call microphone enabled' : 'Camera and microphone stay off until you join.'}</p>
@@ -659,7 +669,7 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
             {speechError && <p className="call-speech__error" role="alert">{speechError}</p>}
             {deliveryError && <p className="call-speech__error" role="alert">{deliveryError}</p>}
           </section>}
-          {role === 'signer' && <SignerWords key={busy ? 'call' : 'ended'} camera={local} connected={canSend} reconnecting={reconnecting} onPending={setPendingWords} onPrepare={prepareSigned} onSentence={sendSigned} />}
+          {role === 'signer' && <SignerWords key={busy ? 'call' : 'ended'} camera={local} connected={canSend} reconnecting={reconnecting} onPending={setPendingWords} onFrame={drawTracking} onPrepare={prepareSigned} onSentence={sendSigned} />}
           <div className="scope-note"><span className="note-icon" aria-hidden="true">i</span><p>Speech and sign recognition can make mistakes. The shared words are a small vocabulary; only confident signs are dictated automatically.</p></div>
           <p className="shortcuts">Shortcuts: <kbd>/</kbd> focus the caption box{role === 'hearing' && <> · <kbd>Alt</kbd>+<kbd>M</kbd> mute or unmute your microphone</>}</p>
         </div>

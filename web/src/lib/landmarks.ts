@@ -115,3 +115,31 @@ export function drawLive(canvas: HTMLCanvasElement | null, frame: OverlayFrame &
   context.drawImage(frame.image, 0, 0, canvas.width, canvas.height);
   drawLandmarksOverlay(canvas, frame, { clear: false });
 }
+
+/** Draw tracked landmarks over the call's own (mirrored) video tile. The recognizer tracks a mirrored frame, which
+ *  is what the tile shows, so no flip is needed; points are fitted into the video's object-fit: contain box. */
+export function drawTileOverlay(canvas: HTMLCanvasElement | null, video: HTMLVideoElement | null, frame: OverlayFrame | null) {
+  const context = canvas?.getContext('2d');
+  if (!canvas || !context) return;
+  const ratio = window.devicePixelRatio || 1;
+  const width = Math.round(canvas.clientWidth * ratio), height = Math.round(canvas.clientHeight * ratio);
+  if (canvas.width !== width || canvas.height !== height) { canvas.width = width; canvas.height = height; }
+  context.clearRect(0, 0, width, height);
+  if (!frame || !video?.videoWidth || !video.videoHeight) return;
+  const scale = Math.min(width / video.videoWidth, height / video.videoHeight);
+  const boxW = video.videoWidth * scale, boxH = video.videoHeight * scale, left = (width - boxW) / 2, top = (height - boxH) / 2;
+  const at = (p: Pt): [number, number] => [left + p.x * boxW, top + p.y * boxH];
+  const line = Math.max(2, Math.min(width, height) / 160);
+  const hands = (frame.hands ?? (frame.points ? [frame.points] : [])).filter(h => h.length === 21);
+  hands.forEach((hand, i) => {
+    context.strokeStyle = i === 0 ? '#3ddc84' : '#38bdf8';
+    context.fillStyle = context.strokeStyle;
+    context.lineWidth = line; context.lineCap = 'round';
+    for (const [a, b] of HAND_LINKS) { context.beginPath(); context.moveTo(...at(hand[a])); context.lineTo(...at(hand[b])); context.stroke(); }
+    for (const p of hand) { context.beginPath(); context.arc(...at(p), line * 1.4, 0, Math.PI * 2); context.fill(); }
+  });
+  if (frame.pose && frame.pose.length >= 13) {
+    context.fillStyle = '#f8fafc';
+    for (const i of [0, 11, 12]) { context.beginPath(); context.arc(...at(frame.pose[i]), line * 1.2, 0, Math.PI * 2); context.fill(); }
+  }
+}
