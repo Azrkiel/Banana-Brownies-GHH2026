@@ -312,3 +312,6 @@ For a combined-source run, point `--manifest` at a directory containing only the
 **Commit record:** Authorship correction is `2ea1f5a`; old/corrected model-v2 commit IDs are recorded in `AUTHORSHIP.md`. The implementation commit is titled `phase-03: add isolated and fingerspelling training with calibration`; its exact hash will be appended in a documentation follow-up. The separate external AGENTS.md attribution-policy commit `e016884` is retained outside the Phase 3 implementation commit.
 
 **Next scope boundary:** Real-data training and acceptance remain human work. Do not start Phase 4 or integrate/ship these synthetic development models without a new instruction.
+
+
+**Verified Phase 3 implementation commit:** `d8e73da51a2b21e67caaa55e38350355d4671b2b` (`phase-03: add isolated and fingerspelling training with calibration`), authored/committed by Ansonii21. This documentation follow-up records the exact implementation hash and adds no code.
