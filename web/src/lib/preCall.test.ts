@@ -6,11 +6,11 @@ import { CallRoom } from '../pages/Call';
 describe('room entry gate', () => {
   it.each(['signer', 'hearing'])('opens direct %s room links in pre-call checks without joining', role => {
     const html = renderToStaticMarkup(createElement(CallRoom, { query: `room=my-room-42&name=Kev&role=${role}` }));
-    expect(html).toContain('<h1>Devices</h1>');
+    expect(html).toContain('<h1>Check your camera and mic</h1>');
     expect(html).toContain('my-room-42');
     expect(html).toContain('Kev');
     expect(html).toContain('Start camera');
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Join conversation/);
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>Join call/);
     expect(html.includes('Test microphone')).toBe(role === 'hearing');
     expect(html).not.toContain('caption-composer');
   });
