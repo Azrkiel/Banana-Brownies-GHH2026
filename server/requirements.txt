@@ -53,3 +53,7 @@ uvloop==0.23.0; sys_platform != "win32"
 watchfiles==1.3.0
 websockets==16.1.1
 yarl==1.25.1
+
+# Optional /api/infer imports these lazily; PyTorch is never a server dependency.
+numpy==2.3.5
+onnxruntime==1.31.0

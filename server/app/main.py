@@ -24,11 +24,14 @@ load_dotenv()
 from . import db, gloss  # noqa: E402  (imported after .env is loaded)
 from .gloss import GlossRequest, GlossCandidate, GlossTokenSlot  # noqa: E402,F401
 
+from .infer import router as infer_router
+
 app = FastAPI(title="SignLine API")
+app.include_router(infer_router)
 # A static frontend on another origin (e.g. GitHub Pages) needs CORS; local dev uses the Vite proxy.
 if origins := [o.strip() for o in os.environ.get("CORS_ORIGINS", "").split(",") if o.strip()]:
     app.add_middleware(CORSMiddleware, allow_origins=origins, allow_methods=["GET", "POST"],
-                       allow_headers=["Content-Type"])
+                       allow_headers=["Content-Type", "X-Landmark-Consent", "X-Model-SHA256"])
 ELEVEN = "https://api.elevenlabs.io"
 
 
