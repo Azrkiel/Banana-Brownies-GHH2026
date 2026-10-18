@@ -1,4 +1,5 @@
 import { Songbirds } from '../components/Songbirds';
+import { HomeBranch } from '../components/HomeBranch';
 import { Button, Icon } from '../components/ui';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { RemoteTrack } from 'livekit-client';
@@ -65,19 +66,22 @@ export default function Call({ welcomeFlight = false, onLanded }: { welcomeFligh
 
   return (
     <main className={`call-page home-page${flightEntry ? ' home-page--flight-entry' : ''}`} id="main-content">
-      <header className="home-heading"><h1>Call</h1></header>
-      <div className="home-layout">
-        <Songbirds className="home-illustration" landing={welcomeFlight} onLanded={onLanded} />
-        <section className="home-join" aria-label="Join a call">
-          <form className="join-bar" onSubmit={open}>
-            <label>Name<input autoComplete="given-name" placeholder="Your name" value={name} maxLength={40} required onChange={event => setName(event.target.value)} /></label>
-            <label>Room<input value={room} pattern="(?:[a-z0-9]|-){3,32}" title="3–32 lowercase letters, numbers or hyphens" required onChange={event => setRoom(event.target.value)} /></label>
-            <label>Role<select value={role} onChange={event => setRole(event.target.value as Role)}><option value="signer">Signer</option><option value="hearing">Hearing participant</option></select></label>
-            <Button variant="primary" type="submit" disabled={!name.trim()}>Join <Icon name="arrow" /></Button>
-          </form>
-          {error && <div className="error-banner" role="alert">{error}</div>}
-        </section>
+      <div className="home-content">
+        <header className="home-heading"><h1>Call</h1></header>
+        <div className="home-layout">
+          <Songbirds className="home-illustration" landing={welcomeFlight} onLanded={onLanded} />
+          <section className="home-join" aria-label="Join a call">
+            <form className="join-bar" onSubmit={open}>
+              <label>Name<input autoComplete="given-name" placeholder="Your name" value={name} maxLength={40} required onChange={event => setName(event.target.value)} /></label>
+              <label>Room<input value={room} pattern="(?:[a-z0-9]|-){3,32}" title="3–32 lowercase letters, numbers or hyphens" required onChange={event => setRoom(event.target.value)} /></label>
+              <label>Role<select value={role} onChange={event => setRole(event.target.value as Role)}><option value="signer">Signer</option><option value="hearing">Hearing participant</option></select></label>
+              <Button variant="primary" type="submit" disabled={!name.trim()}>Join <Icon name="arrow" /></Button>
+            </form>
+            {error && <div className="error-banner" role="alert">{error}</div>}
+          </section>
+        </div>
       </div>
+      <HomeBranch />
     </main>
   );
 }

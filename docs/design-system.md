@@ -22,6 +22,9 @@ remain archived in `docs/design/anthropic/` for provenance.
   perch on the right receives the separate welcome sprite. Both the Call page
   and room standby use this composition. See [welcome motion](intro.md) for the
   connected takeoff, loading and landing sequence.
+- `web/public/notebook/branch-floor.webp`: transparent botanical continuation
+  across the bottom of the Call page. A textured stem joins it to the birds'
+  perch; the lower branch spans the viewport and stays below the form controls.
 - The images were created with OpenAI image generation using the user's naturalist
   butterfly and Claude Opus 5.5 screenshots as visual direction, then encoded as
   WebP. They contain no text. Text and controls are accessible HTML.

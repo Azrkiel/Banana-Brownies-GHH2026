@@ -86,6 +86,20 @@ try {
     assert.equal(await page.locator('.songbirds__welcome .bird-illustration__sprite').evaluate(element => getComputedStyle(element).backgroundPosition), '0px 0px');
     assert.equal(await page.locator('.home-page').evaluate(element => getComputedStyle(element).animationName), 'none', 'The page must not replay its entrance after landing');
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `No overflow at ${width}px`);
+    const floor = await page.locator('.home-branch-floor').boundingBox();
+    assert(Math.abs(floor.x) < 1 && Math.abs(floor.width - width) < 1, 'Bottom branch must span the viewport');
+    assert(Math.abs(floor.y + floor.height - await page.evaluate(() => document.documentElement.scrollHeight)) < 2, 'Branch must meet the bottom of the page');
+    assert(await page.locator('.home-branch-connector').evaluate(svg => {
+      const path = svg.querySelector('path');
+      const controls = [...document.querySelectorAll('.join-bar input, .join-bar select, .join-bar button')].map(element => element.getBoundingClientRect());
+      const bounds = svg.getBoundingClientRect();
+      for (let distance = 0; distance <= path.getTotalLength(); distance += 3) {
+        const point = path.getPointAtLength(distance);
+        const x = point.x + bounds.left, y = point.y + bounds.top;
+        if (controls.some(rect => x > rect.left - 5 && x < rect.right + 5 && y > rect.top - 5 && y < rect.bottom + 5)) return false;
+      }
+      return true;
+    }), 'Branch must remain clear of form controls');
     assert.equal(await page.evaluate(() => window.__deviceRequests), 0);
     await page.screenshot({ path: `/tmp/signline-branch-settled-${width}.png`, fullPage: true });
     // The settled pair also renders on a fresh direct route without a fly-in.
