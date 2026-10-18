@@ -1,0 +1,12 @@
+.signer-words { padding: 24px 0; border-top: 1px solid var(--color-border); }
+.signer-words__heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.signer-words__heading h2 { margin: 0; }
+.signer-words__heading > span, .signer-words p { font-size: var(--text-sm); }
+.signer-words__heading > span, .signer-words .note { color: var(--color-muted); }
+.signer-words__vocabulary { overflow-wrap: anywhere; }
+.signer-words .button-row { margin: 24px 0 16px; }
+.signer-words progress { width: 100%; height: 24px; accent-color: var(--color-ink); }
+.signer-words__review { padding: 20px; margin-top: 16px; background: var(--color-surface); border: 1px solid var(--color-field-border); border-radius: var(--radius-panel); }
+.signer-words__review .signer-words__word { font-size: 2rem; margin-bottom: 8px; overflow-wrap: anywhere; }
+.signer-words__review .note { margin: 16px 0 0; }
+.signer-words__error { color: var(--color-danger); overflow-wrap: anywhere; }

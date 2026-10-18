@@ -5,6 +5,7 @@ import type { RemoteTrack } from 'livekit-client';
 import { joinCall, type Call as CallT, type CallStatus } from '../lib/call';
 import { CaptionLane } from '../components/CaptionLane';
 import { PreCall } from '../components/PreCall';
+import { SignerWords } from '../components/SignerWords';
 import { createCaptionHistory } from '../lib/captions';
 import { createSpeechCaptions } from '../lib/speechCaptions';
 import { createCallSpeech, type CallSpeechState } from '../lib/callSpeech';
@@ -363,7 +364,17 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
             {speechError && <p className="call-speech__error" role="alert">{speechError}</p>}
             {deliveryError && <p className="call-speech__error" role="alert">{deliveryError}</p>}
           </section>}
-          <div className="scope-note"><span className="note-icon" aria-hidden="true">i</span><p>Speech recognition can make mistakes. Sign recognition is not yet available.</p></div>
+          {role === 'signer' && <SignerWords camera={local} connected={canSend} onUse={word => {
+            const next = `${draft.trim()}${draft.trim() ? ' ' : ''}${word}`;
+            if (next.length > 1000) {
+              setError('Your caption is full. Send or shorten it before adding a sign.');
+              return false;
+            }
+            setDraft(next);
+            document.getElementById('caption-draft')?.focus();
+            return true;
+          }} />}
+          <div className="scope-note"><span className="note-icon" aria-hidden="true">i</span><p>Speech and sign recognition can make mistakes. Trained signs cover a small vocabulary and always need your confirmation.</p></div>
         </div>
       </div>
 

@@ -104,7 +104,7 @@ export function PreCall({ room, name, role, onJoin }: { room: string; name: stri
           {camera.status === 'starting' && <Button onClick={() => check.current?.stop('camera')}>Cancel camera check</Button>}
         </Surface>
         <Surface aria-labelledby="precall-mic-title"><h2 id="precall-mic-title">Microphone check</h2>
-          {role === 'signer' ? <p className="note">You’re joining as a signer. Your microphone stays off; only a camera check is needed.</p> : <>
+          {role === 'signer' ? <p className="note">You’re joining as a signer. Your microphone stays off; only a camera check is needed. Your trained signs are available after you join.</p> : <>
             <p className="precall-status" role="status">{microphone.status === 'ready' ? 'Microphone access ready' : microphone.status === 'starting' ? 'Starting microphone…' : 'Microphone not checked'}</p>
             {microphone.stream && <MicrophoneLevel stream={microphone.stream} />}
             {microphone.error && <p className="precall-error" role="alert">{microphone.error}</p>}

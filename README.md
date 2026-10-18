@@ -8,7 +8,10 @@ for the implementation roadmap, consent requirements, and limitations.
 
 The **ledger in [plan.md](plan.md) §3** is the single source of truth for what is done.
 Run `python plan/verify.py status` for counts and `python plan/verify.py next` for the next
-task. Most of the app (ASL switch, recognition, voice, ML training) is not built yet.
+task. The canonical ASL switch, general sign recognition, call voice output and
+ONNX/GISLR training pipeline remain open. A recovered seven-word model is now
+available in the signer call as an opt-in capture-and-confirm feature; see
+[recovered training/model instructions](ml/README.md).
 
 ## Development setup
 
@@ -121,6 +124,12 @@ The dataset script is not registered until its implementation arrives in Phase 2
 
 Typed captions remain in memory only, with the latest eight displayed. A failed
 send retains the draft for retry. The ASL voice switch is still being built.
+Signers can enable **Your trained signs**, capture a word, review the suggestion,
+add it to their editable caption and choose **Send**. The model covers HELLO, MY,
+NAME, LISA, DEMO, GOODBYE and FOOD; it does not recognize unrestricted signing or
+speak automatically. Run the full asset setup before using camera recognition.
+Original scripts are in `ml/legacy/`, with recovery and export instructions in
+[ml/README.md](ml/README.md).
 Hearing participants can opt in to ElevenLabs Scribe captions; typed captions
 remain available when live transcription is unavailable.
 

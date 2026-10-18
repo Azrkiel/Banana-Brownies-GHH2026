@@ -20,8 +20,15 @@ Girls Hoo Hack 2026; the Devpost deadline is **Sun Oct 18, 17:00 EDT**.
 The repo contains the scaffold, FastAPI routes, Gemini prompt/evaluation script, database schema, deployment
 templates, stats page, feature extraction, segmenter, Bench/Recorder pages, separate lobby/room screens,
 and opt-in speech captions integrated into LiveKit calls.
-The **server lane's code is complete; its live checks are not**. There is still **no ASL switch, sign classifier,
-call voice output, ML training code, or trained sign model**. Vocabulary v2 is published (0.4); shared Frame/Session
+
+An additional recovery integration now exposes the original seven-word random
+forest in signer calls: explicit local capture, confidence/hand-presence gates,
+review into the typed-caption draft, and manual Send. See `ml/README.md`. This
+does not complete or replace the canonical v2 classifier, ONNX training, ASL
+switch or real-camera/two-laptop acceptance cards; their ledger statuses remain
+unchanged.
+The **server lane's code is complete; its live checks are not**. There is still **no canonical ASL switch,
+ONNX sign classifier, call voice output or GISLR/CNN training pipeline**. Vocabulary v2 is published (0.4); shared Frame/Session
 types still need task 1.0. The additive speech Caption/Ctrl protocol is already implemented.
 
 The ledger currently has **3 DONE, 7 NEEDS-HUMAN, 3 PARTIAL, 16 TODO, and 12 HUMAN** rows. That means
