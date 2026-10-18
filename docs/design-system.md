@@ -1,7 +1,7 @@
 # SignLine notebook design
 
 The user's current direction replaces the prior editorial card design with a
-textured paper notebook. Original astronomy drawings, serif typography, pencilled
+textured paper notebook. Original bird-and-hand drawings, serif typography, pencilled
 lines and minimal action labels define the UI. The earlier Anthropic source files
 remain archived in `docs/design/anthropic/` for provenance.
 
@@ -9,10 +9,11 @@ remain archived in `docs/design/anthropic/` for provenance.
 
 - `web/public/notebook/paper.webp`: original generated paper grain, 1536 × 1024,
   about 69 kB, tiled at a subtle reading scale across every route.
-- `web/public/notebook/astronomy.webp`: original generated hand-drawn Earth, Moon,
-  stars and orbital lines. A transparent cutout sits directly on the page, with
-  graphite stippling and muted watercolor pigments. It is about 305 kB and reused
-  for the opening, call form and camera standby screens.
+- `web/public/notebook/perch-hand.webp`: a transparent, realistically drawn hand
+  and forearm, about 193 kB. It is separate from the bird for the release bounce.
+- `web/public/notebook/bird-frames.webp`: six illustrated poses in an even 3 × 2
+  sprite sheet, about 313 kB. The perched pose is reused across working screens;
+  the opening uses the other poses for wingbeats. Both assets are 1536 × 1024.
 - The images were created with OpenAI image generation using the user's naturalist
   butterfly and Claude Opus 5.5 screenshots as visual direction, then encoded as
   WebP. They contain no text. Text and controls are accessible HTML.
@@ -30,8 +31,9 @@ shared controls, surfaces and status indicators. Page CSS owns layout.
 
 The welcome screen contains exactly **SignLine**, the illustration, and **Begin**.
 The drawing is decorative and hidden from assistive technology. Begin is a real
-link and enters immediately. There are no repeated navigation actions, taglines,
-figure captions, numbered notes, animated particles or timed transitions.
+link and plays the drawn takeoff before entering. There are no repeated entry
+actions, taglines, figure captions or numbered notes. See [welcome motion](intro.md)
+for timing, ownership and immediate-entry fallbacks.
 
 The app header contains SignLine and five short links: Call, Camera, Speech,
 Record and Stats. The design-kit route remains available directly at `#/design-kit`
@@ -54,7 +56,7 @@ blur, glossy buttons or rounded cards remain.
 
 Font and artwork requests are local. Keyboard focus, skip-to-content, route focus,
 media cleanup and recording/speech consent remain intact. Reduced motion removes
-hover movement. Increased contrast strengthens borders. Forced colors removes
+hover movement and skips the takeoff. Increased contrast strengthens borders. Forced colors removes
 paper imagery and decorative illustrations and restores native checkboxes/selects.
 
 Validation for this revision:
@@ -82,3 +84,9 @@ Browser speech results and stats data are test fixtures; these checks do not
 establish live provider, real-camera or two-laptop acceptance. The existing warning
 about the separate LiveKit JavaScript chunk remains. Roadmap card statuses are
 unchanged by the visual work.
+
+The bird update is checked separately for six actual displayed poses, independent
+hand recoil, CSS completion, double activation, Escape, route cancellation,
+return-to-welcome reset, a missing image, disabled CSS animation, reduced motion
+and preference changes. Static layout checks cover the working routes as well.
+The call form and its validation remain unchanged by the bird animation.

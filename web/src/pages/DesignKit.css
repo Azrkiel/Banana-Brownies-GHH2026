@@ -1,5 +1,5 @@
 .design-kit { position: relative; }
-.kit-astronomy { width: 100%; max-width: 400px; margin: -40px auto 0; }
+.kit-illustration { width: 100%; max-width: 400px; margin: -40px auto 0; }
 .kit-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 24px 48px; }
 .kit-grid > * { min-width: 0; }
 .kit-type-display { font-family: var(--font-serif); font-size: clamp(2.75rem,6vw,4.75rem); letter-spacing: -.06em; }

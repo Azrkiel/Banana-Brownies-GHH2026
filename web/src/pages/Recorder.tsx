@@ -1,4 +1,4 @@
-import { AstronomyArt } from '../components/AstronomyArt';
+import { BirdIllustration } from '../components/BirdIllustration';
 import { Button, Badge, Icon, PageHeader, Surface } from '../components/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useCameraTracker } from '../lib/useCameraTracker';
@@ -100,7 +100,7 @@ export default function Recorder() {
         <div className="recorder-workspace">
           <section className="camera-stage" aria-label="Recording camera preview">
             <video ref={video} muted playsInline className="mirror" width={480} />
-            {!ready && <div className="camera-stage__placeholder"><AstronomyArt className="camera-astronomy" />{camera && consent && <p>Loading camera…</p>}</div>}
+            {!ready && <div className="camera-stage__placeholder"><BirdIllustration className="camera-illustration" />{camera && consent && <p>Loading camera…</p>}</div>}
             <span className="camera-stage__label"><span className="status-dot" />{busy ? 'Recording landmarks' : ready ? 'Local preview · Mirrored' : 'Camera off'}</span>
           </section>
           <div className="recorder-camera-controls"><p role="status">{error || (camera && !ready ? 'Starting camera and models…' : ready ? 'Camera ready' : '')}</p><Button disabled={!consent} onClick={() => { stopRecording(); setCamera(!camera); }}><Icon name="camera" />{camera ? 'Stop camera' : 'Start camera'}</Button></div>

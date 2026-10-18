@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AstronomyArt } from '../components/AstronomyArt';
+import { BirdIllustration } from '../components/BirdIllustration';
 import { Badge, Button, PageHeader, Surface } from '../components/ui';
 import './DesignKit.css';
 
@@ -8,7 +8,7 @@ export default function DesignKit() {
   const [notice, setNotice] = useState('');
   return <main className="design-kit" id="main-content">
     <PageHeader title="Notebook" />
-    <AstronomyArt className="kit-astronomy" />
+    <BirdIllustration className="kit-illustration" />
     <div className="kit-grid">
       <Surface><h2>Type</h2><div className="kit-type-display">SignLine</div><p>Earth. Moon. Stars.</p></Surface>
       <Surface><h2>Actions</h2><div className="button-row"><Button variant="primary" onClick={() => setNotice('Selected')}>Begin</Button><Button onClick={() => setNotice('Saved')}>Save</Button><Button disabled>Unavailable</Button></div><p role="status" className="note">{notice}</p></Surface>

@@ -39,7 +39,7 @@ export default function App() {
     { route: 'record', label: 'Record' },
     { route: 'stats', label: 'Stats' },
   ]
-  if (isIntro) return <Intro />
+  if (isIntro) return <Intro key={hash} />
   return <>
     <a className="skip-link" href="#main-content" onClick={event => {
       event.preventDefault()

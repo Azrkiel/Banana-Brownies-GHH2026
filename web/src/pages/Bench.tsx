@@ -1,4 +1,4 @@
-import { AstronomyArt } from '../components/AstronomyArt';
+import { BirdIllustration } from '../components/BirdIllustration';
 import { Button, Badge, Icon, PageHeader, Surface } from '../components/ui';
 import { useCallback, useRef, useState } from 'react';
 import { useCameraTracker } from '../lib/useCameraTracker';
@@ -28,7 +28,7 @@ export default function Bench() {
       <div className="studio-layout">
         <section className="camera-stage" aria-label="Camera benchmark preview">
           <video ref={video} muted playsInline className="mirror" width={480} />
-          {!ready && <div className="camera-stage__placeholder"><AstronomyArt className="camera-astronomy" />{enabled && <p>Loading camera…</p>}</div>}
+          {!ready && <div className="camera-stage__placeholder"><BirdIllustration className="camera-illustration" />{enabled && <p>Loading camera…</p>}</div>}
           <span className="camera-stage__label"><span className="status-dot" />{ready ? 'Local preview · Mirrored' : 'Camera off'}</span>
         </section>
         <aside className="studio-sidebar">

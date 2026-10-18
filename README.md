@@ -51,7 +51,9 @@ opening the camera pages.
 ## Run and check
 
 The root URL opens the [notebook welcome](docs/intro.md): **SignLine**, a hand-drawn
-Earth, Moon and stars, and **Begin**. Shared `#/room?...` links and the camera,
+songbird perched on a hand, and **Begin**. Activating Begin plays a short drawn
+takeoff with a gentle hand bounce before opening the call form. Reduced motion
+enters immediately. Shared `#/room?...` links and the camera,
 recorder, speech, stats and design-kit routes open directly.
 
 The interface uses textured paper, local Lora serif fonts and pencil-stroke
