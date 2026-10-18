@@ -51,12 +51,12 @@ FrameDict = {
 - [x] **2.1.3:** Write unit tests in `ml/tests/test_vocab_merge.py` verifying label normalization, commercial vs. research filtering, and deterministic class index ordering.
 
 ### Task 2.2: Create Dataset Download Manager, Checksum Verifier & Human Instructions (`ml/datasets/download.py` & `ml/datasets/verify.py`)
-- [ ] **2.2.1:** Create `ml/datasets/download.py` reading `docs/subplans/model-v2/datasets.json` and supporting:
+- [x] **2.2.1:** Create `ml/datasets/download.py` reading `docs/subplans/model-v2/datasets.json` and supporting:
   - `python ml/datasets/download.py --dataset gislr|aslfr|aslfr-npy|asl-citizen|how2sign-holistic|chicagofswild|wlasl-hf --dest data/raw`
   - Pre-flight check: verifies disk space (`shutil.disk_usage`), checks if target archive already exists, and for Kaggle datasets checks whether `~/.kaggle/kaggle.json` or `KAGGLE_USERNAME`/`KAGGLE_KEY` environment variables are configured.
   - **Human-Action Prompt on Missing Credentials/Network:** If run in an offline environment or without Kaggle credentials, `download.py` exits cleanly with code `2` (or writes `docs/subplans/model-v2/NEEDS_HUMAN_ACTION.md` when `--write-human-guide` is passed) printing the exact manual download instructions and destination path.
   - **Dead-Link Resilience:** For any URL-based dataset (such as WLASL/OpenASL if ever invoked), logs dead URLs to `data/manifests/dead_links.jsonl` and continues without crashing.
-- [ ] **2.2.2:** Create `ml/datasets/verify.py` which validates downloaded archives in `data/raw/`, computes SHA256 digests, checks sample readability (e.g., reading the first 5 Parquet/MP4/NPY entries), and writes a unified clip-level provenance manifest `data/manifests/clip_manifest.parquet` with columns:
+- [x] **2.2.2:** Create `ml/datasets/verify.py` which validates downloaded archives in `data/raw/`, computes SHA256 digests, checks sample readability (e.g., reading the first 5 Parquet/MP4/NPY entries), and writes a unified clip-level provenance manifest `data/manifests/clip_manifest.parquet` with columns:
   - `clip_id: str`
   - `dataset_id: str` (`gislr`, `aslfr`, `asl_citizen`, `how2sign`, `own`)
   - `rel_path: str`
@@ -67,7 +67,7 @@ FrameDict = {
   - `license: str`
   - `license_tier: str` (`commercial` or `research`)
   - `sha256: str`
-- [ ] **2.2.3:** Write unit tests in `ml/tests/test_manifest_verify.py` using temporary synthetic archives to verify that `verify.py` catches corrupted files, assigns signer-disjoint splits (`set(train_signers).isdisjoint(val_signers)` and `set(train_signers).isdisjoint(test_signers)`), and never mixes `research`-only clips into a `commercial` query.
+- [x] **2.2.3:** Write unit tests in `ml/tests/test_manifest_verify.py` using temporary synthetic archives to verify that `verify.py` catches corrupted files, assigns signer-disjoint splits (`set(train_signers).isdisjoint(val_signers)` and `set(train_signers).isdisjoint(test_signers)`), and never mixes `research`-only clips into a `commercial` query.
 
 ### Task 2.3: Implement Offline Landmark Converters (`ml/gislr_to_features.py`, `ml/datasets/aslfr_to_features.py`, `ml/datasets/video_to_features.py`, `web/scripts/build-dataset.ts`)
 - [ ] **2.3.1:** Create `ml/gislr_to_features.py` (following the reference design in `plan/tasks/1.B6.md` enhanced with split metadata):

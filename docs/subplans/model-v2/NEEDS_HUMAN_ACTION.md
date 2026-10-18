@@ -26,3 +26,73 @@ npm --prefix web run build
 ```
 
 Phase 1 code checks have passed. This QA note does not authorize starting Phase 2 or deployment.
+
+## Phase 2 / Tasks 2.1–2.3 — Dataset acquisition and full-data verification
+
+**Missing prerequisites:** Large datasets, accepted Kaggle competition rules, credentials, disk space and optional video model assets are absent from the synthetic verification environment. No large dataset was downloaded. Full-data throughput and real video quality remain human checks.
+
+Run from the repository root on the training machine. Python commands below use the Windows virtual environment; on Linux use `ml/.venv/bin/python`. Install only data dependencies for Phase 2:
+
+```powershell
+python -m venv ml/.venv
+ml/.venv/Scripts/python -m pip install numpy==2.3.5 pandas==2.2.3 pyarrow==19.0.1 pytest==9.1.1 kaggle huggingface_hub
+New-Item -ItemType Directory -Force "$HOME/.kaggle", data\raw/gislr, data\raw/aslfr | Out-Null
+Copy-Item "$HOME/Downloads/kaggle.json" "$HOME/.kaggle/kaggle.json"
+```
+
+Create your private API token at https://www.kaggle.com/settings and accept rules at https://www.kaggle.com/competitions/asl-signs/rules and https://www.kaggle.com/competitions/asl-fingerspelling/rules. Keep the token out of Git. Choose **either** compact ASLFR NPY or the full competition archive; both include overlapping clips.
+
+```powershell
+kaggle competitions download -c asl-signs -p data\raw\gislr
+kaggle competitions download -c asl-fingerspelling -p data\raw\aslfr
+kaggle datasets download -d darraghdog/asl-fingerspelling-preprocessing-train-dataset -p data\raw\aslfr
+```
+
+**Exact targets:** `data\raw/gislr/asl-signs.zip`; either `data\raw/aslfr/asl-fingerspelling-preprocessing-train-dataset.zip` (extract locally before NPY conversion) or `data\raw/aslfr/asl-fingerspelling.zip` (extract before ASLFR conversion). GISLR can be read directly from ZIP. Reserve at least archive size × 1.25 for downloads and additional space for extraction/features. The manager enforces preflight: `ml/.venv/Scripts/python ml/datasets/download.py --dataset gislr --dest data\raw`.
+
+**Expected SHA256:** The registry does not publish trusted archive digests. Do not treat an observed hash as an authenticity guarantee. Obtain a publisher checksum if available, place a filename-to-SHA256 JSON mapping at `data/manifests/expected_checksums.json`, and pass `--checksums` to verification. Otherwise verification records observed SHA256 per archive and clip, checks ZIP CRC, and decodes up to five files per media format. Expected binary outputs must be finite float32; fixed sign shards have `n × 32 × 174 × 4` bytes and variable shards have `offsets[-1] × F × 4` bytes, with `n+1` int64 offsets.
+
+```powershell
+ml/.venv/Scripts/python ml/datasets/verify.py --raw-dir data\raw --out data/manifests/clip_manifest.parquet
+ml/.venv/Scripts/python ml/gislr_to_features.py --zip data\raw/gislr/asl-signs.zip --signs demo --manifest data/manifests/clip_manifest.parquet --out data/gislr-demo --workers 8
+ml/.venv/Scripts/python ml/gislr_to_features.py --zip data\raw/gislr/asl-signs.zip --signs all --manifest data/manifests/clip_manifest.parquet --out data/gislr-all --workers 8
+ml/.venv/Scripts/python ml/datasets/aslfr_to_features.py --dir data\raw/aslfr --manifest data/manifests/clip_manifest.parquet --out data/aslfr-processed --workers 8
+```
+
+For compact NPY, keep its matching `train.csv` beside `train_landmarks/<file_id>/<sequence_id>.npy` (or `<file_id>/<sequence_id>.npy`). Keep the publisher's `inference_args.json` containing `selected_columns`, or supply `columns.json` listing the exact flattened column order. Reduced layouts are never guessed. Preserve `character_to_prediction_index.json` if supplied.
+
+**Optional research downloads only:** Accept each source's research license first. Run individually with ample disk space:
+
+```powershell
+New-Item -ItemType Directory -Force data\raw/asl_citizen, data\raw/how2sign, data\raw/chicagofswild, data\raw/wlasl | Out-Null
+curl -L --fail --continue-at - https://download.microsoft.com/download/b/8/8/b88c0bae-e6c1-43e1-8726-98cf5af36ca4/ASL_Citizen.zip --output data\raw\asl_citizen\ASL_Citizen.zip
+hf download PSewmuthu/How2Sign_Holistic --repo-type dataset --local-dir data\raw\how2sign --include metadata/* */frontal/*
+curl -L --fail --continue-at - https://dl.ttic.edu/ChicagoFSWild.tgz --output data\raw\chicagofswild\ChicagoFSWild.tgz
+hf download Voxel51/WLASL --repo-type dataset --local-dir data\raw\wlasl
+ml/.venv/Scripts/python ml/datasets/verify.py --raw-dir data\raw --out data/manifests/research_manifest.parquet --license-tier research
+```
+
+Keep official signer/split metadata. When source metadata uses another schema, provide `clips.csv` with `path,label,signer_id,split` (relative media paths, one row per clip, splits train/val/test). How2Sign sentence metadata may lack signer identity: supply verified signer IDs; the pipeline refuses guessed identities. ASL-LEX EntryID references are research lookup hints, not evidence that identically named signs are equivalent. Human review is required before merging research classes.
+
+```powershell
+ml/.venv/Scripts/python -m pip install mediapipe opencv-python
+python web/scripts/setup_assets.py
+ml/.venv/Scripts/python ml/datasets/video_to_features.py --dir data\raw/asl_citizen --dataset asl_citizen --license-tier research --manifest data/manifests/research_manifest.parquet --out data/asl_citizen_features --workers 8 --resume
+ml/.venv/Scripts/python ml/datasets/video_to_features.py --dir data\raw/how2sign --dataset how2sign --how2sign-npy --license-tier research --manifest data/manifests/research_manifest.parquet --out data/how2sign_features --workers 8 --resume
+```
+
+**Resume automated verification (Phase 2 only):**
+
+```powershell
+ml/.venv/Scripts/python -m pytest -q ml/tests
+npm --prefix web test
+npm --prefix web run lint
+npm --prefix web run build
+$phase2tmp = Join-Path $env:TEMP 'signline-phase2'
+Push-Location web
+npx tsx scripts/fake-sessions.ts "$phase2tmp/raw"
+npx tsx scripts/build-dataset.ts "$phase2tmp/raw" "$phase2tmp/processed" "$phase2tmp/pub"
+Pop-Location
+```
+
+Expected: manifest columns include clip/dataset/path/label/signer/split/license/SHA256; no signer overlap between splits; commercial manifests exclude research sources; synthetic recorder output contains 60 sign clips across three signers and nonempty `knn.f32`/`letters.f32`. No training, deployment, or Phase 3 work is authorized by these commands.
