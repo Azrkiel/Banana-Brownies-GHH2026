@@ -1,7 +1,7 @@
 @import './design-system.css';
 
 * { box-sizing: border-box; }
-:root { font-family: var(--font-serif); color: var(--color-ink); background: var(--color-canvas); font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; font-size: 1rem; line-height: var(--leading-body); font-weight: 400; }
+:root { scrollbar-gutter: stable; font-family: var(--font-serif); color: var(--color-ink); background: var(--color-canvas); font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; font-size: 1rem; line-height: var(--leading-body); font-weight: 400; }
 body { margin: 0; min-width: 320px; min-height: 100vh; background-image: url('/notebook/paper.webp'); background-size: 768px 512px; font-size: var(--text-body); }
 ::selection { background: var(--color-inset); color: var(--color-ink); }
 a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 4px; }
@@ -42,6 +42,10 @@ code { font-family: var(--font-mono); font-size: max(1rem, .8em); background: va
 input[type='checkbox'] { appearance: none; display: inline-grid; place-items: center; width: 19px; height: 19px; border: 1px solid var(--color-field-border); border-radius: var(--radius-sm); background: transparent; }
 input[type='checkbox']:checked::before { content: ''; width: 15px; height: 13px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 14'%3E%3Cpath d='m2 7 3.5 4L14 2M3 7.5l2.5 3L13 3' fill='none' stroke='%23302d27' stroke-width='1.1' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; }
 input[type='checkbox']:disabled { opacity: .65; }
+@media (pointer: coarse) {
+  input[type='checkbox'] { position: relative; width: 24px; height: 24px; }
+  input[type='checkbox']::after { content: ''; position: absolute; inset: -10px; }
+}
 select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 10'%3E%3Cpath d='m2 2 5 5 5-5' fill='none' stroke='%23302d27' stroke-width='1.1' stroke-linecap='round'/%3E%3C/svg%3E"), var(--pencil-line); background-position: right 12px center, center bottom; background-size: 14px 10px, 100% 6px; background-repeat: no-repeat; }
 @media (forced-colors: active) {
   input[type='checkbox'], select { appearance: auto; }
