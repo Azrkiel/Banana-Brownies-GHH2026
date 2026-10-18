@@ -7,6 +7,8 @@ WORKDIR /src/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
 COPY web/ ./
+# npm run build type-checks grammarFallback.test.ts, which imports this shared Python/TS fixture.
+COPY server/tests/fixtures/gloss_grammar.json /src/server/tests/fixtures/gloss_grammar.json
 # Public browser configuration is supplied at build time; never pass service-role keys.
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_PUBLISHABLE_KEY
