@@ -97,10 +97,17 @@ shapes. Visible text has a 1rem minimum (16px at the default browser setting),
 with 18px body copy and darker ink for both main and supporting text. Disabled
 buttons retain readable labels rather than reducing text opacity.
 
-In calls, captions use 28–40px text in a solid cream panel, with a wider desktop
-column and keyboard-accessible scrolling. At 900px and below the caption panel
-comes before the video in both reading and visual order. Final and interim
+In calls, captions use 18–20px text in a solid cream sidebar, up to 320px wide
+on desktop, with keyboard-accessible scrolling. The room expands to 1600px to
+give video more space, with a 220–360px self-view on desktop. Both video elements
+contain the full camera frame. At 900px and below video comes before captions in
+both reading and visual order. Final and interim
 captions retain distinct solid/dashed edges and readable speaker labels.
+On narrow screens captions sit directly after the video toolbar, ahead of sign
+recognition and speech settings. Browser checks at 1920, 1440, 1024, 900, 768, 390
+and 320px cover the enlarged self-view, full camera framing, long-caption wrapping,
+keyboard scrolling and typed-caption delivery using synthetic video and a mocked
+call connection. Doubled text also stays within the phone viewport.
 No glass effects,
 blur, glossy buttons or rounded cards remain.
 

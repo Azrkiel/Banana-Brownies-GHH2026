@@ -336,7 +336,7 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
   }
 
   return (
-    <main className="call-page" id="main-content">
+    <main className="call-page room-page" id="main-content">
       <header className="room-heading">
         <div><h1>{room}</h1></div>
         <p className="intro"><strong>{name}</strong> · {role === 'signer' ? 'Signer' : 'Hearing participant'}</p>
@@ -344,11 +344,6 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
 
       {error && <div className="error-banner" role="alert">{error}</div>}
       <div className="call-workspace">
-        <section className="caption-panel" aria-labelledby="caption-title">
-          <div className="caption-header"><div><h2 id="caption-title">Captions</h2></div><span className="text-badge" aria-hidden="true">Aa</span></div>
-          <div className="caption-scroll" role="region" aria-label="Conversation captions" tabIndex={0}>{captions.length ? <CaptionLane captions={captions} me={name} /> : <div className="caption-empty"><p>Captions will appear here as people sign or speak.</p></div>}</div>
-          <form className="caption-composer" onSubmit={send}><label htmlFor="caption-draft">Type a caption</label><div className="composer-input"><input id="caption-draft" value={draft} maxLength={1000} disabled={!canSend} placeholder={canSend ? 'Say something…' : 'Connect to send a caption'} onChange={event => setDraft(event.target.value)} /><Button type="submit" aria-label="Send caption" disabled={!canSend || !draft.trim() || sending}>{sending ? '…' : '↑'}</Button></div><p>{canSend ? 'Press Enter to send to the room.' : 'Your conversation will appear when you connect.'}</p></form>
-        </section>
         <div className="stage-column">
           <div className="stage" aria-label="Video call">
             <div className="stage-top"><span className="room-label">{room}</span><span className={`connection-status ${inRoom ? 'online' : ''}`} role="status"><span className="status-dot" />{statusText[status]}</span></div>
@@ -362,6 +357,13 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
             {remoteVisible && <span className="peer-label">{peer ?? 'Other participant'}</span>}
           </div>
           <div className="call-toolbar"><p><span className="privacy-dot" />{status === 'joining' ? 'Waiting for camera access and call connection' : inRoom ? role === 'signer' ? 'Camera on · microphone off' : muted ? 'Call microphone muted · speech recognition paused' : 'Camera and call microphone enabled' : 'Camera and microphone stay off until you join.'}</p><div className="call-actions">{role === 'hearing' && inRoom && <Button disabled={!canSend || muting} onClick={() => void toggleMicrophone()}>{muting ? 'Changing microphone…' : muted ? 'Unmute microphone' : 'Mute microphone'}</Button>}{status === 'audio-blocked' && <Button onClick={enableAudio}>Enable audio</Button>}{busy ? <Button variant="danger" onClick={leave}>{status === 'joining' ? 'Cancel' : 'Leave room'}</Button> : <Button variant="primary" onClick={onRecheck}>Rejoin <Icon name="arrow" /></Button>}</div></div>
+        </div>
+        <section className="caption-panel" aria-labelledby="caption-title">
+          <div className="caption-header"><div><h2 id="caption-title">Captions</h2></div><span className="text-badge" aria-hidden="true">Aa</span></div>
+          <div className="caption-scroll" role="region" aria-label="Conversation captions" tabIndex={0}>{captions.length ? <CaptionLane captions={captions} me={name} /> : <div className="caption-empty"><p>Captions will appear here as people sign or speak.</p></div>}</div>
+          <form className="caption-composer" onSubmit={send}><label htmlFor="caption-draft">Type a caption</label><div className="composer-input"><input id="caption-draft" value={draft} maxLength={1000} disabled={!canSend} placeholder={canSend ? 'Say something…' : 'Connect to send a caption'} onChange={event => setDraft(event.target.value)} /><Button type="submit" aria-label="Send caption" disabled={!canSend || !draft.trim() || sending}>{sending ? '…' : '↑'}</Button></div><p>{canSend ? 'Press Enter to send to the room.' : 'Your conversation will appear when you connect.'}</p></form>
+        </section>
+        <div className="call-details">
           {role === 'hearing' && <section className="call-speech" aria-labelledby="call-speech-title">
             <div className="call-speech__heading"><h2 id="call-speech-title">Speech captions</h2><span role="status">{speechLabels[speechState]}</span></div>
             <label><input type="checkbox" checked={consented} onChange={event => { setConsented(event.target.checked); speech.current?.consent(event.target.checked); }} /><span>I agree to send microphone audio to my browser’s speech service and share the recognized text with this room.</span></label>
