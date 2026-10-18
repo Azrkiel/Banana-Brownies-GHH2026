@@ -3,9 +3,10 @@ import { useAuth } from '../lib/auth';
 import { Badge, Button, PageHeader, Surface } from '../components/ui';
 import { BirdScene } from '../components/BirdScene';
 import { loadPersonalSamples, savePersonalSample, deletePersonalSamples } from '../lib/personalSigns';
-import { MAX_PERSONAL_SAMPLES, MIN_SIGN_EXAMPLES, predictPersonalSign, signLabel, trainPersonalModel, validateWordSample, type PersonalSample, type WordSample } from '../lib/personalModel';
+import { MAX_PERSONAL_SAMPLES, MIN_SIGN_EXAMPLES, signLabel, trainPersonalModel, validateWordSample, type PersonalSample, type WordSample } from '../lib/personalModel';
 import { useSignCapture } from '../lib/useSignCapture';
-import type { WordPrediction } from '../lib/wordModel';
+import { loadWordForest, predictSharedAndPersonal, sharedAndPersonalLabels } from '../lib/wordRecognition';
+import type { WordForest, WordPrediction } from '../lib/wordModel';
 import './PersonalSigns.css';
 
 export default function PersonalSigns() {
@@ -48,6 +49,7 @@ function TrainingWorkspace({ userId, name }: { userId: string; name: string }) {
   const [pending, setPending] = useState<Pending | null>(null);
   const [prediction, setPrediction] = useState<WordPrediction | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [shared, setShared] = useState<WordForest | null>(null);
   const lifetime = useRef<AbortController | null>(null);
   const generation = useRef(0);
   const stopCamera = useCallback(() => { generation.current++; setCamera(false); setCapturing(false); setPending(null); setPrediction(null); }, []);
@@ -58,9 +60,16 @@ function TrainingWorkspace({ userId, name }: { userId: string; name: string }) {
     return [...result].sort(([a], [b]) => a.localeCompare(b));
   }, [samples]);
   const trained = useMemo(() => {
-    try { return { model: trainPersonalModel(samples), reason: '' }; }
+    try { return { model: trainPersonalModel(samples, 1), reason: '' }; }
     catch (cause) { return { model: null, reason: cause instanceof Error ? cause.message : 'Add more examples.' }; }
   }, [samples]);
+
+  useEffect(() => {
+    // Tests mirror calls: your signs first, then the shared words. Without it, only your signs are tried.
+    const controller = new AbortController();
+    loadWordForest(controller.signal).then(setShared, () => {});
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController(); lifetime.current = controller;
@@ -93,7 +102,7 @@ function TrainingWorkspace({ userId, name }: { userId: string; name: string }) {
       validateWordSample(sample);
       if (test) {
         if (!trained.model) return;
-        setPrediction(predictPersonalSign(trained.model, sample));
+        setPrediction(predictSharedAndPersonal(shared, trained.model, sample));
         setMessage('Test capture only. This example was not saved or used for training.');
       } else {
         setPending({ ...sample, id: crypto.randomUUID(), label: captureLabel });
@@ -139,7 +148,7 @@ function TrainingWorkspace({ userId, name }: { userId: string; name: string }) {
       <div>
         <Surface aria-labelledby="teach-title">
           <h2 id="teach-title">Teach a sign</h2>
-          <p>Save at least {MIN_SIGN_EXAMPLES} varied examples of each sign and teach at least two signs. Keep the same hand and framing when using your model.</p>
+          <p>Save at least {MIN_SIGN_EXAMPLES} varied examples of each sign. Your signs are added to the shared words. Keep the same hand and framing when using your model.</p>
           <label className="field">Sign name<input value={label} maxLength={40} disabled={busy || Boolean(pending)} onChange={event => { setLabel(event.target.value); setPrediction(null); }} /></label>
           <label className="check-field"><input type="checkbox" checked={consent} disabled={saving} onChange={event => { stopCamera(); setConsent(event.target.checked); }} /><span>I agree to save my hand landmarks to my private account for personal recognition. No video or audio is uploaded.</span></label>
           <div className="personal-camera">
@@ -160,10 +169,10 @@ function TrainingWorkspace({ userId, name }: { userId: string; name: string }) {
           <p role="status">{message}</p>
         </Surface>
         <Surface aria-labelledby="try-title"><h2 id="try-title">Try your model</h2>
-          <p>{trained.model ? `Your personal model is ready for ${trained.model.labels.length} signs. It learns from your saved examples and rebuilds when they change.` : trained.reason}</p>
+          <p>{trained.model ? `Ready for ${trained.model.labels.length} of your signs${shared ? ` plus the shared words` : ''}: ${sharedAndPersonalLabels(shared, trained.model).join(', ')}. It rebuilds when your examples change.` : trained.reason}</p>
           <Button disabled={!ready || !trained.model || !loaded || busy || Boolean(pending)} onClick={() => void capture(true)}>Test a fresh sign</Button>
-          {prediction && <div className="sample-review" role="status">{prediction.accepted ? <><h3>{prediction.label}</h3><p>Does this match your sign? This is a suggestion, not a measured accuracy result.</p></> : <p>No confident match. Try different examples or keep using typed captions.</p>}</div>}
-          <p className="note">Fresh tests stay on this device. In a call, choose Personal signs under Your trained signs. Suggestions are never sent automatically.</p>
+          {prediction && <div className="sample-review" role="status">{prediction.accepted ? <><h3>{prediction.label}</h3><p>{trained.model?.labels.includes(prediction.label) ? 'One of your signs.' : 'A shared word.'} Does this match your sign? This is a suggestion, not a measured accuracy result.</p></> : <p>No confident match. Try different examples or keep using typed captions.</p>}</div>}
+          <p className="note">Fresh tests stay on this device. In a call, choose Shared words + my signs under Your trained signs. Suggestions are never sent automatically.</p>
           <a href="#/conversation">Go to calls</a>
         </Surface>
       </div>

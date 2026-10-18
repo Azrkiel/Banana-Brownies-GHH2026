@@ -7,11 +7,15 @@ export type WordRecognizer = {
   close(): void;
 };
 
-/** Shares the call's existing video; never requests a second camera or microphone. */
-export async function createWordRecognizer(video: HTMLVideoElement, signal: AbortSignal): Promise<WordRecognizer> {
+export async function loadWordForest(signal: AbortSignal): Promise<WordForest> {
   const response = await fetch(`${import.meta.env.BASE_URL}trained-words.json`, { signal });
   if (!response.ok) throw new Error('The trained word model could not be loaded.');
-  const model: WordForest = parseWordForest(await response.json());
+  return parseWordForest(await response.json());
+}
+
+/** Shares the call's existing video; never requests a second camera or microphone. */
+export async function createWordRecognizer(video: HTMLVideoElement, signal: AbortSignal): Promise<WordRecognizer> {
+  const model = await loadWordForest(signal);
   const capture = await createWordCapture(video, signal);
   return { labels: [...model.labels], close: capture.close,
     async capture(onProgress) {
@@ -21,13 +25,25 @@ export async function createWordRecognizer(video: HTMLVideoElement, signal: Abor
   };
 }
 
+export function sharedAndPersonalLabels(shared: WordForest | null, personal: PersonalModel): string[] {
+  return [...new Set([...(shared?.labels ?? []), ...personal.labels])].sort();
+}
+
+/** Personal signs are checked first; the shared forest only answers when no personal sign matched closely. */
+export function predictSharedAndPersonal(shared: WordForest | null, personal: PersonalModel, sample: WordSample): WordPrediction {
+  if (sample.framesWithHand < 24) return { label: personal.labels[0], score: 0, margin: 0, accepted: false };
+  let mine: WordPrediction | null = null;
+  try { mine = predictPersonalSign(personal, sample); } catch { /* Unusable landmarks; the forest rejects them too. */ }
+  if (mine?.accepted || !shared) return mine ?? { label: personal.labels[0], score: 0, margin: 0, accepted: false };
+  return predictWord(shared, sample.features, sample.framesWithHand);
+}
+
 export async function createPersonalRecognizer(video: HTMLVideoElement, signal: AbortSignal, model: PersonalModel): Promise<WordRecognizer> {
+  const shared = await loadWordForest(signal);
   const capture = await createWordCapture(video, signal);
-  return { labels: [...model.labels], close: capture.close,
+  return { labels: sharedAndPersonalLabels(shared, model), close: capture.close,
     async capture(onProgress) {
-      const sample = await capture.capture(onProgress);
-      if (sample.framesWithHand < 24) return { label: model.labels[0], score: 0, margin: 0, accepted: false };
-      return predictPersonalSign(model, sample);
+      return predictSharedAndPersonal(shared, model, await capture.capture(onProgress));
     },
   };
 }

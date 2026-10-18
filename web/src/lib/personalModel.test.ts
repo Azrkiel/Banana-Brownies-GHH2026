@@ -27,6 +27,12 @@ describe('personal isolated-sign model', () => {
     expect(() => trainPersonalModel(examples().slice(1))).toThrow('three examples');
     expect(() => trainPersonalModel([])).toThrow('two different');
   });
+  it('allows one sign beside the shared words and still rejects unseen poses', () => {
+    const model = trainPersonalModel(examples().filter(x => x.label === 'HELLO'), 1);
+    expect(predictPersonalSign(model, sample('not used', 2, 0.08))).toMatchObject({ label: 'HELLO', accepted: true });
+    expect(predictPersonalSign(model, sample('UNSEEN', 4)).accepted).toBe(false);
+    expect(() => trainPersonalModel([], 1)).toThrow('at least three examples');
+  });
   it('rejects missing hands, corrupted shapes and incompatible numeric features', () => {
     expect(() => validateWordSample({ ...sample('HELLO', 2), framesWithHand: 23 })).toThrow();
     for (const features of [[0], Array(1260).fill(0), Array(1260).fill(NaN), Array(1260).fill(Infinity), Array(1260).fill(3)]) {

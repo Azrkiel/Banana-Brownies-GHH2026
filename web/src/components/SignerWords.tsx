@@ -48,7 +48,7 @@ function SignerWordSession({ camera, connected, onUse }: Props) {
     setError(''); setPrediction(null); setState('loading');
     try {
       const recognizer = source === 'personal' && user
-        ? await createPersonalRecognizer(camera.current, controller.signal, trainPersonalModel(await loadPersonalSamples(user.id, controller.signal)))
+        ? await createPersonalRecognizer(camera.current, controller.signal, trainPersonalModel(await loadPersonalSamples(user.id, controller.signal), 1))
         : await createWordRecognizer(camera.current, controller.signal);
       if (generation.current !== attempt) { recognizer.close(); return; }
       engine.current = recognizer;
@@ -82,11 +82,11 @@ function SignerWordSession({ camera, connected, onUse }: Props) {
     <p>Capture one trained word, then review it before adding it to your caption.</p>
     <label className="field">Recognition model<select value={source} disabled={enabled} onChange={event => { setSource(event.target.value as 'shared' | 'personal'); setLabels([]); setError(''); }}>
       <option value="shared">Shared seven-word model</option>
-      {user && <option value="personal">Personal signs</option>}
+      {user && <option value="personal">Shared words + my signs</option>}
     </select></label>
     <p><a href="#/training">{user ? 'Teach or manage your personal signs' : 'Sign in with GitHub to teach your own signs'}</a></p>
     {labels.length > 0 && <p className="signer-words__vocabulary">Trained words: {labels.join(', ')}.</p>}
-    <p className="note">{source === 'personal' ? 'Your saved examples are downloaded privately from your account. New call captures stay on this device.' : 'Recognition stays on this device and does not upload recordings or hand data.'} It can make mistakes.</p>
+    <p className="note">{source === 'personal' ? 'Your signs are checked first, then the shared words. Your saved examples are downloaded privately from your account; new call captures stay on this device.' : 'Recognition stays on this device and does not upload recordings or hand data.'} It can make mistakes.</p>
     <div className="button-row">
       {!enabled ? <Button variant="primary" disabled={!connected} onClick={() => void enable()}>Enable sign recognition</Button> : <>
         <Button variant="primary" disabled={state === 'loading' || state === 'capturing'} onClick={() => void capture()}>{state === 'capturing' ? 'Capturing…' : 'Capture a sign'}</Button>

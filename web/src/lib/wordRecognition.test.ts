@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createPersonalRecognizer, createWordCapture, createWordRecognizer } from './wordRecognition';
+import { createPersonalRecognizer, createWordCapture, createWordRecognizer, predictSharedAndPersonal, sharedAndPersonalLabels } from './wordRecognition';
+import type { WordForest } from './wordModel';
 import { trainPersonalModel, type PersonalSample } from './personalModel';
 
 const mocks = vi.hoisted(() => ({ create: vi.fn(), fileset: vi.fn() }));
@@ -115,6 +116,24 @@ describe('signer word recognition lifecycle', () => {
     const missing = recognizer.capture(vi.fn());
     for (let i = 31; i <= 60; i++) frame(i * 34);
     expect((await missing).accepted).toBe(false);
-    expect(fetch).not.toHaveBeenCalled(); recognizer.close();
+    expect(fetch).toHaveBeenCalledTimes(1); recognizer.close();
+  });
+});
+
+describe('shared words plus personal signs', () => {
+  const sample = (axis: number): PersonalSample => ({ id: crypto.randomUUID(), label: 'WAVE', createdAt: '', framesWithHand: 30,
+    features: Array.from({ length: 1260 }, (_, i) => (i % 42 === axis ? 0.2 : 0)) });
+  const personal = trainPersonalModel([sample(2), sample(2), sample(2)], 1);
+  const shared = model as unknown as WordForest;
+  it('offers a single personal sign without a second personal label', () => {
+    expect(predictSharedAndPersonal(shared, personal, sample(2))).toMatchObject({ label: 'WAVE', accepted: true });
+    expect(sharedAndPersonalLabels(shared, personal)).toEqual(['HELLO', 'NAME', 'WAVE']);
+  });
+  it('falls back to the shared forest when no personal sign is close', () => {
+    expect(predictSharedAndPersonal(shared, personal, sample(5))).toMatchObject({ label: 'HELLO', accepted: true });
+  });
+  it('rejects unmatched poses when the shared forest is unavailable, and missing hands always', () => {
+    expect(predictSharedAndPersonal(null, personal, sample(5)).accepted).toBe(false);
+    expect(predictSharedAndPersonal(shared, personal, { ...sample(2), framesWithHand: 10 }).accepted).toBe(false);
   });
 });

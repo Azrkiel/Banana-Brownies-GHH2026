@@ -29,7 +29,8 @@ function normalized(sample: WordSample): number[] {
   return sample.features.map(x => x / scale);
 }
 
-export function trainPersonalModel(samples: readonly PersonalSample[]): PersonalModel {
+/** minSigns 1 is for use beside the shared forest, which already supplies other words. */
+export function trainPersonalModel(samples: readonly PersonalSample[], minSigns = 2): PersonalModel {
   if (samples.length > MAX_PERSONAL_SAMPLES) throw new Error('Too many examples. Delete some and try again.');
   const counts = new Map<string, number>();
   const examples = samples.map(sample => {
@@ -37,7 +38,7 @@ export function trainPersonalModel(samples: readonly PersonalSample[]): Personal
     counts.set(label, (counts.get(label) ?? 0) + 1);
     return { label, features: normalized(sample) };
   });
-  if (counts.size < 2) throw new Error('Teach at least two different signs so the model can tell them apart.');
+  if (counts.size < minSigns) throw new Error(minSigns > 1 ? 'Teach at least two different signs so the model can tell them apart.' : 'Save at least three examples of a sign to start your vocabulary.');
   if (counts.size > 64) throw new Error('Use up to 64 different signs in your personal model.');
   if ([...counts.values()].some(count => count < MIN_SIGN_EXAMPLES)) throw new Error('Save at least three examples of every sign before training.');
   return { labels: [...counts.keys()].sort(), examples };
@@ -53,7 +54,8 @@ export function predictPersonalSign(model: PersonalModel, sample: WordSample): W
   const votes = model.labels.map(label => ({ label, score: nearest.filter(x => x.label === label).length / 3 }))
     .sort((a, b) => b.score - a.score || a.label.localeCompare(b.label));
   const score = votes[0].score;
-  const margin = score - votes[1].score;
+  // With one personal sign there is no runner-up; the distance gates decide whether it matched.
+  const margin = score - (votes[1]?.score ?? 0);
   return { label: votes[0].label, score, margin,
     accepted: score >= 2 / 3 && margin >= 0.3 && nearest[0].distance <= 0.35 && nearest[2].distance <= 0.5 };
 }
