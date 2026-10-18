@@ -1,5 +1,5 @@
 import { Songbirds } from '../components/Songbirds';
-import { HomeBranch } from '../components/HomeBranch';
+import { CallBranch } from '../components/CallBranch';
 import { Button, Icon } from '../components/ui';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { RemoteTrack } from 'livekit-client';
@@ -81,7 +81,7 @@ export default function Call({ welcomeFlight = false, onLanded }: { welcomeFligh
           </section>
         </div>
       </div>
-      <HomeBranch />
+      <CallBranch />
     </main>
   );
 }

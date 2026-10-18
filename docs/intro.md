@@ -48,14 +48,14 @@ The call form and room standby share this composition. The previous two-bird
 `songbirds.webp` remains as the original artwork reference. Camera and
 recorder standby screens retain the static bird on a hand. Space art is unused.
 
-The Call page continues the perch down to a branch running from the left edge
-to the right edge at the bottom of the page. `HomeBranch.tsx` connects the perch
-to the generated transparent `branch-floor.webp` layer, sampling its bark for
-the connecting stem. ResizeObserver keeps both attachment points aligned as
-the viewport, fonts or form height changes. The lower artwork stays in document
-flow, below the controls; on phones the stem follows the outer gutter. The page
-fills at least the viewport height, with the branch at its foot. Forced colors
-hides this decorative layer. Room standby retains its compact perched pair.
+The Call page extends the same perch sideways across the page, keeping the birds
+in place. `CallBranch.tsx` joins transparent `branch-extension.webp` crops to both
+ends of the perch. ResizeObserver keeps the joins aligned as the viewport, fonts
+or form height changes. The join form sits over the branch in an opaque cream
+card with the buttons' pencil border and irregular corners. On phones the card
+stacks below the birds. The bottom branch and downward stem have been removed.
+Forced colors hides the decorative extension and retains a system-colored card.
+Room standby retains its compact perched pair.
 
 ## Ownership and fallbacks
 
@@ -88,8 +88,8 @@ Browser checks cover a deliberately delayed call module at 1440, 768, 390 and
 The checks exercise settling, direct entry, no device requests, horizontal
 overflow, reduced motion, forced colors, Escape, motion preference changes,
 disabled animation events, missing branch art and returning/replaying the welcome.
-Bottom-branch checks verify viewport-wide coverage, contact with the page's
-bottom edge and clearance around form controls. Additional layout checks cover
+Branch/card checks verify viewport-wide coverage at the original perch, removal
+of the bottom branch and an opaque card layered above the artwork. Layout checks cover
 1920 × 1080 and doubled text at 320px without horizontal overflow.
 The 207 frontend tests, lint and production build also pass. These visual changes
 do not change roadmap card statuses or validate live calls or camera inference.

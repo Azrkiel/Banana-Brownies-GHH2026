@@ -22,9 +22,10 @@ remain archived in `docs/design/anthropic/` for provenance.
   perch on the right receives the separate welcome sprite. Both the Call page
   and room standby use this composition. See [welcome motion](intro.md) for the
   connected takeoff, loading and landing sequence.
-- `web/public/notebook/branch-floor.webp`: transparent botanical continuation
-  across the bottom of the Call page. A textured stem joins it to the birds'
-  perch; the lower branch spans the viewport and stays below the form controls.
+- `web/public/notebook/branch-extension.webp`: transparent botanical continuation
+  extending the birds' existing perch sideways to both edges of the Call page.
+  The join form sits over it in an opaque cream card, using the buttons' pencil
+  border and irregular corners. There is no separate branch at the page bottom.
 - The images were created with OpenAI image generation using the user's naturalist
   butterfly and Claude Opus 5.5 screenshots as visual direction, then encoded as
   WebP. They contain no text. Text and controls are accessible HTML.
@@ -168,7 +169,9 @@ validation and forced colors passed. Live provider checks were not repeated.
 
 The Call heading is a compact 20px label. The illustration and wider form share
 one vertically aligned row without a fixed minimum height; form values use 20px
-text. On phones they stack with the existing compact illustration spacing.
+text. The form's solid cream card overlays the extended perch and shares the
+buttons' pencil border and irregular corners. On phones the birds and card stack
+with the existing compact illustration spacing.
 
 Devices places Start camera and permission/cancellation controls inside the
 preview, beside a larger prompt. Stop camera stays inside the active preview.
