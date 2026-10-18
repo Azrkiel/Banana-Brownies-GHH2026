@@ -3,7 +3,7 @@ import { createPersonalRecognizer, createWordRecognizer, type LiveFrame, type Wo
 import { LETTERS, LETTER_DECODER, createSpeller, loadBuiltinLetters, loadTaughtLetters, saveTaughtLetters, spellingHand, type LetterGuess, type TaughtLetters } from '../lib/letterModel';
 import { useAuth } from '../lib/auth';
 import { loadPersonalSamples } from '../lib/personalSigns';
-import { trainPersonalModel } from '../lib/personalModel';
+import { trainPersonalModel, usableSamples } from '../lib/personalModel';
 import type { WordPrediction } from '../lib/wordModel';
 import { createDictation, type DictatedWord } from '../lib/dictation';
 import { signLabel } from '../lib/signLabels';
@@ -20,6 +20,13 @@ const PREVIEW_SECONDS = 6;
 /** If the sentence is not ready by then, the preview shows the recognized words instead. */
 const PREPARE_TIMEOUT_MS = 4000;
 const AUTO_SEND_KEY = 'signline.autoSendPreview';
+/** The signer's last choice between the known words and known + their trained words. */
+const SOURCE_KEY = 'signline.wordSource';
+type Source = 'shared' | 'personal';
+function readSource(): Source | null {
+  try { const v = localStorage.getItem(SOURCE_KEY); return v === 'shared' || v === 'personal' ? v : null; } catch { return null; }
+}
+
 function readAutoSend(): boolean {
   try { return localStorage.getItem(AUTO_SEND_KEY) !== '0'; } catch { return true; }
 }
@@ -31,6 +38,8 @@ const WORD_END_MS = 1200;
 /** In letter mode, with no hand for this long, the sentence so far goes to review. */
 const SENTENCE_END_MS = 3000;
 const FS = 'fs-';
+/** Two Enter presses within this window send the sentence right away (no preview countdown). */
+const DOUBLE_ENTER_MS = 700;
 /** Sentence chips show a spelled word as its letters (K-E-V); everywhere else it reads as a name ("Kev"). */
 const chipLabel = (key: string) => key.startsWith(FS) ? key.slice(FS.length).split('').join('-') : signLabel(key);
 
@@ -60,7 +69,11 @@ export type SignerWordsProps = {
 /** Signer-only. Live dictation and single-sign capture both end in the same preview: Send now, Cancel, or send automatically. */
 function LegacySignerWords({ camera, connected, reconnecting = false, onPending, onFrame, onPrepare, onSentence, onRetract }: SignerWordsProps) {
   const { user } = useAuth();
-  const [source, setSource] = useState<'shared' | 'personal'>('shared');
+  const [source, setSource] = useState<Source>(() => readSource() ?? 'shared');
+  const sourceChosen = useRef(readSource() !== null);
+  /** The signed-in signer's trained words (signs with 3+ examples), loaded once for the toggle. */
+  const [myWords, setMyWords] = useState<{ labels: string[]; skipped: string[] } | null>(null);
+  const [myWordsError, setMyWordsError] = useState('');
   const [state, setState] = useState<State>('off');
   const [labels, setLabels] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
@@ -102,6 +115,10 @@ function LegacySignerWords({ camera, connected, reconnecting = false, onPending,
   const teachHold = useRef<{ frames: number; locked: boolean }>({ frames: 0, locked: false });
   const retractRef = useRef(onRetract); retractRef.current = onRetract;
   const frameRef = useRef(onFrame);
+  const sentencePanel = useRef<HTMLDivElement>(null);
+  const lastEnterAt = useRef(0);
+  /** Set by a double Enter: the next sentence is sent as soon as it is ready instead of after the countdown. */
+  const sendWhenReady = useRef(false);
   const dictatingRef = useRef(true);
   const connectedRef = useRef(connected);
   const sentenceRef = useRef(onSentence);
@@ -110,6 +127,16 @@ function LegacySignerWords({ camera, connected, reconnecting = false, onPending,
   const focusBefore = useRef<HTMLElement | null>(null);
   const focusMoved = useRef(false);
   useEffect(() => { sentenceRef.current = onSentence; prepareRef.current = onPrepare; pendingRef.current = onPending; dictatingRef.current = dictating; connectedRef.current = connected; frameRef.current = onFrame; });
+  useEffect(() => {
+    if (!user) { setMyWords(null); return; }
+    const controller = new AbortController();
+    loadPersonalSamples(user.id, controller.signal).then(samples => {
+      const usable = usableSamples(samples);
+      setMyWords({ labels: usable.labels, skipped: usable.skipped }); setMyWordsError('');
+      if (!sourceChosen.current && usable.labels.length) setSource('personal');
+    }).catch(() => { if (!controller.signal.aborted) setMyWordsError('Could not load your trained words. Check the connection.'); });
+    return () => controller.abort();
+  }, [user]);
   useEffect(() => { modeRef.current = mode; teachRef.current = teachLetter; onlyTaughtRef.current = onlyTaught; taughtRef.current = taughtLetters; });
 
   function setSpell(next: string[]) { spellingRef.current = next; setSpelling(next); }
@@ -120,6 +147,32 @@ function LegacySignerWords({ camera, connected, reconnecting = false, onPending,
     setSpell([]);
     const words = [...dictation.current.words, { label: FS + letters.join(''), score: 1 }];
     dictation.current.load(words); setSigned(dictation.current.words);
+  }
+  /** Clears everything signed so far (words, the letter word in progress, a waiting preview) to start again. */
+  function startOver() {
+    generation.current++;
+    previewRef.current = null; setPreview(null); sendWhenReady.current = false;
+    dictation.current.clear(); setSigned([]); setSpell([]); speller.current?.reset();
+    holdStreak.current = { letter: null, frames: 0 }; setHold(0); handGoneAt.current = null;
+    setSentStatus('Cleared. Start signing again.');
+  }
+  /** Double Enter: finish any spelled word and send the sentence now. */
+  function sendNow() {
+    endWord();
+    const entry = previewRef.current;
+    if (entry?.text) { void confirmPreview(); return; }
+    if (entry) { sendWhenReady.current = true; return; }
+    const words = dictation.current.flush()?.words ?? [];
+    if (!words.length) return;
+    sendWhenReady.current = true; startPreview(words);
+  }
+  /** Known words vs known + trained words; while recognition runs it restarts with the new words and keeps the sentence. */
+  function chooseSource(next: Source) {
+    sourceChosen.current = true;
+    try { localStorage.setItem(SOURCE_KEY, next); } catch { /* storage may be blocked */ }
+    if (next === source) return;
+    setSource(next); setLabels([]); setError('');
+    if (engine.current || state === 'failed') { endWord(); const keep = dictation.current.words; void enable(next, keep); }
   }
   function chooseMode(next: 'words' | 'letters') {
     if (next === modeRef.current) return;
@@ -146,6 +199,14 @@ function LegacySignerWords({ camera, connected, reconnecting = false, onPending,
     const key = (event: KeyboardEvent) => {
       if (typingField(document.activeElement) || event.metaKey || event.ctrlKey || event.altKey || !stopLive.current) return;
       if (event.key === 'l' || event.key === 'L') { chooseMode(modeRef.current === 'words' ? 'letters' : 'words'); event.preventDefault(); return; }
+      if (event.key === 'Escape') { startOver(); event.preventDefault(); return; }
+      if (event.key === 'Enter' && !event.repeat) {
+        const now = performance.now();
+        if (now - lastEnterAt.current < DOUBLE_ENTER_MS) { lastEnterAt.current = 0; sendNow(); event.preventDefault(); return; }
+        lastEnterAt.current = now;
+        if (!(document.activeElement instanceof HTMLButtonElement)) { if (modeRef.current === 'letters') endWord(); event.preventDefault(); }
+        return;
+      }
       if (modeRef.current !== 'letters') {
         if (event.key === 'Backspace') {
           const draft = dictation.current.words;
@@ -155,7 +216,8 @@ function LegacySignerWords({ camera, connected, reconnecting = false, onPending,
         }
         return;
       }
-      if ((event.key === ' ' || event.key === 'Enter') && !(document.activeElement instanceof HTMLButtonElement)) { endWord(); event.preventDefault(); }
+      if (event.key === ' ' && !(document.activeElement instanceof HTMLButtonElement)) { endWord(); event.preventDefault(); }
+
       if (event.key === 'Backspace') { setSpell(spellingRef.current.slice(0, -1)); event.preventDefault(); }
     };
     window.addEventListener('keydown', key);
@@ -179,6 +241,7 @@ function LegacySignerWords({ camera, connected, reconnecting = false, onPending,
       if (attempt !== generation.current || previewRef.current !== entry) return;
       const ready: Preview = { words, text: sentenceOrFallback(text, words, signLabel) };
       previewRef.current = ready; setPreview(ready); setRemaining(PREVIEW_SECONDS);
+      if (sendWhenReady.current) { sendWhenReady.current = false; void confirmPreview(); }
     });
   }
   async function confirmPreview() {
@@ -246,7 +309,7 @@ function LegacySignerWords({ camera, connected, reconnecting = false, onPending,
     return () => { window.removeEventListener('pagehide', hide); release(); };
   }, []);
 
-  async function enable() {
+  async function enable(use: Source = source, keep: DictatedWord[] = []) {
     if (!connected || !camera.current || request.current) return;
     release();
     const attempt = generation.current;
@@ -254,17 +317,22 @@ function LegacySignerWords({ camera, connected, reconnecting = false, onPending,
     request.current = controller;
     setError(''); setPrediction(null); setState('loading');
     try {
-      const recognizer = source === 'personal' && user
-        ? await createPersonalRecognizer(camera.current, controller.signal, trainPersonalModel(await loadPersonalSamples(user.id, controller.signal), 1))
-        : await createWordRecognizer(camera.current, controller.signal);
+      let recognizer: WordRecognizer;
+      if (use === 'personal' && user) {
+        const usable = usableSamples(await loadPersonalSamples(user.id, controller.signal));
+        setMyWords({ labels: usable.labels, skipped: usable.skipped });
+        if (!usable.labels.length) throw new Error('No trained words yet: save at least three examples of a sign on My signs.');
+        recognizer = await createPersonalRecognizer(camera.current, controller.signal, trainPersonalModel(usable.samples, 1));
+      } else recognizer = await createWordRecognizer(camera.current, controller.signal);
       if (generation.current !== attempt) { recognizer.close(); return; }
       engine.current = recognizer;
       // Start in live view so the signer immediately sees whether their hand is tracked.
       setLabels(recognizer.labels); watchLive();
+      if (keep.length) { dictation.current.load(keep); setSigned(dictation.current.words); }
     } catch (cause) {
       if (generation.current !== attempt) return;
       release();
-      setError(source === 'personal' && cause instanceof Error ? cause.message : 'Could not start sign recognition. Try again or type your caption.');
+      setError(use === 'personal' && cause instanceof Error ? cause.message : 'Could not start sign recognition. Try again or type your caption.');
       setState('failed');
     }
   }
@@ -273,6 +341,7 @@ function LegacySignerWords({ camera, connected, reconnecting = false, onPending,
     if (!connected || !recognizer || stopLive.current) return;
     setPrediction(null); setError(''); setState('live');
     dictation.current.clear(); setSigned([]);
+    requestAnimationFrame(() => sentencePanel.current?.focus({ preventScroll: true }));
     stopLive.current = recognizer.watch((frame, guess) => {
       frameRef.current?.(frame);
       setTracked(frame.hands.length); setLive(guess);
@@ -351,6 +420,16 @@ function LegacySignerWords({ camera, connected, reconnecting = false, onPending,
   const live_ = state === 'live';
   return <section className="signer-words" aria-labelledby="signer-words-title">
     <div className="signer-words__heading"><h2 id="signer-words-title">Sign recognition</h2><span>Signer only</span></div>
+    <div className="signer-words__source" role="group" aria-label="Words to recognize">
+      <button type="button" aria-pressed={source === 'shared'} disabled={busy} onClick={() => chooseSource('shared')}>Known words</button>
+      <button type="button" aria-pressed={source === 'personal'} disabled={busy || !user || !myWords?.labels.length} onClick={() => chooseSource('personal')}>
+        Known + my trained words{myWords?.labels.length ? ` (${myWords.labels.length})` : ''}</button>
+      <span className="note">{!user ? <><a href="#/training">Sign in with GitHub</a> to use the words you trained.</>
+        : myWordsError ? myWordsError
+        : !myWords ? 'Loading your trained words…'
+        : !myWords.labels.length ? <>No trained words yet. <a href="#/training">Teach a word on My signs</a> (3+ examples each).</>
+        : <>Your words: {myWords.labels.join(', ')}{myWords.skipped.length ? `. Need 3+ examples: ${myWords.skipped.join(', ')}` : ''}. <a href="#/training">Manage</a></>}</span>
+    </div>
     <div className="signer-words__grid">
       <div className="signer-words__controls">
         <div className="button-row">
@@ -401,19 +480,15 @@ function LegacySignerWords({ camera, connected, reconnecting = false, onPending,
         </div>}
         <details className="signer-words__options">
           <summary>Recognition options</summary>
-          <label className="field">Words to recognize<select value={source} disabled={enabled} onChange={event => { setSource(event.target.value as 'shared' | 'personal'); setLabels([]); setError(''); }}>
-            <option value="shared">Shared words</option>
-            {user && <option value="personal">Shared words + my signs</option>}
-          </select></label>
-          <p><a href="#/training">{user ? 'Teach or manage my signs' : 'Sign in with GitHub to teach your own signs'}</a></p>
           {modelWords.length > 0 && <p className="signer-words__vocabulary">Words recognized ({modelWords.length}): {modelWords.join(', ')}.</p>}
           <p className="note">{source === 'personal' ? 'My signs are checked first, then the shared words. Your saved examples are downloaded privately from your account; new examples captured in a call stay on this device.' : 'Recognition stays on this device and does not upload recordings or hand data.'} It can make mistakes.</p>
           <label className="signer-words__dictate"><input type="checkbox" checked={autoSend} onChange={event => chooseAutoSend(event.target.checked)} /><span>Send automatically after preview</span></label>
         </details>
       </div>
 
-      <div className="signer-words__sentence" aria-labelledby="signer-words-sentence-title">
-        <h3 id="signer-words-sentence-title">Your sentence</h3>
+      <div className="signer-words__sentence" aria-labelledby="signer-words-sentence-title" ref={sentencePanel} tabIndex={-1}>
+        <div className="signer-words__sentence-head"><h3 id="signer-words-sentence-title">Your sentence</h3>
+          {(signed.length > 0 || spelling.length > 0 || preview || live_) && <Button size="small" onClick={startOver} aria-keyshortcuts="Escape">Start over <kbd className="key-hint" aria-hidden="true">Esc</kbd></Button>}</div>
         {!preview && <>
           <p className="signer-words__signed">{signed.map(word => chipLabel(word.label)).join(' ')}{spelling.length > 0 && <span className="signer-words__spelling">{signed.length ? ' ' : ''}{spelling.join('-')}<span aria-hidden="true">_</span></span>}</p>
           {!signed.length && !spelling.length && <p className="note">{live_ ? (mode === 'letters' ? 'Spelled letters appear here. End the word with the button, Space, or by lowering your hand.' : 'Signed words appear here as you sign.') : 'Start live signing to build a sentence.'}</p>}
@@ -423,8 +498,9 @@ function LegacySignerWords({ camera, connected, reconnecting = false, onPending,
           </div>}
           {(signed.length > 0 || spelling.length > 0) && <div className="button-row">
             <Button variant={mode === 'letters' ? undefined : 'primary'} onClick={() => { endWord(); startPreview(dictation.current.flush()?.words ?? []); }}>Review sentence</Button>
-            <Button onClick={() => { dictation.current.clear(); setSigned([]); setSpell([]); }}>Clear</Button>
+            <Button onClick={sendNow} aria-keyshortcuts="Enter Enter">Send now <kbd className="key-hint" aria-hidden="true">Enter ×2</kbd></Button>
           </div>}
+          {live_ && <p className="note">Press <kbd>Enter</kbd> twice to send right away · <kbd>Esc</kbd> to start over.</p>}
         </>}
         {preview && <div className="signer-words__preview" role="group" aria-label="Sentence ready to send">
           {preview.text ? <>

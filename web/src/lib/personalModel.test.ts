@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { predictPersonalSign, signLabel, trainPersonalModel, validateWordSample, type PersonalSample } from './personalModel';
+import { predictPersonalSign, signLabel, trainPersonalModel, usableSamples, validateWordSample, type PersonalSample } from './personalModel';
 
 function sample(label: string, axis: number, variation = 0): PersonalSample {
   return { id: crypto.randomUUID(), label, createdAt: new Date().toISOString(), framesWithHand: 30,
@@ -43,6 +43,14 @@ describe('personal isolated-sign model', () => {
     const source = examples(); const model = trainPersonalModel(source);
     source[0].features.fill(0);
     expect(predictPersonalSign(model, sample('HELLO', 2)).accepted).toBe(true);
+  });
+  it('skips signs with fewer than three examples instead of refusing the whole vocabulary', () => {
+    const samples = [...examples(), sample('WAVE', 4), sample('WAVE', 4, 0.001)];
+    const usable = usableSamples(samples);
+    expect(usable.labels).toEqual(['HELLO', 'NAME']);
+    expect(usable.skipped).toEqual(['WAVE']);
+    expect(() => trainPersonalModel(samples, 1)).toThrow('three examples');
+    expect(trainPersonalModel(usable.samples, 1).labels).toEqual(['HELLO', 'NAME']);
   });
   it('normalizes custom sign names and rejects markup or invalid names', () => {
     expect(signLabel("  my   name-2's  ")).toBe("MY NAME-2'S");

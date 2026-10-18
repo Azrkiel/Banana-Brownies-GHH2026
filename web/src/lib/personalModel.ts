@@ -57,6 +57,15 @@ export function trainPersonalModel(samples: readonly PersonalSample[], minSigns 
 export const MAX_NEAREST_DISTANCE = 0.45;
 export const MAX_THIRD_DISTANCE = 0.65;
 
+/** Signs with fewer than three examples are left out (and listed) instead of stopping the whole model from loading. */
+export function usableSamples(samples: readonly PersonalSample[]): { samples: PersonalSample[]; labels: string[]; skipped: string[] } {
+  const counts = new Map<string, number>();
+  for (const sample of samples) counts.set(signLabel(sample.label), (counts.get(signLabel(sample.label)) ?? 0) + 1);
+  const ready = new Set([...counts].filter(([, n]) => n >= MIN_SIGN_EXAMPLES).map(([label]) => label));
+  return { samples: samples.filter(sample => ready.has(signLabel(sample.label))), labels: [...ready].sort(),
+    skipped: [...counts].filter(([, n]) => n < MIN_SIGN_EXAMPLES).map(([label]) => label).sort() };
+}
+
 /** A small nearest-neighbor model for personal isolated signs, not a general ASL translator. */
 export function predictPersonalSign(model: PersonalModel, sample: WordSample): WordPrediction {
   const input = normalized(sample);

@@ -1,8 +1,9 @@
 .intro-screen { position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; row-gap: 16px; align-items: center; justify-items: center; max-width: 1440px; min-height: 100svh; margin: auto; padding: clamp(16px, 4svh, 40px) 24px clamp(16px, 5svh, 48px); overflow: clip; }
 .intro-heading { position: relative; z-index: 1; text-align: center; }
 .intro-screen h1 { font-family: var(--font-serif); font-size: clamp(4rem, min(10vw, 16svh), 8.75rem); font-weight: 400; line-height: 1.08; letter-spacing: -.065em; margin: 0; }
-.intro-tagline { margin: 8px 0 0; color: var(--color-muted); font-size: var(--text-body); line-height: 1.5; }
-.intro-purpose { max-width: 52ch; margin: 6px auto 0; color: var(--color-muted); font-size: 1rem; line-height: 1.5; text-wrap: pretty; }
+/* Clear space under the large title (its letters descend close to the line below). */
+.intro-tagline { margin: clamp(20px, 3.5svh, 36px) 0 0; color: var(--color-muted); font-size: var(--text-body); line-height: 1.5; }
+.intro-purpose { max-width: 52ch; margin: 12px auto 0; color: var(--color-muted); font-size: 1rem; line-height: 1.5; text-wrap: pretty; }
 .intro-account { display: inline-flex; align-items: center; min-height: 44px; margin-top: 4px; font-size: 1rem; color: var(--color-muted); }
 /* The stage takes only the height left after the heading and Begin, so Begin stays in the first screen. */
 .intro-stage { container: intro-stage / size; align-self: stretch; justify-self: stretch; display: grid; place-items: end center; }

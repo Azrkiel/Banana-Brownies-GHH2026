@@ -60,3 +60,13 @@
 .v2-gloss.medium { background: #f4cd78; }
 .v2-gloss select { max-width: 12rem; margin-inline-start: .4rem; }
 .v2-nmm { display: inline-block; font-weight: 650; margin-inline: .4rem; }
+.signer-words__sentence:focus { outline: none; }
+.signer-words__sentence:focus-visible { outline: 3px solid var(--color-focus, var(--color-ink)); outline-offset: 2px; }
+.signer-words__sentence-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.signer-words__sentence-head h3 { margin: 0; }
+
+.signer-words__source { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 16px; }
+.signer-words__source button { min-height: 44px; padding: 8px 16px; border: 1px solid var(--color-field-border); border-radius: 999px; background: var(--color-surface); color: var(--color-ink); font: inherit; cursor: pointer; }
+.signer-words__source button[aria-pressed="true"] { background: var(--color-ink); color: var(--color-surface); border-color: var(--color-ink); }
+.signer-words__source button:disabled { opacity: .55; cursor: not-allowed; }
+.signer-words__source .note { flex: 1 1 260px; overflow-wrap: anywhere; }
