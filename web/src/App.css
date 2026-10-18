@@ -138,10 +138,11 @@ body[data-in-call] .site-header nav { display: none; }
   .stage { height: clamp(240px, 40svh, 420px); }
   .stage-illustration { display: none; }
   .stage-placeholder { padding: 56px 16px 16px; }
-  .local-tile { width: clamp(110px, 30%, 180px); }
+  .local-tile { width: clamp(150px, 42%, 200px); }
 }
 @media (max-width: 600px) {
   .room-heading { align-items: flex-start; flex-direction: column; }
   .caption-panel { padding: 16px; } .caption-scroll { min-height: 160px; }
   .stage-top { left: 12px; right: 12px; } .local-tile { bottom: 12px; right: 12px; }
+  .stage { height: clamp(320px, 45svh, 420px); } .stage-placeholder { justify-content: flex-start; padding-bottom: 140px; }
 }

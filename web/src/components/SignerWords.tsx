@@ -205,7 +205,7 @@ function SignerWordSession({ camera, connected, onUse, onPrepare, onSentence }: 
   const busy = state === 'loading' || state === 'capturing';
   const modelWords = labels.map(signLabel);
   return <section className="signer-words" aria-labelledby="signer-words-title">
-    <div className="signer-words__heading"><h2 id="signer-words-title">Your trained signs</h2><span>Signer only</span></div>
+    <div className="signer-words__heading"><h2 id="signer-words-title">Sign recognition</h2><span>Signer only</span></div>
     <p>Sign live and your confident signs become a sentence you can review before it is sent. Or capture one word at a time and add it to your caption.</p>
     <label className="field">Recognition model<select value={source} disabled={enabled} onChange={event => { setSource(event.target.value as 'shared' | 'personal'); setLabels([]); setError(''); }}>
       <option value="shared">Shared words</option>
@@ -221,7 +221,7 @@ function SignerWordSession({ camera, connected, onUse, onPrepare, onSentence }: 
         <Button onClick={stop}>Stop sign recognition</Button>
       </>}
     </div>
-    <p id="signer-words-status" role="status">{!connected ? 'Join the call to use your trained signs.' : state === 'loading' ? 'Loading sign recognition…' : state === 'capturing' ? 'Sign now…' : state === 'ready' ? 'Ready. Choose Capture a sign and sign one word over about one second, or Show live view to watch the model guess as you sign.' : state === 'live' ? 'Live view on. Sign a word and watch the guess.' : state === 'off' ? 'Sign recognition is off.' : ''}</p>
+    <p id="signer-words-status" role="status">{!connected ? 'Join the call to use sign recognition.' : state === 'loading' ? 'Loading sign recognition…' : state === 'capturing' ? 'Sign now…' : state === 'ready' ? 'Ready. Choose Capture a sign and sign one word over about one second, or Show live view to watch the model guess as you sign.' : state === 'live' ? 'Live view on. Sign a word and watch the guess.' : state === 'off' ? 'Sign recognition is off.' : ''}</p>
     {state === 'loading' && <progress aria-label="Loading sign recognition" />}
     {state === 'live' && <div className="signer-words__live">
       <canvas ref={liveCanvas} aria-label="What the hand model sees" />

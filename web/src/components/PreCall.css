@@ -25,4 +25,4 @@
 .precall-join .note { margin-top: 4px; font-size: 1rem; color: var(--color-muted); }
 .precall-back { display: inline-flex; align-items: center; min-height: 44px; font-size: var(--text-sm); }
 @media (min-width: 901px) { .precall-page .camera-stage { position: sticky; top: 1.5rem; } }
-@media (max-width: 600px) { .precall-page .camera-stage { min-height: 0; aspect-ratio: 4 / 3; } .precall-join > .ui-button { width: 100%; } .precall-back { justify-content: center; width: 100%; } }
+@media (max-width: 600px) { .precall-page .camera-stage { min-height: 340px; aspect-ratio: 4 / 3; } .precall-join:not(.precall-join--ready) { position: static; } .precall-join > .ui-button { width: 100%; } .precall-back { justify-content: center; width: 100%; } }

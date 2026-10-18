@@ -112,7 +112,7 @@ export function PreCall({ room, name, role, onJoin }: { room: string; name: stri
           <p className="precall-status" role="status">{camera.status === 'ready' ? 'Camera ready' : camera.status === 'starting' ? 'Starting camera…' : 'Camera not checked'}</p>
         </Surface>
         <Surface aria-labelledby="precall-mic-title"><h2 id="precall-mic-title">Microphone check</h2>
-          {role === 'signer' ? <p className="note">You’re joining as a signer. Your microphone stays off; only a camera check is needed. Your trained signs are available after you join.</p> : <>
+          {role === 'signer' ? <p className="note">You’re joining as a signer. Your microphone stays off; only a camera check is needed. Your signs from My signs are available after you join.</p> : <>
             <p className="precall-status" role="status">{microphone.status === 'ready' ? 'Microphone access ready' : microphone.status === 'starting' ? 'Starting microphone…' : 'Microphone not checked'}</p>
             {microphone.stream && <MicrophoneLevel stream={microphone.stream} />}
             {microphone.error && <p className="precall-error" role="alert">{microphone.error}</p>}
@@ -123,7 +123,7 @@ export function PreCall({ room, name, role, onJoin }: { room: string; name: stri
       </aside>
     </div>
     <p className="studio-privacy"><Icon name="shield" />Checks stay on this device. Nothing is recorded or sent to the room until you join. Your browser’s default camera and microphone are used.</p>
-    <div className="precall-join" role="group" aria-label="Join the call">
+    <div className={`precall-join${ready ? " precall-join--ready" : ""}`} role="group" aria-label="Join the call">
       <div className="precall-join__info"><p className="precall-join__title">Joining as {name} · {roleLabel}</p>
         <p className="note" id="precall-join-hint">{ready ? 'Checks passed. You can join.' : `Still needed: ${needed.join(' and ')}.`}</p></div>
       <Button variant="primary" disabled={!ready} aria-describedby="precall-join-hint" onClick={join}>Join call <Icon name="arrow" /></Button>
