@@ -92,16 +92,20 @@ export function PreCall({ room, name, role, onJoin }: { room: string; name: stri
     <div className="studio-layout">
       <section className="camera-stage" aria-label="Pre-call camera preview">
         <video ref={video} autoPlay muted playsInline className="mirror" aria-label="Your local camera preview" />
-        {camera.status !== 'ready' && <div className="camera-stage__placeholder"><span className="camera-stage__icon"><Icon name="camera" /></span><h2>A moment to get ready.</h2><p>{camera.status === 'starting' ? 'Allow camera access when your browser asks.' : 'Start your camera to check your framing and lighting.'}</p></div>}
+        <div className={`precall-camera-content${camera.status === 'ready' ? ' precall-camera-content--ready' : ''}`}>
+          {camera.status !== 'ready' && <div className="precall-camera-prompt"><h2>A moment to get ready.</h2><p>{camera.status === 'starting' ? 'Allow camera access when your browser asks.' : 'Start your camera to check your framing and lighting.'}</p></div>}
+          {camera.error && <p className="precall-error" role="alert">{camera.error}</p>}
+          <div className="precall-camera-actions">
+            <Button variant={camera.status === 'ready' ? 'secondary' : 'primary'} disabled={camera.status === 'starting'} onClick={() => camera.status === 'ready' ? check.current?.stop('camera') : start('camera')}><Icon name="camera" />{camera.status === 'ready' ? 'Stop camera' : camera.status === 'starting' ? 'Starting camera…' : 'Start camera'}</Button>
+            {camera.status === 'starting' && <Button onClick={() => check.current?.stop('camera')}>Cancel camera check</Button>}
+          </div>
+        </div>
         <span className="camera-stage__label"><span className="status-dot" />{camera.status === 'ready' ? 'Local preview · Mirrored' : 'Camera off'}</span>
       </section>
       <aside className="studio-sidebar">
         <Surface aria-labelledby="precall-camera-title"><h2 id="precall-camera-title">Camera check</h2>
           <p className="note">Keep your face and hands in view, with light in front of you.</p>
           <p className="precall-status" role="status">{camera.status === 'ready' ? 'Camera ready' : camera.status === 'starting' ? 'Starting camera…' : 'Camera not checked'}</p>
-          {camera.error && <p className="precall-error" role="alert">{camera.error}</p>}
-          <Button disabled={camera.status === 'starting'} onClick={() => camera.status === 'ready' ? check.current?.stop('camera') : start('camera')}><Icon name="camera" />{camera.status === 'ready' ? 'Stop camera' : 'Start camera'}</Button>
-          {camera.status === 'starting' && <Button onClick={() => check.current?.stop('camera')}>Cancel camera check</Button>}
         </Surface>
         <Surface aria-labelledby="precall-mic-title"><h2 id="precall-mic-title">Microphone check</h2>
           {role === 'signer' ? <p className="note">You’re joining as a signer. Your microphone stays off; only a camera check is needed. Your trained signs are available after you join.</p> : <>

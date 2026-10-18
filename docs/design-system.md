@@ -61,7 +61,7 @@ shapes. Visible text has a 1rem minimum (16px at the default browser setting),
 with 18px body copy and darker ink for both main and supporting text. Disabled
 buttons retain readable labels rather than reducing text opacity.
 
-In calls, captions use 24–32px text in a solid cream panel, with a wider desktop
+In calls, captions use 28–40px text in a solid cream panel, with a wider desktop
 column and keyboard-accessible scrolling. At 900px and below the caption panel
 comes before the video in both reading and visual order. Final and interim
 captions retain distinct solid/dashed edges and readable speaker labels.
@@ -154,3 +154,27 @@ content. These calls used a mocked LiveKit adapter and synthetic camera feed.
 Welcome checks at 320×568, 844×390 and 1920×1080 kept the tagline and Begin
 visible. Normal-motion takeoff and the centered loader, reduced motion, room
 validation and forced colors passed. Live provider checks were not repeated.
+
+
+## Content scale and spacing
+
+The Call heading is a compact 20px label. The illustration and wider form share
+one vertically aligned row without a fixed minimum height; form values use 20px
+text. On phones they stack with the existing compact illustration spacing.
+
+Devices places Start camera and permission/cancellation controls inside the
+preview, beside a larger prompt. Stop camera stays inside the active preview.
+Permission errors appear with the action. The preview grows with its content so
+errors and enlarged text fit without clipping; the privacy badge can wrap.
+
+Captions use 28–40px text and 18px speaker labels. The centered empty state reads
+“Captions will appear here as people sign or speak.” Keyboard scrolling,
+interim/final distinctions, retractions and typed-caption behavior are preserved.
+
+Validation: 207 frontend tests, lint and production build passed. Chromium checks
+at 1440, 768, 390 and 320px covered the Call form, device checks, empty/populated
+captions, camera start/stop and typed-caption sending with no horizontal overflow
+or page errors. Additional checks covered camera permission errors, retry,
+cancellation, 200% text and the hearing participant’s microphone requirement.
+These checks used synthetic media and a mocked call adapter; real-camera,
+provider and two-laptop acceptance remain separate. Roadmap statuses are unchanged.

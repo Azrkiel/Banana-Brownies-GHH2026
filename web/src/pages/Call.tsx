@@ -341,7 +341,7 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
       <div className="call-workspace">
         <section className="caption-panel" aria-labelledby="caption-title">
           <div className="caption-header"><div><h2 id="caption-title">Captions</h2></div><span className="text-badge" aria-hidden="true">Aa</span></div>
-          <div className="caption-scroll" role="region" aria-label="Conversation captions" tabIndex={0}>{captions.length ? <CaptionLane captions={captions} me={name} /> : <div className="caption-empty"><p>No captions</p></div>}</div>
+          <div className="caption-scroll" role="region" aria-label="Conversation captions" tabIndex={0}>{captions.length ? <CaptionLane captions={captions} me={name} /> : <div className="caption-empty"><p>Captions will appear here as people sign or speak.</p></div>}</div>
           <form className="caption-composer" onSubmit={send}><label htmlFor="caption-draft">Type a caption</label><div className="composer-input"><input id="caption-draft" value={draft} maxLength={1000} disabled={!canSend} placeholder={canSend ? 'Say something…' : 'Connect to send a caption'} onChange={event => setDraft(event.target.value)} /><Button type="submit" aria-label="Send caption" disabled={!canSend || !draft.trim() || sending}>{sending ? '…' : '↑'}</Button></div><p>{canSend ? 'Press Enter to send to the room.' : 'Your conversation will appear when you connect.'}</p></form>
         </section>
         <div className="stage-column">
