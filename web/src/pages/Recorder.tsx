@@ -21,7 +21,13 @@ function download(session: Session) {
 }
 
 export default function Recorder() {
+  const [sharedWords, setSharedWords] = useState<string[]>([]);
   const [signer, setSigner] = useState('');
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`${import.meta.env.BASE_URL}trained-words.json`, { signal: controller.signal }).then(r => r.ok ? r.json() : null).then(data => { if (data && Array.isArray(data.labels)) setSharedWords(data.labels.filter((value: unknown): value is string => typeof value === 'string')); }).catch(() => {});
+    return () => controller.abort();
+  }, []);
   const [leftHanded, setLeftHanded] = useState(false);
   const [consent, setConsent] = useState(false);
   const [camera, setCamera] = useState(false);
@@ -104,7 +110,7 @@ export default function Recorder() {
     <main className="studio-page" id="main-content">
       <PageHeader title="Record"
         accessory={<Badge tone={busy ? 'warning' : ready ? 'positive' : 'neutral'}>{busy ? 'Recording in progress' : ready ? 'Camera ready' : 'Local capture'}</Badge>} />
-      <p className="recorder-note"><Icon name="record" />Developer tool: records dataset clips for the research vocabulary. These are separate from the seven shared call words (Demo, Food, Goodbye, Hello, Lisa, My, Name).</p>
+      <p className="recorder-note"><Icon name="record" />Developer tool: records dataset clips for the research vocabulary. These are separate from the shared words used in calls{sharedWords.length ? ` (${sharedWords.map(signLabel).join(', ')})` : ''}.</p>
       <div className="recorder-consent ui-surface"><Icon name="shield" /><div><h2>Consent</h2><p>Landmarks only, no video. Used to train this project’s model; not published.</p>
         <label className="check-field"><input type="checkbox" checked={consent} onChange={(event) => {
           stopRecording(); setCamera(false); setConsent(event.target.checked);

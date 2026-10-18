@@ -135,7 +135,7 @@ export default function SpeechCheck() {
 
         <aside className="speech-check__sidebar" aria-label="Microphone controls">
           <section className="speech-check__controls">
-            <div role="status" aria-live="polite"><h2>{stateText[state].label}</h2>{stateText[state].detail && state !== 'idle' && <p className="speech-check__detail">{stateText[state].detail}</p>}</div>
+            <div role="status" aria-live="polite"><h2>Microphone</h2>{stateText[state].detail && state !== 'idle' && <p className="speech-check__detail">{stateText[state].detail}</p>}</div>
             {!secure && <p className="speech-check__notice" role="alert">Open this page on localhost or HTTPS to use a microphone.</p>}
             {!supported && <p className="speech-check__notice" role="alert">Microphone streaming is unavailable in this browser. Use a current browser on HTTPS or localhost.</p>}
             {message && <p className="speech-check__notice" role={state === 'failed' ? 'alert' : 'status'}>{message}</p>}

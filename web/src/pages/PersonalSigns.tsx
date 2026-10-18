@@ -28,7 +28,7 @@ export default function PersonalSigns() {
         }}>Sign in with GitHub</Button>
         {!auth.configured && <p role="status">Account sign-in is being set up. Calls are still available.</p>}
         <p className="note">GitHub creates your account on your first sign-in. We do not request access to your repositories.</p>
-        <a href="#/conversation">Continue to Call</a>
+        <a className="account-welcome__call" href="#/call">Go to Call</a>
       </div>
     </Surface> : <TrainingWorkspace key={auth.user.id} userId={auth.user.id} name={typeof auth.user.user_metadata.user_name === 'string' ? auth.user.user_metadata.user_name : 'your account'} />}
   </main>;
@@ -147,7 +147,7 @@ function TrainingWorkspace({ userId, name }: { userId: string; name: string }) {
       await deletePersonalSamples(userId, ids, signal, value === '*' ? null : value);
       if (signal.aborted) return;
       setSamples(current => current.filter(x => !ids.includes(x.id)));
-      setMessage(value === '*' ? 'All your training examples have been deleted.' : `Deleted your examples of ${displayLabel(value)}.`);
+      setMessage(value === '*' ? 'All your examples have been deleted.' : `Deleted your examples of ${displayLabel(value)}.`);
     } catch (cause) { if (!signal.aborted) { setError(cause instanceof Error ? cause.message : 'Delete failed.'); setLoaded(false); } }
     finally { if (!signal.aborted) setSaving(false); }
   }
@@ -210,7 +210,7 @@ function TrainingWorkspace({ userId, name }: { userId: string; name: string }) {
           {!busy && testHint && <p id="hint-test" className="personal-hint">{testHint}</p>}
           {prediction && <div className="sample-review" role="status">{prediction.accepted ? <><h3>{displayLabel(prediction.label)}</h3><p>{trained.model?.labels.includes(prediction.label) ? 'One of your signs.' : 'A shared word.'} Does this match your sign? This is a suggestion, not a measured accuracy result.</p></> : <p>No confident match. Try different examples or keep using typed captions.</p>}</div>}
           <p className="note">Fresh tests stay on this device. In a call, your signs are used automatically when you choose “Shared words + my signs”. Suggestions are never sent automatically.</p>
-          <a href="#/conversation">Go to Call</a>
+          <a href="#/call">Go to Call</a>
         </Surface>
       </div>
     </div>

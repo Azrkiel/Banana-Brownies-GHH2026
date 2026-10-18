@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
 import Intro from './pages/Intro'
 import { BirdLoading } from './components/BirdLoading'
+import NotFound from './pages/NotFound'
 import './App.css'
 
 // Auth pulls in supabase (~200 KB); only working pages need it, so the landing page skips it.
@@ -17,9 +18,6 @@ const PersonalSigns = lazy(() => import('./pages/PersonalSigns'))
 const DEV = import.meta.env.DEV
 const KNOWN_ROUTES = new Set(['', 'welcome', 'call', 'conversation', 'room', 'bench', 'speech-check', 'record', 'training'])
 const TITLES: Record<string, string> = { call: 'Call', conversation: 'Call', room: 'Call', 'speech-check': 'Speech check', record: 'Record', training: 'My signs', bench: 'Camera check', 'design-kit': 'Design kit' }
-function NotFound() {
-  return <main id="main-content" className="not-found"><h1>Page not found</h1><p>That page does not exist. <a href="#/call">Back to Call</a></p></main>
-}
 // This commits only after a lazy screen is ready, so focus never lands in a discarded fallback.
 function PageContent({ children, title }: { children: ReactNode; title: string }) {
   // Passive, so a previous page's cleanup (e.g. restoring its old title) runs first.
