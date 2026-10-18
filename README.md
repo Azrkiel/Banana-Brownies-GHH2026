@@ -94,9 +94,12 @@ The dataset script is not registered until its implementation arrives in Phase 2
    from the repository root; on macOS/Linux use the backend command above from `server/`.
 2. Open the frontend in desktop Chrome on localhost or HTTPS. Enter a display
    name and a room (3–32 lowercase letters, numbers or hyphens), then select a role.
-3. Choose **Join room** and allow camera access. The hearing participant also
-   grants microphone access; the signer's microphone stays off. The same camera
-   track supplies the local preview and LiveKit publication; only the preview is mirrored.
+3. Choose **Check devices** to open a pre-call screen in a new tab. Start the camera
+   to check framing. Hearing participants choose **Test microphone** and speak to
+   check the local level meter; signers never request microphone access. Checks
+   stay local and do not connect to LiveKit. Choose **Join conversation** when
+   ready. Test devices stop before the call reacquires the browser defaults.
+   If permissions fail, retry; stopping a check disables joining until it passes again.
 4. Join the same room on another laptop with a different name. Each frontend
    needs a reachable API. When sharing one API over the LAN, bind Uvicorn to
    `0.0.0.0` and start the second laptop's frontend with

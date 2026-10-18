@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { RemoteTrack } from 'livekit-client';
 import { joinCall, type Call as CallT, type CallStatus } from '../lib/call';
 import { CaptionLane } from '../components/CaptionLane';
+import { PreCall } from '../components/PreCall';
 import { createCaptionHistory } from '../lib/captions';
 import { createSpeechCaptions } from '../lib/speechCaptions';
 import { createCallSpeech, type CallSpeechState } from '../lib/callSpeech';
@@ -73,10 +74,10 @@ export default function Call() {
         <label>Your name<input autoComplete="given-name" placeholder="e.g. Kev" value={name} maxLength={40} required onChange={event => setName(event.target.value)} /></label>
         <label>Room name<input value={room} pattern="[a-z0-9-]{3,32}" title="3–32 lowercase letters, numbers or hyphens" required onChange={event => setRoom(event.target.value)} /></label>
         <label>I’m joining as<select value={role} onChange={event => setRole(event.target.value as Role)}><option value="signer">Signer</option><option value="hearing">Hearing participant</option></select></label>
-        <Button variant="primary" type="submit" disabled={!name.trim()}>Join room <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 13 13 3M3 3h10v10" /></svg></Button>
+        <Button variant="primary" type="submit" disabled={!name.trim()}>Check devices <svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 13 13 3M3 3h10v10" /></svg></Button>
       </form>
       {error && <div className="error-banner" role="alert">{error}</div>}
-      <p className="home-note"><Icon name="shield" /><span>Camera access starts after you join.<br />Your conversation opens in a new tab.</span></p>
+      <p className="home-note"><Icon name="shield" /><span>Check your camera and microphone before joining.<br />Your conversation opens in a new tab.</span></p>
       </section>
       <aside className="home-guide" aria-labelledby="home-guide-title">
         <div className="home-visual" aria-hidden="true"><div className="home-visual__tile"><span /></div><div className="home-visual__tile"><span /></div><div className="home-visual__mark"><Icon name="captions" /></div></div>
@@ -93,6 +94,7 @@ export default function Call() {
 }
 
 export function CallRoom({ query }: { query: string }) {
+  const [checked, setChecked] = useState(false);
   const params = readRoomParams(query);
   if (!params) {
     return (
@@ -101,10 +103,10 @@ export function CallRoom({ query }: { query: string }) {
       </main>
     );
   }
-  return <RoomSession {...params} />;
+  return checked ? <RoomSession {...params} onRecheck={() => setChecked(false)} /> : <PreCall {...params} onJoin={() => setChecked(true)} />;
 }
 
-function RoomSession({ room, name, role }: { room: string; name: string; role: Role }) {
+function RoomSession({ room, name, role, onRecheck }: { room: string; name: string; role: Role; onRecheck(): void }) {
   const [captions, setCaptions] = useState<Caption[]>([]);
   const [status, setStatus] = useState<Status>('idle');
   const [draft, setDraft] = useState('');
@@ -356,12 +358,12 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
             {!remoteVisible && <div className="stage-placeholder">
               <div className="conversation-mark" aria-hidden="true"><span /><span /></div>
               <h2>{inRoom ? peer ? `${peer} is here` : 'A seat for someone.' : status === 'joining' ? 'Making the connection.' : 'Meet in the middle.'}</h2>
-              <p>{inRoom ? peer ? 'Their video will appear when their camera is on.' : 'Ask someone to join the same room to get started.' : status === 'joining' ? 'Allow camera access when your browser asks.' : status === 'disconnected' ? 'You left the room. Rejoin when you’re ready.' : 'Choose Rejoin to try connecting again.'}</p>
+              <p>{inRoom ? peer ? 'Their video will appear when their camera is on.' : 'Ask someone to join the same room to get started.' : status === 'joining' ? 'Allow camera access when your browser asks.' : status === 'disconnected' ? 'You left the room. Rejoin when you’re ready.' : 'Check your devices to try connecting again.'}</p>
             </div>}
             <div className="local-tile"><video ref={local} autoPlay muted playsInline className="mirror local-video" aria-label="Your camera preview" />{!busy && <span className="camera-off" aria-hidden="true">Camera off</span>}<span className="video-label">{inRoom ? name : 'You'} <span>· {role === 'signer' ? 'Signer' : 'Hearing'}</span></span></div>
             {remoteVisible && <span className="peer-label">{peer ?? 'Other participant'}</span>}
           </div>
-          <div className="call-toolbar"><p><span className="privacy-dot" />{status === 'joining' ? 'Waiting for camera access and call connection' : inRoom ? role === 'signer' ? 'Camera on · microphone off' : muted ? 'Call microphone muted · speech recognition paused' : 'Camera and call microphone enabled' : 'Camera and microphone stay off until you join.'}</p><div className="glass">{role === 'hearing' && inRoom && <Button disabled={!canSend || muting} onClick={() => void toggleMicrophone()}>{muting ? 'Changing microphone…' : muted ? 'Unmute microphone' : 'Mute microphone'}</Button>}{status === 'audio-blocked' && <Button onClick={enableAudio}>Enable audio</Button>}{busy ? <Button variant="danger" onClick={leave}>{status === 'joining' ? 'Cancel' : 'Leave room'}</Button> : <Button variant="primary" onClick={() => void join()}>Rejoin</Button>}</div></div>
+          <div className="call-toolbar"><p><span className="privacy-dot" />{status === 'joining' ? 'Waiting for camera access and call connection' : inRoom ? role === 'signer' ? 'Camera on · microphone off' : muted ? 'Call microphone muted · speech recognition paused' : 'Camera and call microphone enabled' : 'Camera and microphone stay off until you join.'}</p><div className="glass">{role === 'hearing' && inRoom && <Button disabled={!canSend || muting} onClick={() => void toggleMicrophone()}>{muting ? 'Changing microphone…' : muted ? 'Unmute microphone' : 'Mute microphone'}</Button>}{status === 'audio-blocked' && <Button onClick={enableAudio}>Enable audio</Button>}{busy ? <Button variant="danger" onClick={leave}>{status === 'joining' ? 'Cancel' : 'Leave room'}</Button> : <Button variant="primary" onClick={onRecheck}>Check devices and rejoin</Button>}</div></div>
           {role === 'hearing' && <section className="call-speech" aria-labelledby="call-speech-title">
             <div className="call-speech__heading"><h2 id="call-speech-title">Speech captions</h2><span role="status">{speechLabels[speechState]}</span></div>
             <label><input type="checkbox" checked={consented} onChange={event => { setConsented(event.target.checked); speech.current?.consent(event.target.checked); }} /><span>I agree to send microphone audio to my browser’s speech service and share the recognized text with this room.</span></label>
