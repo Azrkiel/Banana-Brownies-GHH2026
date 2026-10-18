@@ -15,6 +15,8 @@ measured results and remaining webcam checks are below. See also
 
 ## Real-data CPU baseline — October 18, 2026
 
+Model artifact commit: `fdaf97d2fd6ca41035b529dc425c0483a9072d43`.
+
 Training code: `fdde3755e11a77cfa424b17eb5db7b78f9a48d5c` (started from `0464dd8`); Phase 6 has not started.
 The browser bundle in `web/public/models/manifest.json` now has `deployable=true`,
 250 real GISLR sign labels plus `_idle`, calibrated C1/B heads, and single-file FP16 weights.
@@ -68,6 +70,7 @@ Complete configs, checkpoint hashes, independent evaluations, confusion reports 
 Automated validation: 169 ML/server tests and 316 frontend tests pass; the final web
 production build passes. Chromium verifies all three real models, 251 C1 labels,
 192-dimensional embeddings and no page errors using generated inputs with the camera off.
+
 ## Development setup
 
 Use the existing checkout; a separate Git worktree is not required. Validated with

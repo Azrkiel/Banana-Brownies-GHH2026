@@ -165,6 +165,8 @@ Append-only decisions for the phased model-v2 implementation.
 
 ## ADR-020 — 2026-10-18 — Real Kaggle data and bounded CPU production-format exports
 
+Model artifact commit: `fdaf97d2fd6ca41035b529dc425c0483a9072d43`.
+
 The token and accepted Kaggle rules enabled authenticated acquisition. Preflight found approximately
 632 GiB free on C:, PyTorch 2.14.1+cpu, no CUDA GPU, and Kaggle 2.2.4 installed into ml/.venv.
 The clean checkout was actually phase-05-browser-onnx at 0464dd8; local main was fast-forwarded

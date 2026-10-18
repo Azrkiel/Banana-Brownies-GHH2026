@@ -1,5 +1,7 @@
 # Latest real-data execution — October 18, 2026
 
+Model artifact commit: `fdaf97d2fd6ca41035b529dc425c0483a9072d43`.
+
 Credentials, rules acceptance, real acquisition, feature conversion, C1/B/D2 CPU training,
 calibration, held-out evaluation and production-format C1/B export have now run at source revision
 `fdde3755e11a77cfa424b17eb5db7b78f9a48d5c`. The older phase notes below describe the historical smoke environment.
