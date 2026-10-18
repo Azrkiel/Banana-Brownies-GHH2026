@@ -6,6 +6,8 @@
 .vite
 server/.venv
 server/tests
+# The web build type-checks a test that reads this shared Python/TS fixture (grammarFallback.test.ts).
+!server/tests/fixtures/gloss_grammar.json
 server/deploy
 web/dist
 web/public/mediapipe
