@@ -1,6 +1,6 @@
 # Phase 03: Fingerspelling & Expanded Isolated-Sign Model Design, Training & Evaluation
 
-**Status:** `[ ]` Pending  
+**Status:** `[x]` Tasks 3.1-3.4 implemented and CPU-verified; real-data acceptance AC-3.3 through AC-3.6 pending human/GPU runs
 **Target Stages:** Stage B (Dynamic Fingerspelling: `A-Z`, `0-9`, space/delete) & Stage C (Large Isolated Vocabulary: Stage C1 250-sign Commercial Core + Stage C2 1,000–2,731-sign Research Tier)  
 **Estimated Effort:** 8–12 hours (3–4 coding agent sessions + GPU training time)  
 **Compute Requirements:**
@@ -8,6 +8,9 @@
 - **Stage C2 (1,000–2,731 signs on ASL Citizen + WLASL):** 1× NVIDIA A100 (40 GB) or L4 (24 GB) for ~3–5 hours (~$3–$6 on cloud GPU) or 2× T4 sessions on Kaggle.
 
 ---
+
+
+> **Implementation contract correction (2026-10-18, ADR-007):** Phase 1/2 and the browser ship XY174, not the XYZ/pose/face layout assumed in the augmentation blueprint below. Actual layout: hand 1 body/local XY `[0:84]`, hand 2 body/local XY `[84:168]`, index-tip to nose/mouth XY offsets `[168:172]`, presence flags `[172:174]`. Phase 3 preserves this contract. Rotations project planar XY through a sampled SO(3) camera rotation; discarded depth and pose/face points cannot be reconstructed. The 368-wide stem derives ten planar wrist-to-tip lengths/angles. Stage B consumes Phase 2's variable-length 90-feature shards. Conformer uses channel LayerNorm in the convolution module so padding cannot affect BatchNorm statistics. See the handoff and DECISIONS.md before interpreting the historical design below.
 
 ## 1. Objective and Why It Matters
 
@@ -60,7 +63,7 @@ Before writing training code, we evaluate three candidate model families for 3D 
 
 ## 4. Concrete Tasks (Ordered for Agent Sessions)
 
-### Task 3.1: Physically Correct 3D Landmark & Handedness Data Augmentation (`ml/augment.py`)
+### Task 3.1: [x] Physically Correct 3D Landmark & Handedness Data Augmentation (`ml/augment.py`)
 Create `ml/augment.py` to replace the buggy augmentation logic in `ml/train.py:34-61`. Every augmentation operates on the raw `(T, 543, 3)` or canonicalized `(T, 174)` tensor **before** or **consistently with** canonicalization:
 1. **`mirror_hands_and_pose(seq_174: np.ndarray, p: float = 0.5) -> np.ndarray`:**
    - Simulates left-handed vs. right-handed signers accurately:
@@ -80,7 +83,7 @@ Create `ml/augment.py` to replace the buggy augmentation logic in `ml/train.py:3
      2. Simulating low-light camera jitter (`noise_std=0.012–0.025`) and tracking dropouts (`frame_drop_prob=0.08`) during landmark training.
      3. Evaluating end-to-end on video clips stratified by lighting and signer diversity in Phase 06.
 
-### Task 3.2: Implement Modular Model Architectures (`ml/models/`)
+### Task 3.2: [x] Implement Modular Model Architectures (`ml/models/`)
 Create `ml/models/__init__.py`, `ml/models/bigru.py`, `ml/models/conformer.py`, and `ml/models/heads.py`:
 1. **Input Stem (`LandmarkStem`):**
    - Accepts `(B, T, F=174)`.
@@ -100,7 +103,7 @@ Create `ml/models/__init__.py`, `ml/models/bigru.py`, `ml/models/conformer.py`, 
    - **`FingerspellingCTCHead` (Stage B):**
      - `Linear(192, num_chars=40)` (`0: <blank>`, `1..26: A-Z`, `27..36: 0-9`, `37: <space>`, `38: &`, `39: -`) trained with `nn.CTCLoss(blank=0, zero_infinity=True)`.
 
-### Task 3.3: Unified Reproducible Training & Temperature Calibration Script (`ml/train_v2.py`)
+### Task 3.3: [x] Unified Reproducible Training & Temperature Calibration Script (`ml/train_v2.py`)
 Create `ml/train_v2.py` (preserving legacy `ml/train.py` for backward compatibility):
 1. **Strict Determinism:**
    - Seeds `random`, `np.random`, `torch.manual_seed`, `torch.cuda.manual_seed_all(seed=42)` and sets `torch.backends.cudnn.deterministic = True`.
@@ -120,7 +123,7 @@ Create `ml/train_v2.py` (preserving legacy `ml/train.py` for backward compatibil
 5. **Experiment Tracking:**
    - Writes structured JSONL metrics (`epoch, train_loss, val_loss, val_top1, val_top5, val_macro_f1, val_ece, lr, wall_time_s`) to `ml/checkpoints/<run_id>/metrics.jsonl` and optional Weights & Biases (`--wandb` flag, off by default for offline environments).
 
-### Task 3.4: Comprehensive Evaluation, Confusion Analysis & Webcam Domain Suite (`ml/evaluate_v2.py`)
+### Task 3.4: [x] Comprehensive Evaluation, Confusion Analysis & Webcam Domain Suite (`ml/evaluate_v2.py`)
 Create `ml/evaluate_v2.py` to evaluate trained checkpoints on both the held-out signer-independent test split and webcam-domain recordings:
 1. **Isolated Metrics (Stage C1 & C2):**
    - Overall Top-1, Top-5, Macro-averaged Top-1, Macro F1, Expected Calibration Error (ECE), and False Positive Rate on `_idle` / non-signing clips.
@@ -228,8 +231,8 @@ python -m ml.evaluate_v2 \
 
 ## 7. Acceptance Criteria
 
-- [ ] **AC-3.1 (Mirror Augmentation Correctness):** `pytest ml/tests/test_augment_and_models.py` verifies that applying `mirror_hands_and_pose()` twice (`p=1.0`) is the exact identity transformation (`np.allclose(x, mirror(mirror(x)), atol=1e-6)`) and that a right-handed sign in `[63:126]` moves into `[0:63]` with negated `x` coordinates after a single mirror.
-- [ ] **AC-3.2 (Zero Signer Leakage):** `ml/train_v2.py` logs the exact number of unique signers in `train`, `val`, and `test` and passes the disjointness assertion.
+- [x] **AC-3.1 (Mirror Augmentation Correctness, corrected schema per ADR-007):** `pytest ml/tests/test_augment_and_models.py` verifies double reflection within `atol=1e-6`, exchanges the actual XY hand blocks `[0:84]` and `[84:168]` for two-hand frames, negates XY x coordinates, preserves presence flags, and agrees with `frame_features(mirror_frame(frame))` for both one-hand and two-hand frames. The original `[0:63]`/`[63:126]` XYZ assumption is superseded by the shipped schema; neither browser nor Python feature extraction changed.
+- [x] **AC-3.2 (Zero Signer Leakage):** `ml/train_v2.py` logs the exact number of unique signers in `train`, `val`, and `test` and passes the disjointness assertion.
 - [ ] **AC-3.3 (Stage B Fingerspelling Accuracy):** On the signer-independent test split, Stage B achieves `>= 88%` Top-1 accuracy on isolated characters (`A–Z`, `0–9`, including dynamic `J` and `Z`) and `<= 15%` Character Error Rate (`CER`) on continuous fingerspelled sequences.
 - [ ] **AC-3.4 (Stage C1 250-Sign Commercial Core Accuracy):** On the signer-independent GISLR test split (`4` held-out signers), `SignConformerV2` achieves `>= 82%` Top-1 accuracy, `>= 94%` Top-5 accuracy, and `<= 5%` Expected Calibration Error (`ECE`) after temperature scaling.
 - [ ] **AC-3.5 (Stage C2 Large-Vocabulary Research Tier Accuracy):** On the official ASL Citizen test split (`1,000` to `2,731` signs), `SignConformerV2` achieves `>= 72%` Top-1 / `>= 90%` Top-5 on the 1,000-sign subset (`>= 63%` Top-1 / `>= 85%` Top-5 on full 2,731 signs), outperforming the published ASL Citizen I3D video baseline (`63.10%` Top-1) at `<1%` of the compute cost.
@@ -252,3 +255,60 @@ python -m ml.evaluate_v2 \
 
 > **Handoff Context (Phase 03):**  
 > Start by inspecting `ml/train.py` (`lines 34-107`) to see how the existing 1D-CNN + BiGRU (`SignNet`) was written. Do **not** delete `ml/train.py`; create the new modular package under `ml/models/`, `ml/augment.py`, `ml/dataset_v2.py`, `ml/train_v2.py`, `ml/calibrate.py`, and `ml/evaluate_v2.py`. Pay special attention to `mirror_hands_and_pose()` in `ml/augment.py`: the `F=174` feature layout has Left Hand at `[0:63]` and Right Hand at `[63:126]`, so horizontal mirroring **must** swap those two 63-float slices before negating `x`. Write and pass `ml/tests/test_augment_and_models.py` first before running any training jobs. When done, record your validation/test Top-1, Top-5, CER, and calibrated temperature `T_temp` in `docs/subplans/model-v2/DECISIONS.md` and mark Phase 03 complete in `docs/subplans/model-v2/README.md`.
+
+
+## Handoff Summary - October 18, 2026 - Phase 3 only
+
+Tasks **3.1 through 3.4** are implemented and automated verification passes. No Phase 4-6 implementation, browser model integration, deployment, or real-data accuracy certification was performed. The existing shipped forest/personal-sign flow and feature twins are unchanged. `ml/train.py` referenced by the blueprint does not exist in this checkout; no legacy training file was removed.
+
+### Implemented behavior
+
+- `ml/augment.py`: actual-schema mirror/anchor reconciliation, planar camera-rotation projection, temporal perturbation, contiguous hand tracking dropouts, and scale/jitter with recomputed local coordinates. Zero missing-hand features and presence flags are preserved. Mirror tests compare directly with the Phase 1 extractor rather than relying only on a double-flip identity.
+- `ml/models/`: four-block 192-wide relative-bias Conformer and multi-scale CNN/two-layer packed BiGRU baseline; padding-safe feature stem and pooling; cosine-margin classifier, learned empty/background embedding, auxiliary activity logit, and 40-character CTC head. Conformer C1 with 251 output classes has 2,361,618 parameters. Stage B supports the full source sequence length; the relative-bias table clips distances beyond 127 instead of truncating sequences.
+- `ml/dataset_v2.py`: consumes actual Phase 2 `meta.json` + `X.f32` shards and variable `offsets.i64`/phrases, or Parquet with NPZ `feature_path`/`row_index` and `F` metadata. The provenance manifest can join converter caches via `--shards`; join keys, license identity, signer splits, tensor sizes and CTC alignment feasibility fail closed. Training/validation/test signers are pairwise disjoint. All split checks run before license/stage filtering. `_idle` is always label 0; source-local label indices and character dictionaries are remapped, never reused blindly. Unsupported characters fail with an actionable error. Rare-class sampling uses per-clip weight `1/sqrt(N_c)` (class probability proportional to `sqrt(N_c)`).
+- `ml/train_v2.py`: fixed seeds/deterministic PyTorch, AdamW, five-epoch warmup/cosine schedule, GPU-only AMP, EMA selection by validation loss, JSONL metrics, optional opt-in W&B, compatible-backbone initialization, and a 5% empty-background supplement for isolated batches. This supplement cannot replace real resting/transition recordings. Checkpoints contain labels, schema, effective license tier, exact signer lists, runtime version, and calibration state. Research weights cannot initialize commercial training; research runs are placed under `research_only`.
+- `ml/calibrate.py`: positive validation-only L-BFGS temperature minimizing held-out NLL (CTC sequence NLL for Stage B), with no-worse-than-unscaled fallback. Isolated ECE is reported before/after; frame ECE is not fabricated for unaligned CTC targets. Calibration is baked into the saved/exported head scale.
+- `ml/evaluate_v2.py`: checkpoint CLI; Top-1/Top-5/macro recall/F1/ECE, idle false positives, actual-presence-based hand-count strata, source/domain strata, confusion JSON/top-50 Markdown; greedy and width-10 prefix-beam CTC decoding, CER/WER and isolated-character/J/Z accuracy. Empty metric strata are null. Missing recording-domain labels remain unspecified; synthetic fixtures are explicitly tagged synthetic.
+
+### Verification evidence
+
+| Check | Result |
+| --- | --- |
+| `ml/.venv/Scripts/python -m pytest ml/tests/test_augment_and_models.py -v` | 31 passed; 4 dynamic ONNX runtime parity combinations (Conformer/BiGRU, isolated/CTC); CPU forward/backward for 251-class, 2,732-class and 40-character heads. |
+| `ml/.venv/Scripts/python -m pytest -q ml/tests` | 76 passed, including all 45 pre-existing dataset/parity cases; no skipped or weakened tests. |
+| `ml/.venv/Scripts/python -m ml.train_v2 --smoke-test --device cpu --out-dir ml/checkpoints/phase3-smoke-c1` | Two epochs, full production Conformer, synthetic 48/12/12 train/val/test clips and one distinct signer per split; checkpoint, calibration, evaluation reports and dynamic ONNX export verified. |
+| `ml/.venv/Scripts/python -m ml.train_v2 --smoke-test --stage b_fingerspelling --device cpu --batch-size 16 --out-dir ml/checkpoints/phase3-smoke-b` | Same full CTC pipeline; synthetic continuous/repeated strings plus isolated J/Z/digit examples; checkpoint/calibration/export verified. |
+| `python -m ml.evaluate_v2 --checkpoint ... --manifest ... --split test` | Independently reloads saved calibrated checkpoint and writes reports. |
+| Frontend build / lint / tests | Passed; 259 tests in 21 files. Existing large LiveKit bundle advisory remains. |
+| Backend | Untouched; `server/.venv` absent, so conditional backend suite does not apply. |
+| Export warnings | Legacy TorchScript exporter deprecation and tracing/constant-folding advisories; actual ONNX checker and dynamic ORT CPU comparisons pass for both architectures/tasks. |
+
+Synthetic-only measurements (not accuracy acceptance evidence):
+
+- C1 validation Top-1 33.33%, Top-5 100%; calibrated temperature **81.45866521**, NLL **1.82969237 -> 1.09849553**; validation ECE **0.54707443 -> 0.00670525**. Test Top-1 **33.33%**, Top-5 **100%**, macro F1 **22.22%**, ECE **0.00648001**, idle false positives **100%**. These two-epoch fixtures are unsuitable for inference.
+- B temperature **0.31957957**, sequence NLL **24.69192744 -> 20.52218542**. Synthetic isolated-character greedy Top-1 **33.33%** (6 isolated test examples); greedy CER **172.22%**, beam CER **288.89%**, greedy/beam WER **83.33% / 100%**. CER may exceed 100% because insertions count.
+- Maximum ONNX absolute errors: C1 **1.78813934e-07**, B **3.33786011e-06**. Both are below 1e-3. Raw smoke ONNX sizes are 9,369,584 and 9,231,695 bytes; these unquantized development exports remain ignored and are not browser-ready bundles. Quantization/size/performance certification belongs to later authorized work.
+
+Runtime: Windows, Python 3.12.14, NumPy 2.3.5, pandas 2.2.3, PyArrow 19.0.1, pytest 9.1.1, PyTorch 2.14.1+cpu, ONNX 1.23.2, ONNX Runtime 1.31.0. These satisfy the existing repository requirements; the blueprint's older pinned table was not substituted for the installed Phase 1/2 environment. Dependency installations, raw data, synthetic tensors and checkpoints are ignored and excluded from Git.
+
+### Human/GPU follow-through (remaining acceptance checks)
+
+1. Follow `NEEDS_HUMAN_ACTION.md` to acquire/verify real data and generate `data/gislr-all`, `data/aslfr-processed`, and optionally `data/asl_citizen_features`. Do not claim four held-out GISLR signers unless the actual official/reviewed manifest provides them; this code preserves the Phase 2 splits rather than silently reassigning signers.
+2. Use a PyTorch CUDA environment matching the GPU, then run these commands from the repository root (the Windows CPU venv here is not a GPU installation):
+
+```powershell
+python -m ml.train_v2 --manifest data/gislr-all --stage c1_commercial_250 --license-tier commercial --arch conformer --epochs 60 --batch-size 128 --device cuda --out-dir ml/checkpoints/stage_c1
+python -m ml.train_v2 --manifest data/aslfr-processed --stage b_fingerspelling --license-tier commercial --arch conformer --epochs 50 --batch-size 128 --device cuda --out-dir ml/checkpoints/stage_b
+python -m ml.train_v2 --manifest data/asl_citizen_features --stage c2_research_2731 --license-tier research --license-filter all --epochs 65 --batch-size 128 --device cuda --out-dir ml/checkpoints/stage_c2
+python -m ml.evaluate_v2 --checkpoint ml/checkpoints/stage_c1/best_ema.pt --manifest data/gislr-all --split test
+python -m ml.evaluate_v2 --checkpoint ml/checkpoints/stage_b/best_ema.pt --manifest data/aslfr-processed --split test
+python -m ml.evaluate_v2 --checkpoint ml/checkpoints/stage_c2/research_only/best_ema.pt --manifest data/asl_citizen_features --license-tier research --split test
+```
+
+For a combined-source run, point `--manifest` at a directory containing only the intended converter shard subdirectories, or use the verified Parquet provenance manifest with `--shards` pointing at those caches. First-party non-signing/resting/transition clips and isolated A-Z/0-9 holds must be collected for meaningful idle/character accuracy. To evaluate webcam/studio recordings, provide a reviewed held-out manifest with explicit `domain` values and matching labels; absent metadata is not guessed to be studio. Do not use `data/` as a broad cache root if duplicate experiment copies are present.
+
+3. Measure AC-3.3 through AC-3.6 on real held-out signers and record reports in this handoff. Re-run the CPU command and tests above after any changes. No notebook was added because the user's scope explicitly limited implementation to the listed Phase 3 files; equivalent runnable GPU commands are provided here.
+
+**Commit record:** Authorship correction is `2ea1f5a`; old/corrected model-v2 commit IDs are recorded in `AUTHORSHIP.md`. The implementation commit is titled `phase-03: add isolated and fingerspelling training with calibration`; its exact hash will be appended in a documentation follow-up. The separate external AGENTS.md attribution-policy commit `e016884` is retained outside the Phase 3 implementation commit.
+
+**Next scope boundary:** Real-data training and acceptance remain human work. Do not start Phase 4 or integrate/ship these synthetic development models without a new instruction.
