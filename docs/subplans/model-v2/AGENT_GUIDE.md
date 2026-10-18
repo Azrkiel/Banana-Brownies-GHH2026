@@ -52,7 +52,7 @@
    - Before every `git commit`, run `git status` and `git diff --stat` to verify that no `.env`, API key, or file `> 10 MB` is staged.
 
 3. **Git Identity and Commit Discipline (`AGENTS.md` Compliance):**
-   - Use repository-local Git identity `azrkiel <azrkiel@users.noreply.github.com>` unless instructed otherwise by the repo owner.
+   - Use repository-local Git identity `Ansonii21 <299691781+Ansonii21@users.noreply.github.com>` unless instructed otherwise by the repo owner.
    - Do not append AI `Co-authored-by` trailers to commit messages; keep AI tool attribution in project documentation (`README.md` / `docs/MODEL_CARD.md`).
    - Make small, atomic commits after each verified task using clear commit messages (e.g., `phase-01: unify two-hand tracker and add canonicalize parity`).
 

@@ -9,7 +9,7 @@ merging, and pushing completed work to keep a recoverable history.
   when merging remote work; never force-push or rewrite shared history.
 - Push completed work to `main` when it integrates cleanly and repository rules
   permit it; use a branch and report the blocker if direct pushes are restricted.
-- Use repository-local Git identity `azrkiel <azrkiel@users.noreply.github.com>`
+- Use repository-local Git identity `Ansonii21 <299691781+Ansonii21@users.noreply.github.com>`
   unless the owner supplies a different preferred commit identity.
 - The owner's aliases include Kevin Jiang, Lianqi Weng, and
   `jiang.kevin28@gmail.com`; `.mailmap` records confirmed commit identities.
