@@ -11,6 +11,11 @@ merging, and pushing completed work to keep a recoverable history.
   permit it; use a branch and report the blocker if direct pushes are restricted.
 - Use repository-local Git identity `azrkiel <azrkiel@users.noreply.github.com>`
   unless the owner supplies a different preferred commit identity.
+- The owner's aliases include Kevin Jiang, Lianqi Weng, and
+  `jiang.kevin28@gmail.com`; `.mailmap` records confirmed commit identities.
+  For work performed for azrkiel, use the owner identity above and do not append
+  Claude or other AI `Co-authored-by` trailers. Keep AI-tool disclosures in the
+  project credits. Preserve other contributors' attribution and existing history.
 - Keep credentials, recordings, dependency installations, and generated model/runtime
   assets out of commits. `.env.example` contains names and non-secret defaults only.
 - Report validation outcomes and outstanding setup tasks honestly.
