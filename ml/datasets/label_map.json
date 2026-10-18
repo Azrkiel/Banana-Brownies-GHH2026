@@ -1,0 +1,2541 @@
+{
+  "version": 1,
+  "notes": "EntryID references are research lookup metadata only; English identifier matches do not establish sign equivalence. No ASL-LEX lexical features or videos enter commercial training. Null IDs require human review. Research glosses are namespaced to preserve senses.",
+  "sources": {
+    "gislr": {
+      "tv": {
+        "gloss": "TV",
+        "asl_lex_entry_id": "TV",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "after": {
+        "gloss": "AFTER",
+        "asl_lex_entry_id": "after",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "airplane": {
+        "gloss": "AIRPLANE",
+        "asl_lex_entry_id": "airplane",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "all": {
+        "gloss": "ALL",
+        "asl_lex_entry_id": "all",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "alligator": {
+        "gloss": "ALLIGATOR",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "animal": {
+        "gloss": "ANIMAL",
+        "asl_lex_entry_id": "animal",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "another": {
+        "gloss": "ANOTHER",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "any": {
+        "gloss": "ANY",
+        "asl_lex_entry_id": "any",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "apple": {
+        "gloss": "APPLE",
+        "asl_lex_entry_id": "apple",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "arm": {
+        "gloss": "ARM",
+        "asl_lex_entry_id": "arm",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "aunt": {
+        "gloss": "AUNT",
+        "asl_lex_entry_id": "aunt",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "awake": {
+        "gloss": "AWAKE",
+        "asl_lex_entry_id": "awake",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "backyard": {
+        "gloss": "BACKYARD",
+        "asl_lex_entry_id": "backyard",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "bad": {
+        "gloss": "BAD",
+        "asl_lex_entry_id": "bad",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "balloon": {
+        "gloss": "BALLOON",
+        "asl_lex_entry_id": "balloon",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "bath": {
+        "gloss": "BATH",
+        "asl_lex_entry_id": "bath",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "because": {
+        "gloss": "BECAUSE",
+        "asl_lex_entry_id": "because",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "bed": {
+        "gloss": "BED",
+        "asl_lex_entry_id": "bed",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "bedroom": {
+        "gloss": "BEDROOM",
+        "asl_lex_entry_id": "bedroom",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "bee": {
+        "gloss": "BEE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "before": {
+        "gloss": "BEFORE",
+        "asl_lex_entry_id": "before",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "beside": {
+        "gloss": "BESIDE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "better": {
+        "gloss": "BETTER",
+        "asl_lex_entry_id": "better",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "bird": {
+        "gloss": "BIRD",
+        "asl_lex_entry_id": "bird",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "black": {
+        "gloss": "BLACK",
+        "asl_lex_entry_id": "black",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "blow": {
+        "gloss": "BLOW",
+        "asl_lex_entry_id": "blow",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "blue": {
+        "gloss": "BLUE",
+        "asl_lex_entry_id": "blue",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "boat": {
+        "gloss": "BOAT",
+        "asl_lex_entry_id": "boat",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "book": {
+        "gloss": "BOOK",
+        "asl_lex_entry_id": "book",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "boy": {
+        "gloss": "BOY",
+        "asl_lex_entry_id": "boy",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "brother": {
+        "gloss": "BROTHER",
+        "asl_lex_entry_id": "brother",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "brown": {
+        "gloss": "BROWN",
+        "asl_lex_entry_id": "brown",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "bug": {
+        "gloss": "BUG",
+        "asl_lex_entry_id": "bug",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "bye": {
+        "gloss": "BYE",
+        "asl_lex_entry_id": "bye",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "callonphone": {
+        "gloss": "CALL_ON_PHONE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "can": {
+        "gloss": "CAN",
+        "asl_lex_entry_id": "can",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "car": {
+        "gloss": "CAR",
+        "asl_lex_entry_id": "car",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "carrot": {
+        "gloss": "CARROT",
+        "asl_lex_entry_id": "carrot",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "cat": {
+        "gloss": "CAT",
+        "asl_lex_entry_id": "cat",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "cereal": {
+        "gloss": "CEREAL",
+        "asl_lex_entry_id": "cereal",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "chair": {
+        "gloss": "CHAIR",
+        "asl_lex_entry_id": "chair",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "cheek": {
+        "gloss": "CHEEK",
+        "asl_lex_entry_id": "cheek",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "child": {
+        "gloss": "CHILD",
+        "asl_lex_entry_id": "child",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "chin": {
+        "gloss": "CHIN",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "chocolate": {
+        "gloss": "CHOCOLATE",
+        "asl_lex_entry_id": "chocolate",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "clean": {
+        "gloss": "CLEAN",
+        "asl_lex_entry_id": "clean",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "close": {
+        "gloss": "CLOSE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "closet": {
+        "gloss": "CLOSET",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "cloud": {
+        "gloss": "CLOUD",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "clown": {
+        "gloss": "CLOWN",
+        "asl_lex_entry_id": "clown",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "cow": {
+        "gloss": "COW",
+        "asl_lex_entry_id": "cow",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "cowboy": {
+        "gloss": "COWBOY",
+        "asl_lex_entry_id": "cowboy",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "cry": {
+        "gloss": "CRY",
+        "asl_lex_entry_id": "cry",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "cut": {
+        "gloss": "CUT",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "cute": {
+        "gloss": "CUTE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "dad": {
+        "gloss": "DAD",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "dance": {
+        "gloss": "DANCE",
+        "asl_lex_entry_id": "dance",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "dirty": {
+        "gloss": "DIRTY",
+        "asl_lex_entry_id": "dirty",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "dog": {
+        "gloss": "DOG",
+        "asl_lex_entry_id": "dog",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "doll": {
+        "gloss": "DOLL",
+        "asl_lex_entry_id": "doll",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "donkey": {
+        "gloss": "DONKEY",
+        "asl_lex_entry_id": "donkey",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "down": {
+        "gloss": "DOWN",
+        "asl_lex_entry_id": "down",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "drawer": {
+        "gloss": "DRAWER",
+        "asl_lex_entry_id": "drawer",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "drink": {
+        "gloss": "DRINK",
+        "asl_lex_entry_id": "drink",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "drop": {
+        "gloss": "DROP",
+        "asl_lex_entry_id": "drop",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "dry": {
+        "gloss": "DRY",
+        "asl_lex_entry_id": "dry",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "dryer": {
+        "gloss": "DRYER",
+        "asl_lex_entry_id": "dryer",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "duck": {
+        "gloss": "DUCK",
+        "asl_lex_entry_id": "duck",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "ear": {
+        "gloss": "EAR",
+        "asl_lex_entry_id": "ear",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "elephant": {
+        "gloss": "ELEPHANT",
+        "asl_lex_entry_id": "elephant",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "empty": {
+        "gloss": "EMPTY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "every": {
+        "gloss": "EVERY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "eye": {
+        "gloss": "EYE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "face": {
+        "gloss": "FACE",
+        "asl_lex_entry_id": "face",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "fall": {
+        "gloss": "FALL",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "farm": {
+        "gloss": "FARM",
+        "asl_lex_entry_id": "farm",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "fast": {
+        "gloss": "FAST",
+        "asl_lex_entry_id": "fast",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "feet": {
+        "gloss": "FEET",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "find": {
+        "gloss": "FIND",
+        "asl_lex_entry_id": "find",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "fine": {
+        "gloss": "FINE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "finger": {
+        "gloss": "FINGER",
+        "asl_lex_entry_id": "finger",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "finish": {
+        "gloss": "FINISH",
+        "asl_lex_entry_id": "finish",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "fireman": {
+        "gloss": "FIREMAN",
+        "asl_lex_entry_id": "fireman",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "first": {
+        "gloss": "FIRST",
+        "asl_lex_entry_id": "first",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "fish": {
+        "gloss": "FISH",
+        "asl_lex_entry_id": "fish",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "flag": {
+        "gloss": "FLAG",
+        "asl_lex_entry_id": "flag",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "flower": {
+        "gloss": "FLOWER",
+        "asl_lex_entry_id": "flower",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "food": {
+        "gloss": "FOOD",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "for": {
+        "gloss": "FOR",
+        "asl_lex_entry_id": "for",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "frenchfries": {
+        "gloss": "FRENCH_FRIES",
+        "asl_lex_entry_id": "frenchfries",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "frog": {
+        "gloss": "FROG",
+        "asl_lex_entry_id": "frog",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "garbage": {
+        "gloss": "GARBAGE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "gift": {
+        "gloss": "GIFT",
+        "asl_lex_entry_id": "gift",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "giraffe": {
+        "gloss": "GIRAFFE",
+        "asl_lex_entry_id": "giraffe",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "girl": {
+        "gloss": "GIRL",
+        "asl_lex_entry_id": "girl",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "give": {
+        "gloss": "GIVE",
+        "asl_lex_entry_id": "give",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "glasswindow": {
+        "gloss": "WINDOW",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "go": {
+        "gloss": "GO",
+        "asl_lex_entry_id": "go",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "goose": {
+        "gloss": "GOOSE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "grandma": {
+        "gloss": "GRANDMA",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "grandpa": {
+        "gloss": "GRANDPA",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "grass": {
+        "gloss": "GRASS",
+        "asl_lex_entry_id": "grass",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "green": {
+        "gloss": "GREEN",
+        "asl_lex_entry_id": "green",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "gum": {
+        "gloss": "GUM",
+        "asl_lex_entry_id": "gum",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "hair": {
+        "gloss": "HAIR",
+        "asl_lex_entry_id": "hair",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "happy": {
+        "gloss": "HAPPY",
+        "asl_lex_entry_id": "happy",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "hat": {
+        "gloss": "HAT",
+        "asl_lex_entry_id": "hat",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "hate": {
+        "gloss": "HATE",
+        "asl_lex_entry_id": "hate",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "have": {
+        "gloss": "HAVE",
+        "asl_lex_entry_id": "have",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "haveto": {
+        "gloss": "HAVE_TO",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "head": {
+        "gloss": "HEAD",
+        "asl_lex_entry_id": "head",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "hear": {
+        "gloss": "HEAR",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "helicopter": {
+        "gloss": "HELICOPTER",
+        "asl_lex_entry_id": "helicopter",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "hello": {
+        "gloss": "HELLO",
+        "asl_lex_entry_id": "hello",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "hen": {
+        "gloss": "HEN",
+        "asl_lex_entry_id": "hen",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "hesheit": {
+        "gloss": "IX_3P",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "hide": {
+        "gloss": "HIDE",
+        "asl_lex_entry_id": "hide",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "high": {
+        "gloss": "HIGH",
+        "asl_lex_entry_id": "high",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "home": {
+        "gloss": "HOME",
+        "asl_lex_entry_id": "home",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "horse": {
+        "gloss": "HORSE",
+        "asl_lex_entry_id": "horse",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "hot": {
+        "gloss": "HOT",
+        "asl_lex_entry_id": "hot",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "hungry": {
+        "gloss": "HUNGRY",
+        "asl_lex_entry_id": "hungry",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "icecream": {
+        "gloss": "ICE_CREAM",
+        "asl_lex_entry_id": "icecream",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "if": {
+        "gloss": "IF",
+        "asl_lex_entry_id": "if",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "into": {
+        "gloss": "INTO",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "jacket": {
+        "gloss": "JACKET",
+        "asl_lex_entry_id": "jacket",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "jeans": {
+        "gloss": "JEANS",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "jump": {
+        "gloss": "JUMP",
+        "asl_lex_entry_id": "jump",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "kiss": {
+        "gloss": "KISS",
+        "asl_lex_entry_id": "kiss",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "kitty": {
+        "gloss": "KITTY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "lamp": {
+        "gloss": "LAMP",
+        "asl_lex_entry_id": "lamp",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "later": {
+        "gloss": "LATER",
+        "asl_lex_entry_id": "later",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "like": {
+        "gloss": "LIKE",
+        "asl_lex_entry_id": "like",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "lion": {
+        "gloss": "LION",
+        "asl_lex_entry_id": "lion",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "lips": {
+        "gloss": "LIPS",
+        "asl_lex_entry_id": "lips",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "listen": {
+        "gloss": "LISTEN",
+        "asl_lex_entry_id": "listen",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "look": {
+        "gloss": "LOOK",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "loud": {
+        "gloss": "LOUD",
+        "asl_lex_entry_id": "loud",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "mad": {
+        "gloss": "MAD",
+        "asl_lex_entry_id": "mad",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "make": {
+        "gloss": "MAKE",
+        "asl_lex_entry_id": "make",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "man": {
+        "gloss": "MAN",
+        "asl_lex_entry_id": "man",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "many": {
+        "gloss": "MANY",
+        "asl_lex_entry_id": "many",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "milk": {
+        "gloss": "MILK",
+        "asl_lex_entry_id": "milk",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "minemy": {
+        "gloss": "MY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "mitten": {
+        "gloss": "MITTEN",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "mom": {
+        "gloss": "MOM",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "moon": {
+        "gloss": "MOON",
+        "asl_lex_entry_id": "moon",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "morning": {
+        "gloss": "MORNING",
+        "asl_lex_entry_id": "morning",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "mouse": {
+        "gloss": "MOUSE",
+        "asl_lex_entry_id": "mouse",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "mouth": {
+        "gloss": "MOUTH",
+        "asl_lex_entry_id": "mouth",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "nap": {
+        "gloss": "NAP",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "napkin": {
+        "gloss": "NAPKIN",
+        "asl_lex_entry_id": "napkin",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "night": {
+        "gloss": "NIGHT",
+        "asl_lex_entry_id": "night",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "no": {
+        "gloss": "NO",
+        "asl_lex_entry_id": "no",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "noisy": {
+        "gloss": "NOISY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "nose": {
+        "gloss": "NOSE",
+        "asl_lex_entry_id": "nose",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "not": {
+        "gloss": "NOT",
+        "asl_lex_entry_id": "not",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "now": {
+        "gloss": "NOW",
+        "asl_lex_entry_id": "now",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "nuts": {
+        "gloss": "NUTS",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "old": {
+        "gloss": "OLD",
+        "asl_lex_entry_id": "old",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "on": {
+        "gloss": "ON",
+        "asl_lex_entry_id": "on",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "open": {
+        "gloss": "OPEN",
+        "asl_lex_entry_id": "open",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "orange": {
+        "gloss": "ORANGE",
+        "asl_lex_entry_id": "orange",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "outside": {
+        "gloss": "OUTSIDE",
+        "asl_lex_entry_id": "outside",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "owie": {
+        "gloss": "OWIE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "owl": {
+        "gloss": "OWL",
+        "asl_lex_entry_id": "owl",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "pajamas": {
+        "gloss": "PAJAMAS",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "pen": {
+        "gloss": "PEN",
+        "asl_lex_entry_id": "pen",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "pencil": {
+        "gloss": "PENCIL",
+        "asl_lex_entry_id": "pencil",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "penny": {
+        "gloss": "PENNY",
+        "asl_lex_entry_id": "penny",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "person": {
+        "gloss": "PERSON",
+        "asl_lex_entry_id": "person",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "pig": {
+        "gloss": "PIG",
+        "asl_lex_entry_id": "pig",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "pizza": {
+        "gloss": "PIZZA",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "please": {
+        "gloss": "PLEASE",
+        "asl_lex_entry_id": "please",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "police": {
+        "gloss": "POLICE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "pool": {
+        "gloss": "POOL",
+        "asl_lex_entry_id": "pool",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "potty": {
+        "gloss": "POTTY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "pretend": {
+        "gloss": "PRETEND",
+        "asl_lex_entry_id": "pretend",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "pretty": {
+        "gloss": "PRETTY",
+        "asl_lex_entry_id": "pretty",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "puppy": {
+        "gloss": "PUPPY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "puzzle": {
+        "gloss": "PUZZLE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "quiet": {
+        "gloss": "QUIET",
+        "asl_lex_entry_id": "quiet",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "radio": {
+        "gloss": "RADIO",
+        "asl_lex_entry_id": "radio",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "rain": {
+        "gloss": "RAIN",
+        "asl_lex_entry_id": "rain",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "read": {
+        "gloss": "READ",
+        "asl_lex_entry_id": "read",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "red": {
+        "gloss": "RED",
+        "asl_lex_entry_id": "red",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "refrigerator": {
+        "gloss": "REFRIGERATOR",
+        "asl_lex_entry_id": "refrigerator",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "ride": {
+        "gloss": "RIDE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "room": {
+        "gloss": "ROOM",
+        "asl_lex_entry_id": "room",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "sad": {
+        "gloss": "SAD",
+        "asl_lex_entry_id": "sad",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "same": {
+        "gloss": "SAME",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "say": {
+        "gloss": "SAY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "scissors": {
+        "gloss": "SCISSORS",
+        "asl_lex_entry_id": "scissors",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "see": {
+        "gloss": "SEE",
+        "asl_lex_entry_id": "see",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "shhh": {
+        "gloss": "SHHH",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "shirt": {
+        "gloss": "SHIRT",
+        "asl_lex_entry_id": "shirt",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "shoe": {
+        "gloss": "SHOE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "shower": {
+        "gloss": "SHOWER",
+        "asl_lex_entry_id": "shower",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "sick": {
+        "gloss": "SICK",
+        "asl_lex_entry_id": "sick",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "sleep": {
+        "gloss": "SLEEP",
+        "asl_lex_entry_id": "sleep",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "sleepy": {
+        "gloss": "SLEEPY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "smile": {
+        "gloss": "SMILE",
+        "asl_lex_entry_id": "smile",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "snack": {
+        "gloss": "SNACK",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "snow": {
+        "gloss": "SNOW",
+        "asl_lex_entry_id": "snow",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "stairs": {
+        "gloss": "STAIRS",
+        "asl_lex_entry_id": "stairs",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "stay": {
+        "gloss": "STAY",
+        "asl_lex_entry_id": "stay",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "sticky": {
+        "gloss": "STICKY",
+        "asl_lex_entry_id": "sticky",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "store": {
+        "gloss": "STORE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "story": {
+        "gloss": "STORY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "stuck": {
+        "gloss": "STUCK",
+        "asl_lex_entry_id": "stuck",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "sun": {
+        "gloss": "SUN",
+        "asl_lex_entry_id": "sun",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "table": {
+        "gloss": "TABLE",
+        "asl_lex_entry_id": "table",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "talk": {
+        "gloss": "TALK",
+        "asl_lex_entry_id": "talk",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "taste": {
+        "gloss": "TASTE",
+        "asl_lex_entry_id": "taste",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "thankyou": {
+        "gloss": "THANKYOU",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "that": {
+        "gloss": "THAT",
+        "asl_lex_entry_id": "that",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "there": {
+        "gloss": "THERE",
+        "asl_lex_entry_id": "there",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "think": {
+        "gloss": "THINK",
+        "asl_lex_entry_id": "think",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "thirsty": {
+        "gloss": "THIRSTY",
+        "asl_lex_entry_id": "thirsty",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "tiger": {
+        "gloss": "TIGER",
+        "asl_lex_entry_id": "tiger",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "time": {
+        "gloss": "TIME",
+        "asl_lex_entry_id": "time",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "tomorrow": {
+        "gloss": "TOMORROW",
+        "asl_lex_entry_id": "tomorrow",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "tongue": {
+        "gloss": "TONGUE",
+        "asl_lex_entry_id": "tongue",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "tooth": {
+        "gloss": "TOOTH",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "toothbrush": {
+        "gloss": "TOOTHBRUSH",
+        "asl_lex_entry_id": "toothbrush",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "touch": {
+        "gloss": "TOUCH",
+        "asl_lex_entry_id": "touch",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "toy": {
+        "gloss": "TOY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "tree": {
+        "gloss": "TREE",
+        "asl_lex_entry_id": "tree",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "uncle": {
+        "gloss": "UNCLE",
+        "asl_lex_entry_id": "uncle",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "underwear": {
+        "gloss": "UNDERWEAR",
+        "asl_lex_entry_id": "underwear",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "up": {
+        "gloss": "UP",
+        "asl_lex_entry_id": "up",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "vacuum": {
+        "gloss": "VACUUM",
+        "asl_lex_entry_id": "vacuum",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "wait": {
+        "gloss": "WAIT",
+        "asl_lex_entry_id": "wait",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "wake": {
+        "gloss": "WAKE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "water": {
+        "gloss": "WATER",
+        "asl_lex_entry_id": "water",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "wet": {
+        "gloss": "WET",
+        "asl_lex_entry_id": "wet",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "weus": {
+        "gloss": "WE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "where": {
+        "gloss": "WHERE",
+        "asl_lex_entry_id": "where",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "white": {
+        "gloss": "WHITE",
+        "asl_lex_entry_id": "white",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "who": {
+        "gloss": "WHO",
+        "asl_lex_entry_id": "who",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "why": {
+        "gloss": "WHY",
+        "asl_lex_entry_id": "why",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "will": {
+        "gloss": "WILL",
+        "asl_lex_entry_id": "will",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "wolf": {
+        "gloss": "WOLF",
+        "asl_lex_entry_id": "wolf",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "yellow": {
+        "gloss": "YELLOW",
+        "asl_lex_entry_id": "yellow",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "yes": {
+        "gloss": "YES",
+        "asl_lex_entry_id": "yes",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "yesterday": {
+        "gloss": "YESTERDAY",
+        "asl_lex_entry_id": "yesterday",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "yourself": {
+        "gloss": "YOURSELF",
+        "asl_lex_entry_id": "yourself",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "yucky": {
+        "gloss": "YUCKY",
+        "asl_lex_entry_id": "yucky",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "zebra": {
+        "gloss": "ZEBRA",
+        "asl_lex_entry_id": "zebra",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "zipper": {
+        "gloss": "ZIPPER",
+        "asl_lex_entry_id": "zipper",
+        "entry_id_status": "exact_identifier_match_only"
+      }
+    },
+    "popsign": {
+      "tv": {
+        "gloss": "TV",
+        "asl_lex_entry_id": "TV",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "after": {
+        "gloss": "AFTER",
+        "asl_lex_entry_id": "after",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "airplane": {
+        "gloss": "AIRPLANE",
+        "asl_lex_entry_id": "airplane",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "all": {
+        "gloss": "ALL",
+        "asl_lex_entry_id": "all",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "alligator": {
+        "gloss": "ALLIGATOR",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "animal": {
+        "gloss": "ANIMAL",
+        "asl_lex_entry_id": "animal",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "another": {
+        "gloss": "ANOTHER",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "any": {
+        "gloss": "ANY",
+        "asl_lex_entry_id": "any",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "apple": {
+        "gloss": "APPLE",
+        "asl_lex_entry_id": "apple",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "arm": {
+        "gloss": "ARM",
+        "asl_lex_entry_id": "arm",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "aunt": {
+        "gloss": "AUNT",
+        "asl_lex_entry_id": "aunt",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "awake": {
+        "gloss": "AWAKE",
+        "asl_lex_entry_id": "awake",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "backyard": {
+        "gloss": "BACKYARD",
+        "asl_lex_entry_id": "backyard",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "bad": {
+        "gloss": "BAD",
+        "asl_lex_entry_id": "bad",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "balloon": {
+        "gloss": "BALLOON",
+        "asl_lex_entry_id": "balloon",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "bath": {
+        "gloss": "BATH",
+        "asl_lex_entry_id": "bath",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "because": {
+        "gloss": "BECAUSE",
+        "asl_lex_entry_id": "because",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "bed": {
+        "gloss": "BED",
+        "asl_lex_entry_id": "bed",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "bedroom": {
+        "gloss": "BEDROOM",
+        "asl_lex_entry_id": "bedroom",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "bee": {
+        "gloss": "BEE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "before": {
+        "gloss": "BEFORE",
+        "asl_lex_entry_id": "before",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "beside": {
+        "gloss": "BESIDE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "better": {
+        "gloss": "BETTER",
+        "asl_lex_entry_id": "better",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "bird": {
+        "gloss": "BIRD",
+        "asl_lex_entry_id": "bird",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "black": {
+        "gloss": "BLACK",
+        "asl_lex_entry_id": "black",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "blow": {
+        "gloss": "BLOW",
+        "asl_lex_entry_id": "blow",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "blue": {
+        "gloss": "BLUE",
+        "asl_lex_entry_id": "blue",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "boat": {
+        "gloss": "BOAT",
+        "asl_lex_entry_id": "boat",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "book": {
+        "gloss": "BOOK",
+        "asl_lex_entry_id": "book",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "boy": {
+        "gloss": "BOY",
+        "asl_lex_entry_id": "boy",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "brother": {
+        "gloss": "BROTHER",
+        "asl_lex_entry_id": "brother",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "brown": {
+        "gloss": "BROWN",
+        "asl_lex_entry_id": "brown",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "bug": {
+        "gloss": "BUG",
+        "asl_lex_entry_id": "bug",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "bye": {
+        "gloss": "BYE",
+        "asl_lex_entry_id": "bye",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "callonphone": {
+        "gloss": "CALL_ON_PHONE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "can": {
+        "gloss": "CAN",
+        "asl_lex_entry_id": "can",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "car": {
+        "gloss": "CAR",
+        "asl_lex_entry_id": "car",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "carrot": {
+        "gloss": "CARROT",
+        "asl_lex_entry_id": "carrot",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "cat": {
+        "gloss": "CAT",
+        "asl_lex_entry_id": "cat",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "cereal": {
+        "gloss": "CEREAL",
+        "asl_lex_entry_id": "cereal",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "chair": {
+        "gloss": "CHAIR",
+        "asl_lex_entry_id": "chair",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "cheek": {
+        "gloss": "CHEEK",
+        "asl_lex_entry_id": "cheek",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "child": {
+        "gloss": "CHILD",
+        "asl_lex_entry_id": "child",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "chin": {
+        "gloss": "CHIN",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "chocolate": {
+        "gloss": "CHOCOLATE",
+        "asl_lex_entry_id": "chocolate",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "clean": {
+        "gloss": "CLEAN",
+        "asl_lex_entry_id": "clean",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "close": {
+        "gloss": "CLOSE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "closet": {
+        "gloss": "CLOSET",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "cloud": {
+        "gloss": "CLOUD",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "clown": {
+        "gloss": "CLOWN",
+        "asl_lex_entry_id": "clown",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "cow": {
+        "gloss": "COW",
+        "asl_lex_entry_id": "cow",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "cowboy": {
+        "gloss": "COWBOY",
+        "asl_lex_entry_id": "cowboy",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "cry": {
+        "gloss": "CRY",
+        "asl_lex_entry_id": "cry",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "cut": {
+        "gloss": "CUT",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "cute": {
+        "gloss": "CUTE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "dad": {
+        "gloss": "DAD",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "dance": {
+        "gloss": "DANCE",
+        "asl_lex_entry_id": "dance",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "dirty": {
+        "gloss": "DIRTY",
+        "asl_lex_entry_id": "dirty",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "dog": {
+        "gloss": "DOG",
+        "asl_lex_entry_id": "dog",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "doll": {
+        "gloss": "DOLL",
+        "asl_lex_entry_id": "doll",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "donkey": {
+        "gloss": "DONKEY",
+        "asl_lex_entry_id": "donkey",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "down": {
+        "gloss": "DOWN",
+        "asl_lex_entry_id": "down",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "drawer": {
+        "gloss": "DRAWER",
+        "asl_lex_entry_id": "drawer",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "drink": {
+        "gloss": "DRINK",
+        "asl_lex_entry_id": "drink",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "drop": {
+        "gloss": "DROP",
+        "asl_lex_entry_id": "drop",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "dry": {
+        "gloss": "DRY",
+        "asl_lex_entry_id": "dry",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "dryer": {
+        "gloss": "DRYER",
+        "asl_lex_entry_id": "dryer",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "duck": {
+        "gloss": "DUCK",
+        "asl_lex_entry_id": "duck",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "ear": {
+        "gloss": "EAR",
+        "asl_lex_entry_id": "ear",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "elephant": {
+        "gloss": "ELEPHANT",
+        "asl_lex_entry_id": "elephant",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "empty": {
+        "gloss": "EMPTY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "every": {
+        "gloss": "EVERY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "eye": {
+        "gloss": "EYE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "face": {
+        "gloss": "FACE",
+        "asl_lex_entry_id": "face",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "fall": {
+        "gloss": "FALL",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "farm": {
+        "gloss": "FARM",
+        "asl_lex_entry_id": "farm",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "fast": {
+        "gloss": "FAST",
+        "asl_lex_entry_id": "fast",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "feet": {
+        "gloss": "FEET",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "find": {
+        "gloss": "FIND",
+        "asl_lex_entry_id": "find",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "fine": {
+        "gloss": "FINE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "finger": {
+        "gloss": "FINGER",
+        "asl_lex_entry_id": "finger",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "finish": {
+        "gloss": "FINISH",
+        "asl_lex_entry_id": "finish",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "fireman": {
+        "gloss": "FIREMAN",
+        "asl_lex_entry_id": "fireman",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "first": {
+        "gloss": "FIRST",
+        "asl_lex_entry_id": "first",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "fish": {
+        "gloss": "FISH",
+        "asl_lex_entry_id": "fish",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "flag": {
+        "gloss": "FLAG",
+        "asl_lex_entry_id": "flag",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "flower": {
+        "gloss": "FLOWER",
+        "asl_lex_entry_id": "flower",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "food": {
+        "gloss": "FOOD",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "for": {
+        "gloss": "FOR",
+        "asl_lex_entry_id": "for",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "frenchfries": {
+        "gloss": "FRENCH_FRIES",
+        "asl_lex_entry_id": "frenchfries",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "frog": {
+        "gloss": "FROG",
+        "asl_lex_entry_id": "frog",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "garbage": {
+        "gloss": "GARBAGE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "gift": {
+        "gloss": "GIFT",
+        "asl_lex_entry_id": "gift",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "giraffe": {
+        "gloss": "GIRAFFE",
+        "asl_lex_entry_id": "giraffe",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "girl": {
+        "gloss": "GIRL",
+        "asl_lex_entry_id": "girl",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "give": {
+        "gloss": "GIVE",
+        "asl_lex_entry_id": "give",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "glasswindow": {
+        "gloss": "WINDOW",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "go": {
+        "gloss": "GO",
+        "asl_lex_entry_id": "go",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "goose": {
+        "gloss": "GOOSE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "grandma": {
+        "gloss": "GRANDMA",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "grandpa": {
+        "gloss": "GRANDPA",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "grass": {
+        "gloss": "GRASS",
+        "asl_lex_entry_id": "grass",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "green": {
+        "gloss": "GREEN",
+        "asl_lex_entry_id": "green",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "gum": {
+        "gloss": "GUM",
+        "asl_lex_entry_id": "gum",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "hair": {
+        "gloss": "HAIR",
+        "asl_lex_entry_id": "hair",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "happy": {
+        "gloss": "HAPPY",
+        "asl_lex_entry_id": "happy",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "hat": {
+        "gloss": "HAT",
+        "asl_lex_entry_id": "hat",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "hate": {
+        "gloss": "HATE",
+        "asl_lex_entry_id": "hate",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "have": {
+        "gloss": "HAVE",
+        "asl_lex_entry_id": "have",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "haveto": {
+        "gloss": "HAVE_TO",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "head": {
+        "gloss": "HEAD",
+        "asl_lex_entry_id": "head",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "hear": {
+        "gloss": "HEAR",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "helicopter": {
+        "gloss": "HELICOPTER",
+        "asl_lex_entry_id": "helicopter",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "hello": {
+        "gloss": "HELLO",
+        "asl_lex_entry_id": "hello",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "hen": {
+        "gloss": "HEN",
+        "asl_lex_entry_id": "hen",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "hesheit": {
+        "gloss": "IX_3P",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "hide": {
+        "gloss": "HIDE",
+        "asl_lex_entry_id": "hide",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "high": {
+        "gloss": "HIGH",
+        "asl_lex_entry_id": "high",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "home": {
+        "gloss": "HOME",
+        "asl_lex_entry_id": "home",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "horse": {
+        "gloss": "HORSE",
+        "asl_lex_entry_id": "horse",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "hot": {
+        "gloss": "HOT",
+        "asl_lex_entry_id": "hot",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "hungry": {
+        "gloss": "HUNGRY",
+        "asl_lex_entry_id": "hungry",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "icecream": {
+        "gloss": "ICE_CREAM",
+        "asl_lex_entry_id": "icecream",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "if": {
+        "gloss": "IF",
+        "asl_lex_entry_id": "if",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "into": {
+        "gloss": "INTO",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "jacket": {
+        "gloss": "JACKET",
+        "asl_lex_entry_id": "jacket",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "jeans": {
+        "gloss": "JEANS",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "jump": {
+        "gloss": "JUMP",
+        "asl_lex_entry_id": "jump",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "kiss": {
+        "gloss": "KISS",
+        "asl_lex_entry_id": "kiss",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "kitty": {
+        "gloss": "KITTY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "lamp": {
+        "gloss": "LAMP",
+        "asl_lex_entry_id": "lamp",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "later": {
+        "gloss": "LATER",
+        "asl_lex_entry_id": "later",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "like": {
+        "gloss": "LIKE",
+        "asl_lex_entry_id": "like",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "lion": {
+        "gloss": "LION",
+        "asl_lex_entry_id": "lion",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "lips": {
+        "gloss": "LIPS",
+        "asl_lex_entry_id": "lips",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "listen": {
+        "gloss": "LISTEN",
+        "asl_lex_entry_id": "listen",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "look": {
+        "gloss": "LOOK",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "loud": {
+        "gloss": "LOUD",
+        "asl_lex_entry_id": "loud",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "mad": {
+        "gloss": "MAD",
+        "asl_lex_entry_id": "mad",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "make": {
+        "gloss": "MAKE",
+        "asl_lex_entry_id": "make",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "man": {
+        "gloss": "MAN",
+        "asl_lex_entry_id": "man",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "many": {
+        "gloss": "MANY",
+        "asl_lex_entry_id": "many",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "milk": {
+        "gloss": "MILK",
+        "asl_lex_entry_id": "milk",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "minemy": {
+        "gloss": "MY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "mitten": {
+        "gloss": "MITTEN",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "mom": {
+        "gloss": "MOM",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "moon": {
+        "gloss": "MOON",
+        "asl_lex_entry_id": "moon",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "morning": {
+        "gloss": "MORNING",
+        "asl_lex_entry_id": "morning",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "mouse": {
+        "gloss": "MOUSE",
+        "asl_lex_entry_id": "mouse",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "mouth": {
+        "gloss": "MOUTH",
+        "asl_lex_entry_id": "mouth",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "nap": {
+        "gloss": "NAP",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "napkin": {
+        "gloss": "NAPKIN",
+        "asl_lex_entry_id": "napkin",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "night": {
+        "gloss": "NIGHT",
+        "asl_lex_entry_id": "night",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "no": {
+        "gloss": "NO",
+        "asl_lex_entry_id": "no",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "noisy": {
+        "gloss": "NOISY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "nose": {
+        "gloss": "NOSE",
+        "asl_lex_entry_id": "nose",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "not": {
+        "gloss": "NOT",
+        "asl_lex_entry_id": "not",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "now": {
+        "gloss": "NOW",
+        "asl_lex_entry_id": "now",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "nuts": {
+        "gloss": "NUTS",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "old": {
+        "gloss": "OLD",
+        "asl_lex_entry_id": "old",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "on": {
+        "gloss": "ON",
+        "asl_lex_entry_id": "on",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "open": {
+        "gloss": "OPEN",
+        "asl_lex_entry_id": "open",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "orange": {
+        "gloss": "ORANGE",
+        "asl_lex_entry_id": "orange",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "outside": {
+        "gloss": "OUTSIDE",
+        "asl_lex_entry_id": "outside",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "owie": {
+        "gloss": "OWIE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "owl": {
+        "gloss": "OWL",
+        "asl_lex_entry_id": "owl",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "pajamas": {
+        "gloss": "PAJAMAS",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "pen": {
+        "gloss": "PEN",
+        "asl_lex_entry_id": "pen",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "pencil": {
+        "gloss": "PENCIL",
+        "asl_lex_entry_id": "pencil",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "penny": {
+        "gloss": "PENNY",
+        "asl_lex_entry_id": "penny",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "person": {
+        "gloss": "PERSON",
+        "asl_lex_entry_id": "person",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "pig": {
+        "gloss": "PIG",
+        "asl_lex_entry_id": "pig",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "pizza": {
+        "gloss": "PIZZA",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "please": {
+        "gloss": "PLEASE",
+        "asl_lex_entry_id": "please",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "police": {
+        "gloss": "POLICE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "pool": {
+        "gloss": "POOL",
+        "asl_lex_entry_id": "pool",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "potty": {
+        "gloss": "POTTY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "pretend": {
+        "gloss": "PRETEND",
+        "asl_lex_entry_id": "pretend",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "pretty": {
+        "gloss": "PRETTY",
+        "asl_lex_entry_id": "pretty",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "puppy": {
+        "gloss": "PUPPY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "puzzle": {
+        "gloss": "PUZZLE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "quiet": {
+        "gloss": "QUIET",
+        "asl_lex_entry_id": "quiet",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "radio": {
+        "gloss": "RADIO",
+        "asl_lex_entry_id": "radio",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "rain": {
+        "gloss": "RAIN",
+        "asl_lex_entry_id": "rain",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "read": {
+        "gloss": "READ",
+        "asl_lex_entry_id": "read",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "red": {
+        "gloss": "RED",
+        "asl_lex_entry_id": "red",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "refrigerator": {
+        "gloss": "REFRIGERATOR",
+        "asl_lex_entry_id": "refrigerator",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "ride": {
+        "gloss": "RIDE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "room": {
+        "gloss": "ROOM",
+        "asl_lex_entry_id": "room",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "sad": {
+        "gloss": "SAD",
+        "asl_lex_entry_id": "sad",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "same": {
+        "gloss": "SAME",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "say": {
+        "gloss": "SAY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "scissors": {
+        "gloss": "SCISSORS",
+        "asl_lex_entry_id": "scissors",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "see": {
+        "gloss": "SEE",
+        "asl_lex_entry_id": "see",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "shhh": {
+        "gloss": "SHHH",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "shirt": {
+        "gloss": "SHIRT",
+        "asl_lex_entry_id": "shirt",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "shoe": {
+        "gloss": "SHOE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "shower": {
+        "gloss": "SHOWER",
+        "asl_lex_entry_id": "shower",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "sick": {
+        "gloss": "SICK",
+        "asl_lex_entry_id": "sick",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "sleep": {
+        "gloss": "SLEEP",
+        "asl_lex_entry_id": "sleep",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "sleepy": {
+        "gloss": "SLEEPY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "smile": {
+        "gloss": "SMILE",
+        "asl_lex_entry_id": "smile",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "snack": {
+        "gloss": "SNACK",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "snow": {
+        "gloss": "SNOW",
+        "asl_lex_entry_id": "snow",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "stairs": {
+        "gloss": "STAIRS",
+        "asl_lex_entry_id": "stairs",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "stay": {
+        "gloss": "STAY",
+        "asl_lex_entry_id": "stay",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "sticky": {
+        "gloss": "STICKY",
+        "asl_lex_entry_id": "sticky",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "store": {
+        "gloss": "STORE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "story": {
+        "gloss": "STORY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "stuck": {
+        "gloss": "STUCK",
+        "asl_lex_entry_id": "stuck",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "sun": {
+        "gloss": "SUN",
+        "asl_lex_entry_id": "sun",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "table": {
+        "gloss": "TABLE",
+        "asl_lex_entry_id": "table",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "talk": {
+        "gloss": "TALK",
+        "asl_lex_entry_id": "talk",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "taste": {
+        "gloss": "TASTE",
+        "asl_lex_entry_id": "taste",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "thankyou": {
+        "gloss": "THANKYOU",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "that": {
+        "gloss": "THAT",
+        "asl_lex_entry_id": "that",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "there": {
+        "gloss": "THERE",
+        "asl_lex_entry_id": "there",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "think": {
+        "gloss": "THINK",
+        "asl_lex_entry_id": "think",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "thirsty": {
+        "gloss": "THIRSTY",
+        "asl_lex_entry_id": "thirsty",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "tiger": {
+        "gloss": "TIGER",
+        "asl_lex_entry_id": "tiger",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "time": {
+        "gloss": "TIME",
+        "asl_lex_entry_id": "time",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "tomorrow": {
+        "gloss": "TOMORROW",
+        "asl_lex_entry_id": "tomorrow",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "tongue": {
+        "gloss": "TONGUE",
+        "asl_lex_entry_id": "tongue",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "tooth": {
+        "gloss": "TOOTH",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "toothbrush": {
+        "gloss": "TOOTHBRUSH",
+        "asl_lex_entry_id": "toothbrush",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "touch": {
+        "gloss": "TOUCH",
+        "asl_lex_entry_id": "touch",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "toy": {
+        "gloss": "TOY",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "tree": {
+        "gloss": "TREE",
+        "asl_lex_entry_id": "tree",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "uncle": {
+        "gloss": "UNCLE",
+        "asl_lex_entry_id": "uncle",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "underwear": {
+        "gloss": "UNDERWEAR",
+        "asl_lex_entry_id": "underwear",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "up": {
+        "gloss": "UP",
+        "asl_lex_entry_id": "up",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "vacuum": {
+        "gloss": "VACUUM",
+        "asl_lex_entry_id": "vacuum",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "wait": {
+        "gloss": "WAIT",
+        "asl_lex_entry_id": "wait",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "wake": {
+        "gloss": "WAKE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "water": {
+        "gloss": "WATER",
+        "asl_lex_entry_id": "water",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "wet": {
+        "gloss": "WET",
+        "asl_lex_entry_id": "wet",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "weus": {
+        "gloss": "WE",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "where": {
+        "gloss": "WHERE",
+        "asl_lex_entry_id": "where",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "white": {
+        "gloss": "WHITE",
+        "asl_lex_entry_id": "white",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "who": {
+        "gloss": "WHO",
+        "asl_lex_entry_id": "who",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "why": {
+        "gloss": "WHY",
+        "asl_lex_entry_id": "why",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "will": {
+        "gloss": "WILL",
+        "asl_lex_entry_id": "will",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "wolf": {
+        "gloss": "WOLF",
+        "asl_lex_entry_id": "wolf",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "yellow": {
+        "gloss": "YELLOW",
+        "asl_lex_entry_id": "yellow",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "yes": {
+        "gloss": "YES",
+        "asl_lex_entry_id": "yes",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "yesterday": {
+        "gloss": "YESTERDAY",
+        "asl_lex_entry_id": "yesterday",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "yourself": {
+        "gloss": "YOURSELF",
+        "asl_lex_entry_id": "yourself",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "yucky": {
+        "gloss": "YUCKY",
+        "asl_lex_entry_id": "yucky",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "zebra": {
+        "gloss": "ZEBRA",
+        "asl_lex_entry_id": "zebra",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "zipper": {
+        "gloss": "ZIPPER",
+        "asl_lex_entry_id": "zipper",
+        "entry_id_status": "exact_identifier_match_only"
+      }
+    },
+    "own": {
+      "me": {
+        "gloss": "ME",
+        "asl_lex_entry_id": "me",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "you": {
+        "gloss": "YOU",
+        "asl_lex_entry_id": "you",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "name": {
+        "gloss": "NAME",
+        "asl_lex_entry_id": "name",
+        "entry_id_status": "exact_identifier_match_only"
+      },
+      "what": {
+        "gloss": "WHAT",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      },
+      "_idle": {
+        "gloss": "_idle",
+        "asl_lex_entry_id": null,
+        "entry_id_status": "unverified"
+      }
+    }
+  },
+  "provenance": {
+    "gislr": "https://huggingface.co/sign/kaggle-asl-signs-1st-place/raw/main/sign_to_prediction_index_map.json",
+    "asl_lex": "https://github.com/ASL-LEX/asl-lex/blob/master/data-analysis/scripts/data/signdata_updated11-18.csv"
+  }
+}

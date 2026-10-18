@@ -43,12 +43,12 @@ FrameDict = {
 ## 4. Concrete Ordered Tasks (One Agent Session Each)
 
 ### Task 2.1: Create Vocabulary Normalization & ASL-LEX Mapping (`ml/datasets/vocab_merge.py` & `ml/datasets/label_map.json`)
-- [ ] **2.1.1:** Create `ml/datasets/label_map.json` mapping all 250 lowercase GISLR labels (e.g., `"thankyou": "THANKYOU"`, `"callonphone": "CALL_ON_PHONE"`, `"minemy": "MY"`, `"hesheit": "IX_3P"`) and `web/src/vocab.json` labels (`ME, YOU, NAME, WHAT, _idle`) to canonical uppercase glosses and `ASL-LEX 2.0` `EntryID`s where applicable.
-- [ ] **2.1.2:** Create `ml/datasets/vocab_merge.py` with functions:
+- [x] **2.1.1:** Create `ml/datasets/label_map.json` mapping all 250 lowercase GISLR labels (e.g., `"thankyou": "THANKYOU"`, `"callonphone": "CALL_ON_PHONE"`, `"minemy": "MY"`, `"hesheit": "IX_3P"`) and `web/src/vocab.json` labels (`ME, YOU, NAME, WHAT, _idle`) to canonical uppercase glosses and `ASL-LEX 2.0` `EntryID`s where applicable.
+- [x] **2.1.2:** Create `ml/datasets/vocab_merge.py` with functions:
   - `normalize_gloss(raw_label: str, source: str) -> str`
   - `build_vocabulary(sources: list[str], license_tier: Literal["commercial", "research"], max_classes: int = 2750) -> dict`
   - Ensure that `--license-tier commercial` includes only `CC BY 4.0` (`gislr`, `popsign`) and `own` labels, while `--license-tier research` merges `asl_citizen` + `gislr` + `own` without duplicate homonym collisions.
-- [ ] **2.1.3:** Write unit tests in `ml/tests/test_vocab_merge.py` verifying label normalization, commercial vs. research filtering, and deterministic class index ordering.
+- [x] **2.1.3:** Write unit tests in `ml/tests/test_vocab_merge.py` verifying label normalization, commercial vs. research filtering, and deterministic class index ordering.
 
 ### Task 2.2: Create Dataset Download Manager, Checksum Verifier & Human Instructions (`ml/datasets/download.py` & `ml/datasets/verify.py`)
 - [ ] **2.2.1:** Create `ml/datasets/download.py` reading `docs/subplans/model-v2/datasets.json` and supporting:
