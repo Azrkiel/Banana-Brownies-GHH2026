@@ -1,103 +1,32 @@
-@import './styles/anthropic-tokens.css';
+@import './styles/notebook-tokens.css';
 
-/* Semantic roles keep the uploaded palette consistent across every screen. */
-:root {
-  color-scheme: light;
-  --font-sans: var(--font-anthropic-sans);
-  --font-serif: var(--font-anthropic-serif);
-  --font-mono: var(--font-anthropic-mono);
-  --text-xs: var(--text-caption);
-  --text-sm: var(--text-body-sm);
-  --text-title: clamp(36px, 4.5vw, 61px);
-  --color-canvas: var(--surface-canvas);
-  --color-surface: var(--surface-card-surface);
-  --color-inset: var(--surface-deep-warm-surface);
-  --color-feature: var(--surface-warm-feature-surface);
-  --color-ink: var(--color-slate-dark);
-  /* Cloud tokens are retained for borders; reading text needs stronger contrast. */
-  --color-muted: var(--color-slate-medium);
-  --color-accent: var(--color-slate-dark);
-  --color-accent-hover: var(--color-slate-medium);
-  --color-accent-soft: var(--color-oat-warm);
-  --color-on-accent: var(--color-ivory-light);
-  --color-action: var(--color-clay);
-  --color-action-hover: var(--color-clay-deep);
-  --color-on-action: var(--color-slate-dark);
-  --color-positive: var(--color-slate-medium);
-  --color-positive-soft: var(--color-ivory-medium);
-  --color-warning: var(--color-slate-dark);
-  --color-warning-soft: var(--color-manilla);
-  --color-danger: var(--color-slate-dark);
-  --color-danger-soft: var(--color-oat-warm);
-  --color-border: var(--color-stone);
-  --color-field-border: var(--color-cloud-dark);
-  --color-focus: var(--color-slate-dark);
-  --radius-sm: var(--radius-lg);
-  --radius-control: var(--radius-xl);
-  --radius-panel: var(--radius-cards);
-  --space-1: var(--spacing-4);
-  --space-2: var(--spacing-8);
-  --space-3: var(--spacing-12);
-  --space-4: var(--spacing-16);
-  --space-6: var(--spacing-24);
-  --space-8: var(--spacing-32);
-  --space-12: 48px;
-  --duration-fast: 160ms;
-  --ease-out: cubic-bezier(.2, .8, .2, 1);
-}
-.ui-icon { width: 21px; height: 21px; flex-shrink: 0; vertical-align: middle; }
-.ui-button {
-  display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
-  min-height: 48px; padding: 12px 24px; max-width: 100%;
-  border: 1px solid var(--color-field-border); border-radius: var(--radius-control);
-  background: transparent; color: var(--color-ink);
-  font-family: var(--font-sans); font-size: var(--text-sm); font-weight: 500; line-height: 1.4;
-  text-align: center; text-decoration: none; cursor: pointer;
-  transition: background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast);
-}
-.ui-button--primary {
-  background: var(--color-action); color: var(--color-on-action);
-  border-color: transparent; border-radius: var(--radius-buttons);
-}
-.ui-button--ghost { border-color: transparent; border-radius: 0; padding-inline: 12px; }
-.ui-button--danger { border-color: var(--color-ink); text-decoration: underline; text-underline-offset: 4px; }
-.ui-button--small { min-height: 44px; padding: 8px 16px; font-size: var(--text-xs); }
-@media (hover: hover) {
-  .ui-button:not(:disabled):hover { background: var(--color-inset); border-color: var(--color-ink); }
-  .ui-button--primary:not(:disabled):hover { background: var(--color-action-hover); border-color: transparent; }
-  .ui-button--ghost:not(:disabled):hover { background: transparent; border-color: transparent; text-decoration: underline; text-underline-offset: 4px; }
-}
-.ui-button:not(:disabled):active { border-color: var(--color-ink); }
-.ui-button:disabled { color: var(--color-muted); background: var(--color-canvas); border-color: var(--color-border); cursor: not-allowed; }
-.ui-surface { padding: var(--card-padding); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-panel); }
-.page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--space-6); margin-bottom: var(--space-12); }
-.page-heading h1 { font-size: var(--text-title); margin-bottom: var(--space-6); }
-.page-description { max-width: 58ch; color: var(--color-muted); margin: 0; }
-.eyebrow { color: var(--color-muted); font-family: var(--font-sans); font-size: var(--text-xs); font-weight: 500; letter-spacing: .06em; line-height: 1.4; text-transform: uppercase; margin-bottom: var(--space-4); }
-.ui-badge { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); border: 0; border-radius: 0; padding: 4px 0; color: var(--color-muted); font-family: var(--font-sans); font-size: var(--text-xs); font-weight: 500; line-height: 1.4; white-space: nowrap; }
-.status-dot { display: inline-block; width: 6px; height: 6px; flex-shrink: 0; background: currentColor; border-radius: 50%; }
-.ui-badge--positive .status-dot { width: 10px; height: 6px; border-left: 2px solid currentColor; border-bottom: 2px solid currentColor; background: transparent; border-radius: 0; transform: translateY(-2px) rotate(-45deg); }
+.ui-icon { width: 22px; height: 22px; flex-shrink: 0; vertical-align: middle; }
+.ui-button { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 48px; max-width: 100%; padding: 10px 20px; background: transparent; color: var(--color-ink); border: 1px solid var(--color-field-border); border-radius: var(--radius-control); font: 400 1rem/1.5 var(--font-serif); text-align: center; text-decoration: none; cursor: pointer; transition: background 160ms, color 160ms; }
+.ui-button--primary { padding-inline: 8px; border: 0; border-radius: 0; font-size: 1.25rem; }
+.ui-button--primary::after { content: ''; position: absolute; left: 0; right: 0; bottom: 1px; height: 7px; background: var(--pencil-line) center / 100% 100% no-repeat; }
+.ui-button--ghost { border-color: transparent; padding-inline: 8px; text-decoration: underline; text-underline-offset: 5px; }
+.ui-button--danger { border-color: var(--color-danger); color: var(--color-danger); }
+.ui-button--small { min-height: 44px; padding: 8px 12px; font-size: 0.875rem; }
+.ui-button:not(:disabled):hover { background: var(--color-inset); }
+.ui-button--primary:not(:disabled):hover { background: transparent; color: var(--color-accent-hover); }
+.ui-button:disabled { color: var(--color-muted); border-color: var(--color-border); opacity: .65; cursor: not-allowed; }
+.ui-button--primary:disabled::after { opacity: .4; }
+.ui-surface { min-width: 0; padding: 24px 0; background: transparent; border: 0; border-top: 1px solid var(--color-border); border-radius: 0; }
+.page-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 40px; }
+.page-heading h1 { margin: 0; }
+.ui-badge { display: inline-flex; align-items: center; gap: 8px; padding: 4px 0; color: var(--color-muted); font-size: 0.8125rem; line-height: 1.4; white-space: nowrap; }
+.status-dot { display: inline-block; width: 5px; height: 5px; flex-shrink: 0; background: currentColor; border-radius: 48% 54% 42% 55%; }
+.ui-badge--positive .status-dot { width: 9px; height: 5px; border-left: 1px solid currentColor; border-bottom: 1px solid currentColor; border-radius: 0; background: transparent; transform: rotate(-45deg); }
 .ui-badge--warning .status-dot { border-radius: 0; transform: rotate(45deg); }
-.field { display: grid; gap: var(--space-2); font-family: var(--font-sans); font-size: var(--text-sm); font-weight: 500; line-height: 1.4; }
-.check-field { display: flex; align-items: flex-start; gap: var(--space-3); font-family: var(--font-sans); font-size: var(--text-sm); font-weight: 400; line-height: 1.5; color: var(--color-muted); cursor: pointer; }
-.check-field input { flex-shrink: 0; margin-top: 3px; }
-.button-row { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
-.panel-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-4); margin-bottom: var(--space-6); }
+.field { display: grid; gap: 8px; font-size: 1rem; line-height: 1.5; }
+.check-field { display: flex; align-items: flex-start; gap: 12px; font-size: 0.9375rem; line-height: 1.6; color: var(--color-muted); cursor: pointer; }
+.check-field input { flex-shrink: 0; margin: 3px 0 0; }
+.button-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.panel-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
 .panel-heading h2 { margin: 0; }
-.icon-well { display: inline-grid; place-items: center; width: 44px; height: 44px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-canvas); color: var(--color-ink); }
-.state-panel { text-align: center; padding: var(--space-12) var(--space-8); }
-.state-panel .icon-well { margin-bottom: var(--space-6); }
-.state-panel p { color: var(--color-muted); max-width: 48ch; margin-left: auto; margin-right: auto; }
-@media (prefers-contrast: more) {
-  :root { --color-border: var(--color-ink); --color-field-border: var(--color-ink); }
-  .ui-button { border-color: var(--color-ink); }
-}
-@media (forced-colors: active) {
-  .ui-button, .ui-surface, input, select, textarea { border: 1px solid ButtonText; }
-  .ui-button--primary { background: Highlight; color: HighlightText; }
-  .status-dot { background: CanvasText; }
-}
-@media (max-width: 680px) {
-  .ui-surface { padding: var(--space-6); }
-  .page-heading { align-items: flex-start; flex-direction: column; gap: var(--space-4); margin-bottom: var(--space-8); }
-}
+.icon-well { display: inline-grid; place-items: center; width: 40px; height: 40px; color: var(--color-ink); }
+.state-panel { text-align: center; padding: 64px 24px; }
+.state-panel p { color: var(--color-muted); max-width: 48ch; margin-inline: auto; }
+.astronomy-art { display: block; max-width: 100%; height: auto; mix-blend-mode: multiply; pointer-events: none; }
+@media (prefers-contrast: more) { :root { --color-border: #5f584c; --color-field-border: #302d27; } }
+@media (forced-colors: active) { .ui-button, input, select, textarea { border: 1px solid ButtonText; } .ui-button--primary::after { display: none; } .astronomy-art { display: none; } .ui-button--primary { border-bottom: 1px solid ButtonText; } }

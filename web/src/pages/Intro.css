@@ -1,31 +1,18 @@
-.intro-screen { max-width: var(--page-max-width); min-height: 100svh; display: flex; flex-direction: column; margin: auto; padding: 0 32px; }
-.intro-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 88px; border-bottom: 1px solid var(--color-border); }
-.intro-skip { display: inline-flex; align-items: center; gap: 12px; min-height: 44px; font-family: var(--font-sans); font-size: var(--text-xs); }
-.intro-skip .ui-icon { width: 16px; height: 16px; }
-.intro-editorial { flex: 1; display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: clamp(32px, 6vw, 76px); padding: clamp(48px, 7vw, 100px) 0; }
-.intro-copy h1 { font-family: var(--font-sans); font-weight: 700; font-size: clamp(44px, 5.3vw, var(--text-heading)); line-height: var(--leading-heading); letter-spacing: var(--tracking-heading); margin: 0 0 32px; }
-.intro-description { font-size: var(--text-subheading); line-height: 1.4; margin: 0 0 32px; }
-.intro-begin { justify-content: space-between; min-width: 160px; }
-.intro-note { font-family: var(--font-sans); font-size: var(--text-xs); line-height: 1.6; color: var(--color-muted); margin: 24px 0 0; }
-.intro-plate { margin: 0; padding: 24px; border-radius: var(--radius-panel); background: var(--color-feature); }
-.intro-plate__heading, .intro-plate figcaption { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; font-family: var(--font-sans); font-size: var(--text-xs); line-height: 1.4; }
-.intro-plate__heading { padding-bottom: 16px; border-bottom: 1px solid var(--color-field-border); font-size: 10px; letter-spacing: .06em; }
-.connection-plate { display: block; width: 100%; height: auto; color: var(--color-ink); }
-.intro-plate figcaption { padding-top: 16px; border-top: 1px solid var(--color-field-border); }
-.intro-footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; border-top: 1px solid var(--color-border); padding: 24px 0; font-family: var(--font-sans); font-size: var(--text-xs); color: var(--color-muted); }
-.intro-footer p { margin: 0; }
-.intro-footer a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; }
-.intro-footer .ui-icon { width: 16px; }
-@media (max-width: 760px) {
-  .intro-screen { padding-inline: 24px; }
-  .intro-editorial { grid-template-columns: 1fr; padding: 48px 0; gap: 40px; }
-  .intro-copy h1 { font-size: clamp(44px, 8vw, 61px); }
-  .intro-plate { max-width: 520px; width: 100%; }
-  .intro-description { font-size: var(--text-body); }
+.intro-screen { position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; align-items: center; justify-items: center; max-width: 1440px; min-height: 100svh; margin: auto; padding: 40px 24px 48px; overflow: clip; }
+.intro-screen h1 { position: relative; z-index: 1; font-family: var(--font-serif); font-size: clamp(4.75rem, 10vw, 8.75rem); font-weight: 400; line-height: 1.08; letter-spacing: -.065em; margin: 0; }
+.intro-astronomy { width: min(1120px, 100%); max-height: 68svh; object-fit: contain; margin: -32px 0 -16px; }
+.intro-begin { display: inline-flex; align-items: center; justify-content: center; gap: 28px; min-height: 52px; padding: 8px 24px; font-family: var(--font-serif); font-size: 1.5rem; color: var(--color-ink); text-decoration: none; position: relative; }
+.intro-begin::after { content: ''; position: absolute; bottom: 1px; left: 10px; right: 10px; height: 8px; background: var(--pencil-line) center / 100% 100% no-repeat; }
+.intro-begin .ui-icon { width: 42px; height: 24px; transition: transform 160ms; }
+.intro-begin:hover .ui-icon { transform: translateX(4px); }
+@media (max-width: 680px) {
+  .intro-screen { padding: 48px 16px 64px; }
+  .intro-screen h1 { font-size: clamp(4.5rem, 18vw, 6.5rem); }
+  .intro-astronomy { width: 135%; max-width: none; margin: 0 0 0 -22%; max-height: 64svh; }
 }
-@media (max-width: 380px) {
-  .intro-screen { padding-inline: 16px; }
-  .intro-header { gap: 12px; }
-  .intro-plate { padding: 16px; }
-  .intro-plate figcaption { font-size: 10px; }
-}
+@media (max-height: 600px) and (min-width: 681px) { .intro-screen { padding: 16px; } .intro-screen h1 { font-size: 4.5rem; } .intro-astronomy { max-height: 60svh; } .intro-begin { font-size: 1.25rem; } }
+@media (forced-colors: active) { .intro-begin { border-bottom: 1px solid LinkText; } .intro-begin::after { display: none; } }
+
+@media (prefers-reduced-motion: reduce) { .intro-begin:hover .ui-icon { transform: none; } }
+
+.intro-screen h1 { text-align: center; }

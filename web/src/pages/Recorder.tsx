@@ -1,3 +1,4 @@
+import { AstronomyArt } from '../components/AstronomyArt';
 import { Button, Badge, Icon, PageHeader, Surface } from '../components/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useCameraTracker } from '../lib/useCameraTracker';
@@ -88,10 +89,9 @@ export default function Recorder() {
 
   return (
     <main className="studio-page" id="main-content">
-      <PageHeader eyebrow="SIGNLINE / RECORDER" title="Recorder"
-        description="Capture hand and body landmarks to help train this project’s model. Verify sign forms with the team before recording."
+      <PageHeader title="Recorder"
         accessory={<Badge tone={busy ? 'warning' : ready ? 'positive' : 'neutral'}>{busy ? 'Recording in progress' : ready ? 'Camera ready' : 'Local capture'}</Badge>} />
-      <div className="recorder-consent ui-surface"><Icon name="shield" /><div><h2>Your landmarks. Your choice.</h2><p>We store coordinates only, never video. Recordings train this project’s model and are not published.</p>
+      <div className="recorder-consent ui-surface"><Icon name="shield" /><div><h2>Consent</h2><p>Landmarks only, no video. Used to train this project’s model; not published.</p>
         <label className="check-field"><input type="checkbox" checked={consent} onChange={(event) => {
           stopRecording(); setCamera(false); setConsent(event.target.checked);
         }} /><span>I consent to recording my landmarks for this project.</span></label>
@@ -100,24 +100,24 @@ export default function Recorder() {
         <div className="recorder-workspace">
           <section className="camera-stage" aria-label="Recording camera preview">
             <video ref={video} muted playsInline className="mirror" width={480} />
-            {!ready && <div className="camera-stage__placeholder"><span className="camera-stage__icon"><Icon name="record" /></span><h2>Every movement matters.</h2><p>{camera && consent ? 'Preparing your camera and tracking models…' : 'Give consent, then start your camera.'}</p></div>}
+            {!ready && <div className="camera-stage__placeholder"><AstronomyArt className="camera-astronomy" />{camera && consent && <p>Loading camera…</p>}</div>}
             <span className="camera-stage__label"><span className="status-dot" />{busy ? 'Recording landmarks' : ready ? 'Local preview · Mirrored' : 'Camera off'}</span>
           </section>
-          <div className="recorder-camera-controls"><p role="status">{error || (camera && !ready ? 'Starting camera and models…' : ready ? 'Camera ready' : 'Camera off')}</p><Button disabled={!consent} onClick={() => { stopRecording(); setCamera(!camera); }}><Icon name="camera" />{camera ? 'Stop camera' : 'Start camera'}</Button></div>
-          <Surface className="clip-library" aria-labelledby="clip-library-title"><div className="panel-heading"><h2 id="clip-library-title">Your session</h2><Badge>{clips.length} clips</Badge></div>
+          <div className="recorder-camera-controls"><p role="status">{error || (camera && !ready ? 'Starting camera and models…' : ready ? 'Camera ready' : '')}</p><Button disabled={!consent} onClick={() => { stopRecording(); setCamera(!camera); }}><Icon name="camera" />{camera ? 'Stop camera' : 'Start camera'}</Button></div>
+          <Surface className="clip-library" aria-labelledby="clip-library-title"><div className="panel-heading"><h2 id="clip-library-title">Clips</h2><Badge>{clips.length} clips</Badge></div>
             <div className="clip-counts" aria-label="Label counts">{labels.map(value => <span key={value}><b>{value}</b><span>{count(value)}</span></span>)}</div>
-            <p className="studio-status" role="status">{message || 'Your captured landmarks will collect here.'}</p>
-            <div className="button-row"><Button disabled={busy || !clips.length} onClick={() => setClips((current) => current.slice(0, -1))}>Undo last</Button><Button disabled={busy || !clips.length || !signer} onClick={() => download({ version: 1, signer, leftHanded, recordedAt: new Date().toISOString(), clips })}><Icon name="download" />Download session ({clips.length} clips)</Button></div>
-            <p className="note">Download your session before leaving. Keep recordings in the ignored data/raw folder.</p>
+            <p className="studio-status" role="status">{message || 'No clips'}</p>
+            <div className="button-row"><Button disabled={busy || !clips.length} onClick={() => setClips((current) => current.slice(0, -1))}>Undo last</Button><Button disabled={busy || !clips.length || !signer} onClick={() => download({ version: 1, signer, leftHanded, recordedAt: new Date().toISOString(), clips })}><Icon name="download" />Download ({clips.length})</Button></div>
+            <p className="note">Download before leaving; clips are not saved online.</p>
           </Surface>
         </div>
         <aside className="studio-sidebar">
-          <Surface aria-labelledby="recorder-settings"><p className="eyebrow">01 / MAKE IT YOURS</p><h2 id="recorder-settings">Session details</h2>
+          <Surface aria-labelledby="recorder-settings"><h2 id="recorder-settings">Session</h2>
             <label className="field">Signer ID <input placeholder="e.g. liv" value={signer} disabled={busy || clips.length > 0} onChange={(event) => setSigner(event.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, ''))} /></label>
             <label className="check-field"><input type="checkbox" checked={leftHanded} disabled={busy || clips.length > 0} onChange={(event) => setLeftHanded(event.target.checked)} /><span>Left-handed signer</span></label>
-            <p className="note">Use a pseudonym. These details lock after your first clip.</p>
+            <p className="note">Use a pseudonym. Locks after the first clip.</p>
           </Surface>
-          <Surface aria-labelledby="capture-settings"><p className="eyebrow">02 / CAPTURE A MOMENT</p><h2 id="capture-settings">What are you signing?</h2>
+          <Surface aria-labelledby="capture-settings"><h2 id="capture-settings">Capture</h2>
             <label className="field">Recording type <select aria-label="Recording type" value={kind} disabled={busy} onChange={(event) => {
               const next = event.target.value as ClipKind;
               setKind(next); setLabel(next === 'sign' ? RECORD_LABELS[0] : LETTERS[0]);

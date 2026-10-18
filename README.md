@@ -50,15 +50,15 @@ opening the camera pages.
 
 ## Run and check
 
-The root URL opens the editorial [welcome screen](docs/intro.md). Choose **Begin**
-or **Skip intro** to reach the conversation options. Shared `#/room?...` links and
-the camera, recorder, speech, stats, and design-kit routes open directly.
+The root URL opens the [notebook welcome](docs/intro.md): **SignLine**, a hand-drawn
+Earth, Moon and stars, and **Begin**. Shared `#/room?...` links and the camera,
+recorder, speech, stats and design-kit routes open directly.
 
-The interface follows the supplied Anthropic design reference: warm ivory paper,
-serif reading text, flat navigation, and a single clay primary action. See
-[design system](docs/design-system.md) for source tokens, accessible adaptations,
-and the interactive `#/design-kit` page. The reference is light-only; the former
-appearance switch and animated glass presentation have been replaced.
+The interface uses textured paper, local Lora serif fonts and pencil-stroke
+controls. Navigation and page copy are reduced to names, actions and necessary
+consent/status messages. See [design system](docs/design-system.md) for the visual
+rules, generated assets and font license. No camera or microphone is requested
+from the welcome or call form.
 
 ```sh
 cd web

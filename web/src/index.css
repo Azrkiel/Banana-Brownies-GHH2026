@@ -1,8 +1,8 @@
 @import './design-system.css';
 
 * { box-sizing: border-box; }
-:root { font-family: var(--font-serif); color: var(--color-ink); background: var(--color-canvas); font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; font-size: 16px; line-height: var(--leading-body); font-weight: 400; }
-body { margin: 0; min-width: 320px; min-height: 100vh; font-size: var(--text-body); }
+:root { font-family: var(--font-serif); color: var(--color-ink); background: var(--color-canvas); font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; font-size: 1rem; line-height: var(--leading-body); font-weight: 400; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background-image: url('/notebook/paper.webp'); background-size: 768px 512px; font-size: var(--text-body); }
 ::selection { background: var(--color-inset); color: var(--color-ink); }
 a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 a:hover { text-decoration-thickness: 2px; }
@@ -16,11 +16,11 @@ h2 { font-size: var(--text-subheading); }
 h3 { font-size: var(--text-body); }
 p { font-size: inherit; }
 label, small, th, td { font-family: var(--font-sans); }
-input:not([type='checkbox']), select, textarea { width: 100%; min-width: 0; min-height: 48px; border: 1px solid var(--color-field-border); border-radius: var(--radius-control); padding: 12px 16px; background: var(--color-surface); color: var(--color-ink); font-size: var(--text-sm); font-weight: 400; line-height: 1.5; transition: border-color var(--duration-fast), background var(--duration-fast); }
+input:not([type='checkbox']), select, textarea { width: 100%; min-width: 0; min-height: 48px; border: 0; border-radius: 0; background-image: var(--pencil-line); background-position: center bottom; background-size: 100% 6px; background-repeat: no-repeat; padding: 12px 16px; background-color: transparent; color: var(--color-ink); font-size: var(--text-sm); font-weight: 400; line-height: 1.5; transition: border-color var(--duration-fast), background var(--duration-fast); }
 input::placeholder, textarea::placeholder { color: var(--color-muted); opacity: 1; }
 input:not([type='checkbox']):hover, select:hover { border-color: var(--color-ink); }
-input:not([type='checkbox']):focus, select:focus, textarea:focus { border-color: var(--color-ink); background: var(--color-surface); }
-input:disabled, select:disabled { color: var(--color-muted); background: var(--color-canvas); cursor: not-allowed; }
+input:not([type='checkbox']):focus, select:focus, textarea:focus { border-color: var(--color-ink); background-color: transparent; }
+input:disabled, select:disabled { color: var(--color-muted); background-color: var(--color-canvas); cursor: not-allowed; }
 input[type='checkbox'] { width: 20px; height: 20px; accent-color: var(--color-ink); cursor: pointer; }
 input[type='checkbox']:disabled { cursor: not-allowed; }
 select { padding-right: 32px; }
@@ -34,3 +34,18 @@ code { font-family: var(--font-mono); font-size: .8em; background: var(--color-c
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
+
+@media (forced-colors: active) { body { background-image: none; } }
+
+/* Native inputs keep their semantics; ink strokes give them a notebook finish. */
+input[type='checkbox'] { appearance: none; display: inline-grid; place-items: center; width: 19px; height: 19px; border: 1px solid var(--color-field-border); border-radius: var(--radius-sm); background: transparent; }
+input[type='checkbox']:checked::before { content: ''; width: 15px; height: 13px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 14'%3E%3Cpath d='m2 7 3.5 4L14 2M3 7.5l2.5 3L13 3' fill='none' stroke='%23302d27' stroke-width='1.1' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / contain no-repeat; }
+input[type='checkbox']:disabled { opacity: .65; }
+select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 10'%3E%3Cpath d='m2 2 5 5 5-5' fill='none' stroke='%23302d27' stroke-width='1.1' stroke-linecap='round'/%3E%3C/svg%3E"), var(--pencil-line); background-position: right 12px center, center bottom; background-size: 14px 10px, 100% 6px; background-repeat: no-repeat; }
+@media (forced-colors: active) {
+  input[type='checkbox'], select { appearance: auto; }
+  input[type='checkbox']:checked::before { display: none; }
+  input:not([type='checkbox']), select, textarea { border: 1px solid ButtonText; }
+}
+
+h1, h2, h3 { max-width: 100%; overflow-wrap: anywhere; }
