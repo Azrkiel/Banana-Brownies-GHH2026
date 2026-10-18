@@ -40,11 +40,18 @@ describe('recovered word model', () => {
     expect(predictWord(forest(), sample(), 23).accepted).toBe(false);
     expect(predictWord(forest(), sample(), 24)).toMatchObject({ label: 'HELLO', score: 0.8, accepted: true });
   });
-  it('holds close calls for retry rather than exposing them as accepted suggestions', () => {
+  it('accepts a clear lead from 40% and holds close calls for retry', () => {
     const model = forest(); model.trees[0][1].votes = [0.59, 0.41];
-    expect(predictWord(model, sample(), 30).accepted).toBe(false);
+    expect(predictWord(model, sample(), 30).accepted).toBe(true);
     model.trees[0][1].votes = [0.55, 0.45];
     expect(predictWord(model, sample(), 30).accepted).toBe(false);
+  });
+  it('holds a top score under 40% even with a clear lead', () => {
+    const model = forest(); model.labels = ['HELLO', 'NAME', 'MY', 'FOOD'];
+    model.trees[0][1].votes = [0.39, 0.21, 0.2, 0.2];
+    expect(predictWord(model, sample(), 30)).toMatchObject({ label: 'HELLO', accepted: false });
+    model.trees[0][1].votes = [0.41, 0.2, 0.2, 0.19];
+    expect(predictWord(model, sample(), 30)).toMatchObject({ label: 'HELLO', accepted: true });
   });
   it('rejects incompatible, cyclic, empty and nonfinite model data', () => {
     expect(() => parseWordForest({ ...forest(), frames: 32 })).toThrow();
