@@ -1,0 +1,7 @@
+{
+  "ml_and_server_tests": 169,
+  "frontend_tests": 316,
+  "web_build": "passed",
+  "independent_evaluations": "C1/B/D2 exactly reproduce saved held-out reports",
+  "browser_lab": "passed; all 3 real model hashes/inference, 251 C1 labels, 192-dimensional embedding, no page errors; camera off"
+}

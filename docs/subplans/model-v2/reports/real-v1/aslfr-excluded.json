@@ -1,0 +1,470 @@
+[
+  {
+    "clip_id": "aslfr:1987106675",
+    "frames": 6,
+    "minimum_ctc_frames": 14,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1998463233",
+    "frames": 10,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1720875373",
+    "frames": 6,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1735087678",
+    "frames": 4,
+    "minimum_ctc_frames": 16,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1812150663",
+    "frames": 12,
+    "minimum_ctc_frames": 14,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1814755891",
+    "frames": 6,
+    "minimum_ctc_frames": 14,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1218416505",
+    "frames": 4,
+    "minimum_ctc_frames": 10,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:141729886",
+    "frames": 12,
+    "minimum_ctc_frames": 16,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:143376880",
+    "frames": 6,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:151961965",
+    "frames": 6,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:164450432",
+    "frames": 6,
+    "minimum_ctc_frames": 14,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:582725106",
+    "frames": 6,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:585729125",
+    "frames": 12,
+    "minimum_ctc_frames": 14,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:211160049",
+    "frames": 6,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1925452530",
+    "frames": 6,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1936723771",
+    "frames": 9,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1052335349",
+    "frames": 6,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1528036430",
+    "frames": 6,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1543046211",
+    "frames": 6,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1107108526",
+    "frames": 6,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:944838267",
+    "frames": 5,
+    "minimum_ctc_frames": 17,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:945253734",
+    "frames": 6,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:402899841",
+    "frames": 6,
+    "minimum_ctc_frames": 10,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1469264536",
+    "frames": 6,
+    "minimum_ctc_frames": 15,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1489820852",
+    "frames": 6,
+    "minimum_ctc_frames": 14,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1342933076",
+    "frames": 6,
+    "minimum_ctc_frames": 16,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:506642680",
+    "frames": 6,
+    "minimum_ctc_frames": 17,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1324343012",
+    "frames": 6,
+    "minimum_ctc_frames": 8,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1326295050",
+    "frames": 6,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1647689917",
+    "frames": 6,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:2121762855",
+    "frames": 4,
+    "minimum_ctc_frames": 15,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:865631745",
+    "frames": 6,
+    "minimum_ctc_frames": 11,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1159175976",
+    "frames": 6,
+    "minimum_ctc_frames": 10,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:630565279",
+    "frames": 6,
+    "minimum_ctc_frames": 15,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1012994791",
+    "frames": 6,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1609154364",
+    "frames": 5,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1621140047",
+    "frames": 7,
+    "minimum_ctc_frames": 16,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:704141013",
+    "frames": 8,
+    "minimum_ctc_frames": 17,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1183999940",
+    "frames": 6,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1200211031",
+    "frames": 3,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1395101744",
+    "frames": 6,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:90348950",
+    "frames": 6,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:363059518",
+    "frames": 2,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:379486571",
+    "frames": 6,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:2066189120",
+    "frames": 6,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1511237706",
+    "frames": 4,
+    "minimum_ctc_frames": 10,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1514123370",
+    "frames": 6,
+    "minimum_ctc_frames": 11,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:894409447",
+    "frames": 6,
+    "minimum_ctc_frames": 14,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:906071302",
+    "frames": 6,
+    "minimum_ctc_frames": 15,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:910977769",
+    "frames": 6,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1130809431",
+    "frames": 5,
+    "minimum_ctc_frames": 14,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1134003507",
+    "frames": 6,
+    "minimum_ctc_frames": 14,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:679550931",
+    "frames": 8,
+    "minimum_ctc_frames": 14,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:695079309",
+    "frames": 6,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:40690416",
+    "frames": 5,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:658979929",
+    "frames": 6,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:660624191",
+    "frames": 7,
+    "minimum_ctc_frames": 14,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:773678701",
+    "frames": 8,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:774467949",
+    "frames": 6,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:786991808",
+    "frames": 6,
+    "minimum_ctc_frames": 10,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:789295651",
+    "frames": 7,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:796207325",
+    "frames": 6,
+    "minimum_ctc_frames": 8,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1901153392",
+    "frames": 6,
+    "minimum_ctc_frames": 16,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1459295088",
+    "frames": 6,
+    "minimum_ctc_frames": 11,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:960236270",
+    "frames": 6,
+    "minimum_ctc_frames": 17,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:981150608",
+    "frames": 13,
+    "minimum_ctc_frames": 15,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:527039019",
+    "frames": 6,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:530112747",
+    "frames": 13,
+    "minimum_ctc_frames": 17,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1275705024",
+    "frames": 6,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1288184228",
+    "frames": 6,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1289681600",
+    "frames": 6,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1694685243",
+    "frames": 6,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:307696114",
+    "frames": 5,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:848102517",
+    "frames": 11,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1770983393",
+    "frames": 6,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1772395614",
+    "frames": 6,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1783029041",
+    "frames": 9,
+    "minimum_ctc_frames": 13,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  },
+  {
+    "clip_id": "aslfr:1783162844",
+    "frames": 6,
+    "minimum_ctc_frames": 12,
+    "reason": "Original clip cannot align to unchanged CTC target"
+  }
+]

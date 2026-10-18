@@ -91,7 +91,12 @@ def export_one(checkpoint, target, stage, quantize='uint8', smoke_test=False):
                 if value.data_type != onnx.TensorProto.FLOAT:
                     continue
                 array = onnx.numpy_helper.to_array(value)
-                if array.size < 32:
+                # Real CTC heads can amplify FP16 rounding beyond probability
+                # parity. Keep output weights, biases and normalization vectors
+                # in FP32; the large encoder matrices still use FP16 storage.
+                ctc_sensitive = ctc and (array.ndim < 2 or array.shape in {
+                    (width, cfg['num_classes']), (cfg['num_classes'], width)})
+                if array.size < 32 or ctc_sensitive:
                     continue
                 original = value.name
                 half = onnx.numpy_helper.from_array(array.astype(np.float16), original + '_fp16')

@@ -1,0 +1,33 @@
+{
+  "ok": true,
+  "labels": 251,
+  "options": 256,
+  "diagnostics": {
+    "ok": true,
+    "generatedInputOnly": true,
+    "modelSynthetic": false,
+    "metrics": {
+      "live": {
+        "p50": 0.09999999403953552,
+        "p95": 0.20000001788139343
+      },
+      "c1": {
+        "p50": 3.5,
+        "p95": 4.5
+      },
+      "b": {
+        "p50": 5.9000000059604645,
+        "p95": 7.5999999940395355
+      },
+      "d": {
+        "p50": 15,
+        "p95": 23.5
+      }
+    },
+    "embedding": 192,
+    "input": "generated zero landmark vectors; not human accuracy"
+  },
+  "pageErrors": [],
+  "cameraRequested": false,
+  "input": "Generated model self-check vectors only; physical webcam accuracy remains a human check."
+}

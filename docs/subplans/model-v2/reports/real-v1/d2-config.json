@@ -1,0 +1,54 @@
+{
+  "stage": "d2_continuous_ctc",
+  "source_stage": "c1_commercial_250",
+  "dataset": "stitched",
+  "license_tier": "commercial",
+  "non_commercial": false,
+  "feature_schema": "xy174",
+  "blank": 0,
+  "num_classes": 251,
+  "model_kwargs": {
+    "d_model": 192,
+    "num_layers": 2,
+    "dropout": 0.1
+  },
+  "seq_len": 128,
+  "min_signs": 2,
+  "max_signs": 5,
+  "samples": 512,
+  "seed": 42,
+  "eval_samples": 12,
+  "ema_decay": 0.95,
+  "signers": {
+    "train": [
+      "gislr:16069",
+      "gislr:18796",
+      "gislr:2044",
+      "gislr:22343",
+      "gislr:26734",
+      "gislr:29302",
+      "gislr:34503",
+      "gislr:36257",
+      "gislr:37055",
+      "gislr:37779",
+      "gislr:4718",
+      "gislr:49445",
+      "gislr:53618",
+      "gislr:55372",
+      "gislr:61333",
+      "gislr:62590"
+    ],
+    "val": [
+      "gislr:25571",
+      "gislr:27610",
+      "gislr:28656",
+      "gislr:30680"
+    ],
+    "test": [
+      "gislr:32319"
+    ]
+  },
+  "initialized_encoder_tensors": 66,
+  "synthetic": false,
+  "torch_version": "2.14.1+cpu"
+}

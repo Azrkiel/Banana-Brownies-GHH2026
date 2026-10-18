@@ -1,3 +1,20 @@
+# Latest real-data execution — October 18, 2026
+
+Credentials, rules acceptance, real acquisition, feature conversion, C1/B/D2 CPU training,
+calibration, held-out evaluation and production-format C1/B export have now run at source revision
+`fdde3755e11a77cfa424b17eb5db7b78f9a48d5c`. The older phase notes below describe the historical smoke environment.
+C1 held-out sign-only Top-1 is 29.10%; B greedy CER/WER is
+45.23%/95.93%; D2 stitched WER is 100.00%.
+Validation temperatures are C1 1.51282299 and B 1.09210696, baked once.
+Current measured reports: [real-v1](reports/real-v1/training-report.json).
+
+Still requiring human data/QA: first-party visible-hand rest and transition examples,
+physical-webcam/domain accuracy, natural continuous signing, target-laptop FPS and the two-person call.
+Idle checks here use original no-hand tracking windows. The CPU subset is not a full-corpus accuracy claim;
+C1/B accuracy acceptance remains unmet (82% C1 Top-1 / 15% B CER targets); isolated-character/J/Z tests and four-signer GISLR testing remain outstanding. D2 requires its 28% WER target before production use. Phase 6 has not started.
+
+---
+
 # Model v2 Human QA
 
 ## Phase 1 / Tasks 1.3-1.4 - Physical webcam and two-person call

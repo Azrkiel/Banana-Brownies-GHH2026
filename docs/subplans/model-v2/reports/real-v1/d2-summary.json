@@ -1,0 +1,23 @@
+{
+  "synthetic": false,
+  "license_tier": "commercial",
+  "non_commercial": false,
+  "validation": {
+    "n": 12,
+    "reference_glosses": 48,
+    "gloss_errors": 48,
+    "wer": 1.0,
+    "beam_gloss_errors": 48,
+    "beam_wer": 1.0,
+    "val_loss": 5.850207805633545
+  },
+  "test": {
+    "n": 12,
+    "reference_glosses": 49,
+    "gloss_errors": 49,
+    "wer": 1.0,
+    "beam_gloss_errors": 49,
+    "beam_wer": 1.0,
+    "val_loss": 5.849894046783447
+  }
+}

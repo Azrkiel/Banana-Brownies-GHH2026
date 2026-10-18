@@ -1,0 +1,456 @@
+{
+  "starting_commit": "0464dd81ca1bfdba9252971cecc1b901b9201417",
+  "training_code_commit": "fdde3755e11a77cfa424b17eb5db7b78f9a48d5c",
+  "synthetic": false,
+  "license_tier": "commercial",
+  "device": "cpu",
+  "torch_version": "2.14.1+cpu",
+  "cuda_available": false,
+  "hardware": "AMD Ryzen AI 7 PRO 350 / AMD Radeon 860M (no CUDA)",
+  "c1": {
+    "epochs": 40,
+    "batch_size": 64,
+    "cpu_threads": 4,
+    "lr": 0.0015,
+    "ema_decay": 0.95,
+    "seed": 42,
+    "d_model": 192,
+    "num_layers": 2,
+    "train_loop_wall_time_s": 1103.134243699984
+  },
+  "b": {
+    "epochs": 60,
+    "batch_size": 32,
+    "cpu_threads": 4,
+    "lr": 0.002,
+    "ema_decay": 0.95,
+    "seed": 42,
+    "d_model": 128,
+    "num_layers": 2,
+    "max_frames": 128,
+    "metrics_interval": 10,
+    "train_loop_wall_time_s": 904.6228580999887
+  },
+  "d2": {
+    "epochs": 8,
+    "samples_per_epoch": 512,
+    "eval_streams_per_split": 12,
+    "batch_size": 16,
+    "cpu_threads": 2,
+    "lr": 0.0015,
+    "ema_decay": 0.95,
+    "seed": 42,
+    "d_model": 192,
+    "num_layers": 2,
+    "sequence_frames": 128
+  },
+  "results": {
+    "c1": {
+      "synthetic": false,
+      "calibration": {
+        "temperature": 1.512822994508557,
+        "nll_before": 2.6764864803432658,
+        "nll_after": 2.377523850105134,
+        "ece_before": 0.20841391209953847,
+        "ece_after": 0.04415059204779868
+      },
+      "test": {
+        "n": 1100,
+        "top1": 0.35545453429222107,
+        "top5": 0.614545464515686,
+        "macro_top1": 0.293824702501297,
+        "macro_f1": 0.26475730538368225,
+        "ece": 0.050577402114868164,
+        "idle_false_positive_rate": 0.0,
+        "idle_n": 100,
+        "strata": {
+          "hand_count": {
+            "one_or_no_hand": {
+              "n": 1099,
+              "top1": 0.3557779788970947,
+              "top5": 0.615104615688324,
+              "macro_top1": 0.2941567301750183,
+              "macro_f1": 0.2648297846317291,
+              "ece": 0.05047992989420891,
+              "idle_false_positive_rate": 0.0,
+              "idle_n": 100
+            },
+            "two_hand": {
+              "n": 1,
+              "top1": 0.0,
+              "top5": 0.0,
+              "macro_top1": 0.0,
+              "macro_f1": 0.0,
+              "ece": 0.15769167244434357,
+              "idle_false_positive_rate": null,
+              "idle_n": 0
+            }
+          },
+          "dataset_source": {
+            "gislr": {
+              "n": 1100,
+              "top1": 0.35545453429222107,
+              "top5": 0.614545464515686,
+              "macro_top1": 0.293824702501297,
+              "macro_f1": 0.26475730538368225,
+              "ece": 0.050577402114868164,
+              "idle_false_positive_rate": 0.0,
+              "idle_n": 100
+            }
+          },
+          "recording_domain": {
+            "derived_gislr_tracking_absence": {
+              "n": 100,
+              "top1": 1.0,
+              "top5": 1.0,
+              "macro_top1": 1.0,
+              "macro_f1": 1.0,
+              "ece": 0.04241424798965454,
+              "idle_false_positive_rate": 0.0,
+              "idle_n": 100
+            },
+            "unspecified": {
+              "n": 1000,
+              "top1": 0.29100000858306885,
+              "top5": 0.5759999752044678,
+              "macro_top1": 0.29100000858306885,
+              "macro_f1": 0.2618163824081421,
+              "ece": 0.05182371661067009,
+              "idle_false_positive_rate": null,
+              "idle_n": 0
+            }
+          }
+        },
+        "confusion_pairs": [
+          {
+            "actual": "CALL_ON_PHONE",
+            "predicted": "NOW",
+            "count": 4
+          },
+          {
+            "actual": "KITTY",
+            "predicted": "SEE",
+            "count": 4
+          },
+          {
+            "actual": "LAMP",
+            "predicted": "STORE",
+            "count": 4
+          },
+          {
+            "actual": "MAD",
+            "predicted": "TASTE",
+            "count": 4
+          },
+          {
+            "actual": "NOISY",
+            "predicted": "FINISH",
+            "count": 4
+          },
+          {
+            "actual": "ORANGE",
+            "predicted": "OLD",
+            "count": 4
+          },
+          {
+            "actual": "SAY",
+            "predicted": "THIRSTY",
+            "count": 4
+          },
+          {
+            "actual": "TALK",
+            "predicted": "FINE",
+            "count": 4
+          },
+          {
+            "actual": "WHITE",
+            "predicted": "LIKE",
+            "count": 4
+          },
+          {
+            "actual": "ALL",
+            "predicted": "HAPPY",
+            "count": 3
+          },
+          {
+            "actual": "BED",
+            "predicted": "BLUE",
+            "count": 3
+          },
+          {
+            "actual": "BLACK",
+            "predicted": "CRY",
+            "count": 3
+          },
+          {
+            "actual": "BOAT",
+            "predicted": "BROTHER",
+            "count": 3
+          },
+          {
+            "actual": "CLOSET",
+            "predicted": "TIME",
+            "count": 3
+          },
+          {
+            "actual": "EVERY",
+            "predicted": "YOURSELF",
+            "count": 3
+          },
+          {
+            "actual": "FACE",
+            "predicted": "THIRSTY",
+            "count": 3
+          },
+          {
+            "actual": "FIND",
+            "predicted": "TOUCH",
+            "count": 3
+          },
+          {
+            "actual": "GIRL",
+            "predicted": "YOURSELF",
+            "count": 3
+          },
+          {
+            "actual": "GO",
+            "predicted": "LIKE",
+            "count": 3
+          },
+          {
+            "actual": "GOOSE",
+            "predicted": "DUCK",
+            "count": 3
+          },
+          {
+            "actual": "HAVE",
+            "predicted": "BATH",
+            "count": 3
+          },
+          {
+            "actual": "HELICOPTER",
+            "predicted": "DOG",
+            "count": 3
+          },
+          {
+            "actual": "HIGH",
+            "predicted": "SCISSORS",
+            "count": 3
+          },
+          {
+            "actual": "IX_3P",
+            "predicted": "WHERE",
+            "count": 3
+          },
+          {
+            "actual": "JUMP",
+            "predicted": "WE",
+            "count": 3
+          },
+          {
+            "actual": "LIPS",
+            "predicted": "THIRSTY",
+            "count": 3
+          },
+          {
+            "actual": "MOON",
+            "predicted": "LISTEN",
+            "count": 3
+          },
+          {
+            "actual": "MOUTH",
+            "predicted": "THIRSTY",
+            "count": 3
+          },
+          {
+            "actual": "PRETEND",
+            "predicted": "MOUSE",
+            "count": 3
+          },
+          {
+            "actual": "PUPPY",
+            "predicted": "BOAT",
+            "count": 3
+          },
+          {
+            "actual": "SNACK",
+            "predicted": "SCISSORS",
+            "count": 3
+          },
+          {
+            "actual": "SNOW",
+            "predicted": "ON",
+            "count": 3
+          },
+          {
+            "actual": "STAIRS",
+            "predicted": "POLICE",
+            "count": 3
+          },
+          {
+            "actual": "TABLE",
+            "predicted": "MY",
+            "count": 3
+          },
+          {
+            "actual": "THANKYOU",
+            "predicted": "HAPPY",
+            "count": 3
+          },
+          {
+            "actual": "TIGER",
+            "predicted": "WAIT",
+            "count": 3
+          },
+          {
+            "actual": "WET",
+            "predicted": "NOW",
+            "count": 3
+          },
+          {
+            "actual": "WHY",
+            "predicted": "WET",
+            "count": 3
+          },
+          {
+            "actual": "YES",
+            "predicted": "SHOE",
+            "count": 3
+          },
+          {
+            "actual": "YESTERDAY",
+            "predicted": "CAN",
+            "count": 3
+          },
+          {
+            "actual": "YOURSELF",
+            "predicted": "PUZZLE",
+            "count": 3
+          },
+          {
+            "actual": "YUCKY",
+            "predicted": "TOUCH",
+            "count": 3
+          },
+          {
+            "actual": "ALLIGATOR",
+            "predicted": "MY",
+            "count": 2
+          },
+          {
+            "actual": "ANIMAL",
+            "predicted": "BATH",
+            "count": 2
+          },
+          {
+            "actual": "ANIMAL",
+            "predicted": "OWL",
+            "count": 2
+          },
+          {
+            "actual": "ANY",
+            "predicted": "BATH",
+            "count": 2
+          },
+          {
+            "actual": "ANY",
+            "predicted": "PUZZLE",
+            "count": 2
+          },
+          {
+            "actual": "ARM",
+            "predicted": "TABLE",
+            "count": 2
+          },
+          {
+            "actual": "AWAKE",
+            "predicted": "UP",
+            "count": 2
+          },
+          {
+            "actual": "BACKYARD",
+            "predicted": "BROTHER",
+            "count": 2
+          }
+        ]
+      },
+      "onnx_max_abs_error": 2.86102294921875e-06,
+      "output": "ml\\checkpoints\\real-v1-c1"
+    },
+    "b": {
+      "synthetic": false,
+      "calibration": {
+        "temperature": 1.0921069578308795,
+        "nll_before": 1.5389160877794488,
+        "nll_after": 1.517605912012752
+      },
+      "test": {
+        "n": 77,
+        "greedy_cer": 0.45228215767634855,
+        "greedy_wer": 0.959349593495935,
+        "greedy_isolated_character_top1": null,
+        "greedy_dynamic_jz_top1": {
+          "J": null,
+          "Z": null
+        },
+        "beam_cer": 0.4387966804979253,
+        "beam_wer": 0.943089430894309,
+        "beam_isolated_character_top1": null,
+        "beam_dynamic_jz_top1": {
+          "J": null,
+          "Z": null
+        },
+        "isolated_character_n": 0
+      },
+      "onnx_max_abs_error": 3.725290298461914e-06,
+      "output": "ml\\checkpoints\\real-v1-b"
+    },
+    "d2": {
+      "synthetic": false,
+      "license_tier": "commercial",
+      "non_commercial": false,
+      "validation": {
+        "n": 12,
+        "reference_glosses": 48,
+        "gloss_errors": 48,
+        "wer": 1.0,
+        "beam_gloss_errors": 48,
+        "beam_wer": 1.0,
+        "val_loss": 5.850207805633545
+      },
+      "test": {
+        "n": 12,
+        "reference_glosses": 49,
+        "gloss_errors": 49,
+        "wer": 1.0,
+        "beam_gloss_errors": 49,
+        "beam_wer": 1.0,
+        "val_loss": 5.849894046783447
+      }
+    }
+  },
+  "checkpoint_sha256": {
+    "c1": "58c7ab7d0b2c5720987a0be6f6e441fc09502171de719041db02e2c24f6d4439",
+    "b": "6212d829e84c2ca58aa8614d84e341ccc296cf4f4cd544cf0a179f23905b76c1",
+    "d2": "0f44445852b890e8b5ede681af6f7c9dc8f7dbbe8b097dbc2026c762c26ab062"
+  },
+  "limitations": [
+    "Bounded real-data CPU baseline, not full-corpus training or measured webcam accuracy.",
+    "GISLR held-out test contains one signer; idle examples contain no tracked hands, not first-party visible-hand rest.",
+    "ASLFR uses 2..16-character supported phrases; ampersand has no training support.",
+    "D2 uses stitched isolated clips, not natural continuous ASL."
+  ],
+  "export_precision": "C1/D2 weight-only FP16; B encoder FP16 with output and normalization parameters retained in FP32 to pass unchanged probability parity.",
+  "accuracy_acceptance_met": {
+    "c1": false,
+    "b": false,
+    "d2": false
+  },
+  "validation": {
+    "ml_and_server_tests": 169,
+    "frontend_tests": 316,
+    "web_build": "passed",
+    "independent_evaluations": "C1/B/D2 exactly reproduce saved held-out reports",
+    "browser_lab": "passed; all 3 real model hashes/inference, 251 C1 labels, 192-dimensional embedding, no page errors; camera off"
+  }
+}
