@@ -41,7 +41,17 @@ const ROOM_PATTERN = /^[a-z0-9-]{3,32}$/;
 
 function roomUrl(room: string, name: string, role: Role): string {
   const params = new URLSearchParams({ room, name, role });
-  return `${window.location.pathname}#/room?${params}`;
+  return `/room?${params}`;
+}
+
+const normalizeRoom = (value: string) => value.toLowerCase().replace(/\s+/g, '-');
+function randomRoom(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(6));
+  return `call-${Array.from(bytes, byte => 'abcdefghijklmnopqrstuvwxyz0123456789'[byte % 36]).join('')}`;
+}
+function initialRoom(): string {
+  const requested = normalizeRoom(new URLSearchParams(window.location.hash.split('?')[1] ?? '').get('room') ?? '');
+  return ROOM_PATTERN.test(requested) ? requested : randomRoom();
 }
 
 function readRoomParams(query: string): { room: string; name: string; role: Role } | null {
@@ -54,17 +64,34 @@ function readRoomParams(query: string): { room: string; name: string; role: Role
   return { room, name, role };
 }
 
+const roleOptions: { value: Role; label: string; help: string }[] = [
+  { value: 'signer', label: 'Signer', help: 'You sign; recognized signs are spoken aloud for the other person.' },
+  { value: 'hearing', label: 'Hearing participant', help: 'You speak; your speech appears as captions for the signer.' },
+];
+
 export default function Call({ welcomeFlight = false, onLanded }: { welcomeFlight?: boolean; onLanded?: () => void }) {
   const [flightEntry] = useState(welcomeFlight);
-  const [room, setRoom] = useState('demo-room');
+  const [room, setRoom] = useState(initialRoom);
   const [name, setName] = useState('');
   const [role, setRole] = useState<Role>('signer');
-  const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState('');
+  const roomValid = ROOM_PATTERN.test(room);
+  const canJoin = Boolean(name.trim()) && roomValid;
+  const hint = !name.trim() ? 'Enter your name to join' : !roomValid ? 'Fix the room name to join' : '';
 
   function open(event: FormEvent) {
     event.preventDefault();
-    const tab = window.open(roomUrl(room, name.trim(), role), '_blank');
-    setError(tab ? '' : 'Your browser blocked the new tab. Allow pop-ups for this site, then try again.');
+    if (!canJoin) return;
+    window.location.hash = roomUrl(room, name.trim(), role);
+  }
+  async function copyInvite() {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}#/conversation?room=${encodeURIComponent(room)}`);
+      setCopyError('');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch { setCopied(false); setCopyError('Couldn’t copy the link. Copy it from the address bar after joining.'); }
   }
 
   return (
@@ -76,11 +103,25 @@ export default function Call({ welcomeFlight = false, onLanded }: { welcomeFligh
           <section className="home-join" aria-label="Join a call">
             <form className="join-bar" onSubmit={open}>
               <label>Name<input autoComplete="given-name" placeholder="Your name" value={name} maxLength={40} required onChange={event => setName(event.target.value)} /></label>
-              <label>Room<input value={room} pattern="(?:[a-z0-9]|-){3,32}" title="3–32 lowercase letters, numbers or hyphens" required onChange={event => setRoom(event.target.value)} /></label>
-              <label>Role<select value={role} onChange={event => setRole(event.target.value as Role)}><option value="signer">Signer</option><option value="hearing">Hearing participant</option></select></label>
-              <Button variant="primary" type="submit" disabled={!name.trim()}>Join <Icon name="arrow" /></Button>
+              <div className="join-field">
+                <label>Room name<input value={room} required spellCheck={false} autoCapitalize="none" aria-invalid={!roomValid || undefined} aria-describedby={roomValid ? 'room-help' : 'room-help room-error'} onChange={event => setRoom(normalizeRoom(event.target.value))} onBlur={() => setRoom(value => normalizeRoom(value).replace(/^-+|-+$/g, ''))} /></label>
+                <p className="join-help" id="room-help">3–32 lowercase letters, numbers or hyphens. Share the invite link so the other person joins the same room.</p>
+                {!roomValid && <p className="join-error" id="room-error">Use 3–32 lowercase letters, numbers or hyphens.</p>}
+                <div className="join-invite">
+                  <Button type="button" onClick={() => void copyInvite()} disabled={!roomValid}>Copy invite link</Button>
+                  <span role="status" className="join-help">{copied ? 'Copied' : ''}</span>
+                </div>
+                {copyError && <p className="join-error" role="alert">{copyError}</p>}
+              </div>
+              <fieldset className="join-roles"><legend>Role</legend>
+                {roleOptions.map(option => <label className="role-option" key={option.value}>
+                  <input type="radio" name="role" value={option.value} checked={role === option.value} aria-describedby={`role-${option.value}`} onChange={() => setRole(option.value)} />
+                  <span><span className="role-option__label">{option.label}</span><span className="join-help" id={`role-${option.value}`}>{option.help}</span></span>
+                </label>)}
+              </fieldset>
+              <Button variant="primary" type="submit" disabled={!canJoin} aria-describedby="join-hint">Join <Icon name="arrow" /></Button>
+              <p className="join-help" id="join-hint">{hint ? `${hint}. ` : ''}Next: a quick camera and microphone check before you join.</p>
             </form>
-            {error && <div className="error-banner" role="alert">{error}</div>}
           </section>
         </div>
       </div>
@@ -91,6 +132,11 @@ export default function Call({ welcomeFlight = false, onLanded }: { welcomeFligh
 
 export function CallRoom({ query }: { query: string }) {
   const [checked, setChecked] = useState(false);
+  useEffect(() => {
+    if (!checked) return;
+    const main = document.querySelector<HTMLElement>('main');
+    if (main) { main.tabIndex = -1; main.focus({ preventScroll: true }); }
+  }, [checked]);
   const params = readRoomParams(query);
   if (!params) {
     return (

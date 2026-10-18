@@ -77,6 +77,8 @@ export function PreCall({ room, name, role, onJoin }: { room: string; name: stri
   }, [camera.stream]);
 
   const ready = camera.status === 'ready' && (role === 'signer' || microphone.status === 'ready');
+  const roleLabel = role === 'signer' ? 'Signer' : 'Hearing participant';
+  const needed = [camera.status === 'ready' ? '' : 'start your camera', role === 'hearing' && microphone.status !== 'ready' ? 'test your microphone' : ''].filter(Boolean);
   function start(kind: DeviceKind) { void check.current?.start(kind); }
   function join() {
     if (!ready || departing.current) return;
@@ -87,10 +89,11 @@ export function PreCall({ room, name, role, onJoin }: { room: string; name: stri
     onJoin();
   }
   return <main className="studio-page precall-page" id="main-content">
-    <PageHeader title="Devices"
-      accessory={<Badge tone={ready ? 'positive' : 'neutral'}>{ready ? 'Ready to join' : 'Only you can see this'}</Badge>} />
+    <p className="eyebrow precall-room">Call · {room}</p>
+    <PageHeader title="Check your camera and mic"
+      accessory={<Badge tone={ready ? 'positive' : 'neutral'}>{ready ? 'Ready to join' : 'Checks needed'}</Badge>} />
     <div className="studio-layout">
-      <section className="camera-stage" aria-label="Pre-call camera preview">
+      <div className="precall-stage"><section className="camera-stage" aria-label="Pre-call camera preview">
         <video ref={video} autoPlay muted playsInline className="mirror" aria-label="Your local camera preview" />
         <div className={`precall-camera-content${camera.status === 'ready' ? ' precall-camera-content--ready' : ''}`}>
           {camera.status !== 'ready' && <div className="precall-camera-prompt"><h2>A moment to get ready.</h2><p>{camera.status === 'starting' ? 'Allow camera access when your browser asks.' : 'Start your camera to check your framing and lighting.'}</p></div>}
@@ -102,6 +105,7 @@ export function PreCall({ room, name, role, onJoin }: { room: string; name: stri
         </div>
         <span className="camera-stage__label"><span className="status-dot" />{camera.status === 'ready' ? 'Local preview · Mirrored' : 'Camera off'}</span>
       </section>
+      <p className="precall-caption">Only you can see this preview.</p></div>
       <aside className="studio-sidebar">
         <Surface aria-labelledby="precall-camera-title"><h2 id="precall-camera-title">Camera check</h2>
           <p className="note">Keep your face and hands in view, with light in front of you.</p>
@@ -116,12 +120,14 @@ export function PreCall({ room, name, role, onJoin }: { room: string; name: stri
             {microphone.status === 'starting' && <Button onClick={() => check.current?.stop('microphone')}>Cancel microphone check</Button>}
           </>}
         </Surface>
-        <Surface className="precall-join"><p className="eyebrow">{room}</p><h2>Your seat is ready.</h2><p className="note">Joining as {name} · {role === 'signer' ? 'Signer' : 'Hearing participant'}</p>
-          <Button variant="primary" disabled={!ready} onClick={join}>Join conversation <Icon name="arrow" /></Button>
-          <a href="#/conversation">Back to room details</a>
-        </Surface>
       </aside>
     </div>
     <p className="studio-privacy"><Icon name="shield" />Checks stay on this device. Nothing is recorded or sent to the room until you join. Your browser’s default camera and microphone are used.</p>
+    <div className="precall-join" role="group" aria-label="Join the call">
+      <div className="precall-join__info"><p className="precall-join__title">Joining as {name} · {roleLabel}</p>
+        <p className="note" id="precall-join-hint">{ready ? 'Checks passed. You can join.' : `Still needed: ${needed.join(' and ')}.`}</p></div>
+      <Button variant="primary" disabled={!ready} aria-describedby="precall-join-hint" onClick={join}>Join call <Icon name="arrow" /></Button>
+      <a className="precall-back" href="#/conversation">Back to call setup</a>
+    </div>
   </main>;
 }

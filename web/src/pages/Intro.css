@@ -2,6 +2,7 @@
 .intro-heading { position: relative; z-index: 1; text-align: center; }
 .intro-screen h1 { font-family: var(--font-serif); font-size: clamp(4.75rem, 10vw, 8.75rem); font-weight: 400; line-height: 1.08; letter-spacing: -.065em; margin: 0; }
 .intro-tagline { margin: 16px 0 0; color: var(--color-muted); font-size: var(--text-body); line-height: 1.5; }
+.intro-purpose { max-width: 52ch; margin: 8px auto 0; color: var(--color-muted); font-size: 1rem; line-height: 1.5; text-wrap: pretty; }
 .intro-account { display: inline-flex; align-items: center; min-height: 44px; margin-top: 12px; font-size: 1rem; color: var(--color-muted); }
 .intro-illustration { width: min(100%, 960px, max(0px, calc((100svh - 400px) * 1.5))); margin: 0 0 -20px; }
 .intro-begin .ui-icon { transition: transform 160ms; }
@@ -9,11 +10,18 @@
 .intro-screen--departing .intro-heading { animation: title-depart 400ms 120ms ease-in both; }
 .intro-screen--departing .intro-begin { opacity: 0; transition: opacity 180ms; }
 @keyframes title-depart { from { opacity: 1; } to { opacity: 0; } }
-@media (max-width: 680px) {
+@media (max-width: 600px) {
   .intro-screen { padding: 40px 16px 48px; }
   .intro-screen h1 { font-size: clamp(4.5rem, 18vw, 6.5rem); }
   .intro-illustration { width: min(110%, max(0px, calc((100svh - 320px) * 1.5))); max-width: none; margin: 0 0 0 -4%; }
 }
-@media (max-height: 600px) and (min-width: 681px) { .intro-screen { padding: 16px; row-gap: 12px; } .intro-screen h1 { font-size: 4.5rem; } .intro-illustration { width: min(100%, max(0px, calc((100svh - 260px) * 1.5))); } }
+@media (max-height: 600px) and (min-width: 601px) { .intro-screen { padding: 16px; row-gap: 12px; } .intro-screen h1 { font-size: 4.5rem; } .intro-illustration { width: min(100%, max(0px, calc((100svh - 260px) * 1.5))); } }
+@media (max-height: 500px) and (orientation: landscape) {
+  .intro-screen { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: 1fr auto; column-gap: 24px; row-gap: 8px; padding: 16px 24px; }
+  .intro-heading { grid-column: 1; grid-row: 1; }
+  .intro-screen h1 { font-size: 3.5rem; }
+  .intro-illustration { grid-column: 2; grid-row: 1 / span 2; width: min(100%, calc(60svh * 1.5)); margin: 0; }
+  .intro-begin { grid-column: 1; grid-row: 2; }
+}
 @media (prefers-reduced-motion: reduce) { .intro-begin:hover .ui-icon { transform: none; } }
 .intro-screen--departing .intro-illustration { z-index: 2; }
