@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
 import Intro from './pages/Intro'
 import { BirdLoading } from './components/BirdLoading'
 import './App.css'
@@ -23,8 +23,13 @@ function PageContent({ children }: { children: ReactNode }) {
 
 export default function App() {
   const [hash, setHash] = useState(new URLSearchParams(window.location.search).has('auth_callback') ? '#/training' : window.location.hash)
+  const [welcomeFlight, setWelcomeFlight] = useState(false)
+  const finishLanding = useCallback(() => setWelcomeFlight(false), [])
   useEffect(() => {
-    const update = () => setHash(window.location.hash)
+    const update = () => {
+      if (!/^#\/?conversation(?:\?|$)/.test(window.location.hash)) setWelcomeFlight(false)
+      setHash(window.location.hash)
+    }
     window.addEventListener('hashchange', update)
     return () => window.removeEventListener('hashchange', update)
   }, [])
@@ -42,7 +47,7 @@ export default function App() {
     { route: 'training', label: 'My signs' },
     { route: 'stats', label: 'Stats' },
   ]
-  if (isIntro) return <Intro key={hash} />
+  if (isIntro) return <Intro key={hash} onDepart={setWelcomeFlight} />
   return <>
     <a className="skip-link" href="#main-content" onClick={event => {
       event.preventDefault()
@@ -55,7 +60,7 @@ export default function App() {
     </header>
     <Suspense fallback={<BirdLoading />}>
       <PageContent key={`${route}?${query}`}>
-        {route === 'training' ? <PersonalSigns /> : route === 'speech-check' ? <SpeechCheck /> : route === 'design-kit' ? <DesignKit /> : route === 'stats' ? <Stats /> : route === 'record' ? <Recorder /> : route === 'bench' ? <Bench /> : route === 'room' ? <CallRoom key={query} query={query} /> : <Call />}
+        {route === 'training' ? <PersonalSigns /> : route === 'speech-check' ? <SpeechCheck /> : route === 'design-kit' ? <DesignKit /> : route === 'stats' ? <Stats /> : route === 'record' ? <Recorder /> : route === 'bench' ? <Bench /> : route === 'room' ? <CallRoom key={query} query={query} /> : <Call welcomeFlight={welcomeFlight} onLanded={finishLanding} />}
       </PageContent>
     </Suspense>
   </>

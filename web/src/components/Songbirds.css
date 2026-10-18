@@ -1,0 +1,30 @@
+.songbirds { position: relative; aspect-ratio: 3 / 2; }
+.songbirds__branch { display: block; width: 100%; height: 100%; object-fit: contain; }
+.songbirds__welcome { position: absolute; left: 55%; top: 2%; width: 44%; aspect-ratio: 1; transform-origin: 44% 61%; }
+.songbirds--landing .songbirds__welcome { z-index: 5; animation: bird-branch-landing 1200ms cubic-bezier(.22, .45, .32, 1) both; }
+.songbirds--landing .bird-illustration__sprite { animation: bird-landing-wings 1200ms steps(1, end) both; }
+/* Keep the measured perch still while the incoming bird crosses the page. */
+.home-page--flight-entry { animation: none; }
+@keyframes bird-branch-landing {
+  0% { transform: translate(var(--landing-x), var(--landing-y)) scale(var(--landing-scale)); }
+  25% { transform: translate(calc(var(--landing-x) * .75), calc(var(--landing-y) * .75 - 40px)) scale(1.08) rotate(-5deg); }
+  55% { transform: translate(calc(var(--landing-x) * .3), calc(var(--landing-y) * .3 - 32px)) scale(1.04) rotate(-4deg); }
+  80% { transform: translate(0, -6%) scale(1) rotate(-2deg); }
+  92% { transform: translate(0, 1%) scale(1); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes bird-landing-wings {
+  0% { background-position: 100% 100%; transform: translate(-1%, 18%); }
+  8% { background-position: 100% 0; transform: translate(-1.4%, -2.5%); }
+  16% { background-position: 0 100%; transform: translate(1%, 17%); }
+  24% { background-position: 50% 100%; transform: translate(-1%, 15%); }
+  32% { background-position: 100% 100%; transform: translate(-1%, 18%); }
+  40% { background-position: 100% 0; transform: translate(-1.4%, -2.5%); }
+  48% { background-position: 0 100%; transform: translate(1%, 17%); }
+  56% { background-position: 100% 0; transform: translate(-1.4%, -2.5%); }
+  68%, 78% { background-position: 50% 0; transform: translate(1.5%, -2.2%); }
+  88%, 100% { background-position: 0 0; transform: translate(0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .songbirds--landing .songbirds__welcome, .songbirds--landing .bird-illustration__sprite { animation: none; }
+}

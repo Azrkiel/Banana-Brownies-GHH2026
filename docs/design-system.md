@@ -16,7 +16,12 @@ remain archived in `docs/design/anthropic/` for provenance.
   flying bird replaces route loading screens. Both assets are 1536 × 1024.
 - `web/public/notebook/songbirds.webp`: two realistic songbirds facing each other
   on a leafy branch, about 400 kB, 1536 × 1024 with transparency. The call form
-  and room standby use this separate illustration from the approved reference.
+  originally used this illustration; it is retained as the reference.
+- `web/public/notebook/branch-blue.webp`: the regenerated extended branch, about
+  346 kB, 1536 × 1024 with transparency. The blue bird sits on the left; an empty
+  perch on the right receives the separate welcome sprite. Both the Call page
+  and room standby use this composition. See [welcome motion](intro.md) for the
+  connected takeoff, loading and landing sequence.
 - The images were created with OpenAI image generation using the user's naturalist
   butterfly and Claude Opus 5.5 screenshots as visual direction, then encoded as
   WebP. They contain no text. Text and controls are accessible HTML.

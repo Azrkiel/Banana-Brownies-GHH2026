@@ -50,7 +50,8 @@ function readRoomParams(query: string): { room: string; name: string; role: Role
   return { room, name, role };
 }
 
-export default function Call() {
+export default function Call({ welcomeFlight = false, onLanded }: { welcomeFlight?: boolean; onLanded?: () => void }) {
+  const [flightEntry] = useState(welcomeFlight);
   const [room, setRoom] = useState('demo-room');
   const [name, setName] = useState('');
   const [role, setRole] = useState<Role>('signer');
@@ -63,10 +64,10 @@ export default function Call() {
   }
 
   return (
-    <main className="call-page home-page" id="main-content">
+    <main className={`call-page home-page${flightEntry ? ' home-page--flight-entry' : ''}`} id="main-content">
       <header className="home-heading"><h1>Call</h1></header>
       <div className="home-layout">
-        <Songbirds className="home-illustration" />
+        <Songbirds className="home-illustration" landing={welcomeFlight} onLanded={onLanded} />
         <section className="home-join" aria-label="Join a call">
           <form className="join-bar" onSubmit={open}>
             <label>Name<input autoComplete="given-name" placeholder="Your name" value={name} maxLength={40} required onChange={event => setName(event.target.value)} /></label>

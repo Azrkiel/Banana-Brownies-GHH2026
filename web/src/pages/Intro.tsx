@@ -8,18 +8,19 @@ const motionQuery = '(prefers-reduced-motion: reduce)';
 const contrastQuery = '(forced-colors: active)';
 const preloadCall = () => { void import('./Call').catch(() => { /* Normal navigation can retry loading the route. */ }); };
 
-export default function Intro() {
+export default function Intro({ onDepart }: { onDepart?: (animate: boolean) => void }) {
   const [departing, setDeparting] = useState(false);
   const inFlight = useRef(false);
   const ready = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const finish = useCallback(() => {
+  const finish = useCallback((animate = false) => {
     if (!inFlight.current) return;
     inFlight.current = false;
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
+    onDepart?.(animate);
     window.location.hash = '/conversation';
-  }, []);
+  }, [onDepart]);
 
   useEffect(() => {
     document.title = 'SignLine';
@@ -68,7 +69,7 @@ export default function Intro() {
       <p className="intro-tagline">Video calls. Shared captions.</p>
       <a className="intro-account" href="#/training">My signs · Sign in with GitHub</a>
     </header>
-    <BirdIllustration className="intro-illustration" departing={departing} onFlightEnd={finish} />
+    <BirdIllustration className="intro-illustration" departing={departing} onFlightEnd={() => finish(true)} />
     <a className="ui-button ui-button--primary intro-begin" href="#/conversation" onClick={begin} onPointerEnter={preloadCall} onFocus={preloadCall} aria-disabled={departing || undefined}>Begin <Icon name="arrow" /></a>
   </main>;
 }
