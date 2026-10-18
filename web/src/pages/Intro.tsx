@@ -75,7 +75,7 @@ export default function Intro({ onDepart }: { onDepart?: (animate: boolean) => v
       <p className="intro-purpose">For a Deaf or hard of hearing signer and a hearing participant: recognized signs become spoken English, and speech becomes captions.</p>
       <a className="intro-account" href="#/training">{signedIn ? 'My signs' : 'Sign in with GitHub to save your own signs'}</a>
     </header>
-    <BirdIllustration className="intro-illustration" departing={departing} onFlightEnd={() => finish(true)} />
+    <div className="intro-stage"><BirdIllustration className="intro-illustration" departing={departing} onFlightEnd={() => finish(true)} /></div>
     <a className="ui-button ui-button--primary intro-begin" href="#/conversation" onClick={begin} onPointerEnter={preloadCall} onFocus={preloadCall} aria-disabled={departing || undefined}>Begin <Icon name="arrow" /></a>
   </main>;
 }
