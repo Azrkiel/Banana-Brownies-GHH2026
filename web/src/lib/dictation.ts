@@ -1,6 +1,6 @@
 import type { WordPrediction } from './wordModel';
 
-export type DictatedWord = { label: string; score: number };
+export type DictatedWord = { label: string; score: number; alternatives?: { gloss: string; p: number }[]; nmmTags?: string[] };
 export type DictationEvent =
   | { type: 'word'; word: DictatedWord; words: DictatedWord[] }
   | { type: 'sentence'; words: DictatedWord[] };

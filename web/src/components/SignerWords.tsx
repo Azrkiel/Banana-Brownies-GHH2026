@@ -10,6 +10,7 @@ import { signLabel } from '../lib/signLabels';
 import { sentenceOrFallback } from '../lib/signedSentence';
 import { Button } from './ui';
 import './SignerWords.css';
+import { V2SignerWords } from './V2SignerWords';
 
 type State = 'off' | 'loading' | 'ready' | 'live' | 'capturing' | 'review' | 'failed';
 type Preview = { words: DictatedWord[]; text: string | null };
@@ -39,7 +40,8 @@ function heldReason(prediction: WordPrediction): string {
   return 'Not sure about this sign. Try again, or type the word yourself.';
 }
 
-type Props = {
+export type SentenceDetails = { confidence: number; nmmTags: string[]; allowSpeak: boolean };
+export type SignerWordsProps = {
   camera: RefObject<HTMLVideoElement | null>;
   /** True only while the call can send. A reconnect keeps this panel mounted and just pauses sending. */
   connected: boolean; reconnecting?: boolean;
@@ -50,11 +52,13 @@ type Props = {
   /** Turns dictated signs into the sentence shown in the preview. */
   onPrepare(words: DictatedWord[]): Promise<string>;
   /** Sends the previewed sentence; resolves to the text that was sent, or null if it was not. */
-  onSentence(text: string): Promise<string | null>;
+  onSentence(text: string, details?: SentenceDetails): Promise<string | null>;
+  onRetract?(): void;
+  onHypothesis?(words: DictatedWord[]): void;
 };
 
 /** Signer-only. Live dictation and single-sign capture both end in the same preview: Send now, Cancel, or send automatically. */
-export function SignerWords({ camera, connected, reconnecting = false, onPending, onFrame, onPrepare, onSentence }: Props) {
+function LegacySignerWords({ camera, connected, reconnecting = false, onPending, onFrame, onPrepare, onSentence, onRetract }: SignerWordsProps) {
   const { user } = useAuth();
   const [source, setSource] = useState<'shared' | 'personal'>('shared');
   const [state, setState] = useState<State>('off');
@@ -96,6 +100,7 @@ export function SignerWords({ camera, connected, reconnecting = false, onPending
   const holdStreak = useRef<{ letter: string | null; frames: number }>({ letter: null, frames: 0 });
   /** Teaching: any steady hold (10 still frames) is saved; the next needs a move or a lowered hand first. */
   const teachHold = useRef<{ frames: number; locked: boolean }>({ frames: 0, locked: false });
+  const retractRef = useRef(onRetract); retractRef.current = onRetract;
   const frameRef = useRef(onFrame);
   const dictatingRef = useRef(true);
   const connectedRef = useRef(connected);
@@ -141,7 +146,15 @@ export function SignerWords({ camera, connected, reconnecting = false, onPending
     const key = (event: KeyboardEvent) => {
       if (typingField(document.activeElement) || event.metaKey || event.ctrlKey || event.altKey || !stopLive.current) return;
       if (event.key === 'l' || event.key === 'L') { chooseMode(modeRef.current === 'words' ? 'letters' : 'words'); event.preventDefault(); return; }
-      if (modeRef.current !== 'letters') return;
+      if (modeRef.current !== 'letters') {
+        if (event.key === 'Backspace') {
+          const draft = dictation.current.words;
+          if (draft.length) { const next = draft.slice(0, -1); dictation.current.load(next); setSigned(next); }
+          else retractRef.current?.();
+          event.preventDefault();
+        }
+        return;
+      }
       if ((event.key === ' ' || event.key === 'Enter') && !(document.activeElement instanceof HTMLButtonElement)) { endWord(); event.preventDefault(); }
       if (event.key === 'Backspace') { setSpell(spellingRef.current.slice(0, -1)); event.preventDefault(); }
     };
@@ -441,4 +454,11 @@ export function SignerWords({ camera, connected, reconnecting = false, onPending
       </div>
     </div>
   </section>;
+}
+
+export function SignerWords(props: SignerWordsProps) {
+  const [fallback, setFallback] = useState(false);
+  return fallback ? <><p role="status">Using the fallback recognizer. Verified v2 models are unavailable on this device.</p>
+    <Button onClick={props.onRetract} disabled={!props.connected}>That was wrong</Button><LegacySignerWords {...props} /></>
+    : <V2SignerWords {...props} onFallback={() => setFallback(true)} />;
 }

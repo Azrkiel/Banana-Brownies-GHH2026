@@ -16,6 +16,7 @@ export type Role = 'signer' | 'hearing';
 export type Caption = {
   id: string; speaker: string; role: Role;
   kind: 'english' | 'speech'; text: string; final: boolean; ts: number;
+  confidence?: number; nmmTags?: string[];
   retracted?: boolean; // signer withdrew a mistaken sentence
   revision?: number; // ordered speech draft/final updates; other producers remain compatible
 };
@@ -25,4 +26,6 @@ export type Ctrl =
   | { type: 'clarify' }
   | { type: 'attention' }
   | { type: 'speak-local'; text: string }
+  | { type: 'clear'; captionId: string }
+  | { type: 'gloss'; words: { label: string; score: number; nmmTags?: string[] }[] }
   | { type: 'caption-clear'; id: string; revision: number };

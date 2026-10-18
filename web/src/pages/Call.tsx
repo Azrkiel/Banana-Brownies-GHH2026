@@ -6,11 +6,12 @@ import type { RemoteTrack } from 'livekit-client';
 import { joinCall, joinErrorMessage, SECURE_CONTEXT_ERROR, type Call as CallT, type CallStatus } from '../lib/call';
 import { CaptionLane } from '../components/CaptionLane';
 import { PreCall } from '../components/PreCall';
-import { SignerWords } from '../components/SignerWords';
+import { SignerWords, type SentenceDetails } from '../components/SignerWords';
 import { counterAnnouncement, createCaptionHistory, LOCAL_SOURCE } from '../lib/captions';
 import { createSpeechCaptions } from '../lib/speechCaptions';
 import { createCallSpeech, type CallSpeechState } from '../lib/callSpeech';
 import { getVoices, translateGloss, type VoiceInfo } from '../lib/api';
+import type { DictatedWord } from '../lib/dictation';
 import { glossToEnglish } from '../lib/signedSentence';
 import { signLabel } from '../lib/signLabels';
 import { drawTileOverlay } from '../lib/landmarks';
@@ -197,6 +198,9 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
   const voice = useRef<SignerVoice | null>(null);
   const speechQueue = useRef<Promise<void>>(Promise.resolve());
   const speakEpoch = useRef(0);
+  const lastSignerCaption = useRef<string | null>(null);
+  const [liveGloss, setLiveGloss] = useState<DictatedWord[]>([]);
+
   const speech = useRef<ReturnType<typeof createCallSpeech> | null>(null);
   const delivery = useRef<ReturnType<typeof createSpeechCaptions> | null>(null);
   const mutingRef = useRef(false);
@@ -413,9 +417,11 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
           onCtrl: (message, identity) => {
             if (!active()) return;
             if (message.type === 'caption-clear') history.clear(message.id, message.revision, identity);
+            if (message.type === 'clear') history.retract(message.captionId, identity);
+            if (message.type === 'gloss') setLiveGloss(message.words);
             if (message.type === 'tts') recognizer.playback(identity, message.on);
           },
-          onPeerLeft: identity => { if (active()) { history.clearDrafts(identity); recognizer.playback(identity, false); } },
+          onPeerLeft: identity => { if (active()) { setLiveGloss([]); history.clearDrafts(identity); recognizer.playback(identity, false); } },
           onMicrophoneMuted: value => { if (active()) { setMuted(value); recognizer.mute(value); } },
           onRemoteVideo: track => {
             if (!active()) return;
@@ -472,7 +478,7 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
     speech.current?.enable(false);
     speech.current?.dispose(); speech.current = null;
     delivery.current?.dispose(); delivery.current = null;
-    history.clearDrafts();
+    history.clearDrafts(); setLiveGloss([]); lastSignerCaption.current = null;
     generation.current++;
     speakEpoch.current++;
     connectionAbort.current?.abort();
@@ -521,27 +527,43 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
   }
 
   /** Turns dictated signs into the sentence the signer sees in the preview before anything is sent. */
-  async function prepareSigned(words: { label: string; score: number }[]): Promise<string> {
+  async function prepareSigned(words: DictatedWord[]): Promise<string> {
     const context = captions.filter(caption => caption.role === 'hearing' && caption.final && !caption.retracted).slice(-3).map(caption => caption.text);
     return spokenText(polish ? await glossToEnglish(words, context, translateGloss) : words.map(word => word.label.startsWith('fs-') ? signLabel(word.label) : word.label).join(' '));
   }
 
   /** Sends a sentence the signer confirmed (or let the preview countdown confirm): only confident signs reach here. */
-  async function sendSigned(text: string): Promise<string | null> {
+  async function sendSigned(text: string, details?: SentenceDetails): Promise<string | null> {
     const current = call.current;
     if (!current || !canSend || !text.trim()) return null;
-    const attempt = generation.current;
-    const caption: Caption = { id: crypto.randomUUID(), speaker: name, role, kind: 'english', text, final: true, ts: Date.now() };
+    const attempt = generation.current, speechAttempt = speakEpoch.current;
+    const caption: Caption = { id: crypto.randomUUID(), speaker: name, role, kind: 'english', text, final: true, ts: Date.now(), ...(details ? { confidence: details.confidence, nmmTags: details.nmmTags } : {}) };
     try {
+      lastSignerCaption.current = caption.id;
       await current.sendCaption(caption);
       if (generation.current !== attempt) return null;
       history.receive(caption, LOCAL_SOURCE);
-      if (speakAloud) speak(text);
+      if (speakEpoch.current === speechAttempt && speakAloud && (details?.allowSpeak ?? true)) speak(text);
       return text;
     } catch {
       // The signer panel reports this failure next to the preview, so it is not repeated in the page banner.
       return null;
     }
+  }
+
+
+  async function retractSigned() {
+    const id = lastSignerCaption.current, current = call.current;
+    if (!id || !current || !canSend) return;
+    stopSpeaking();
+    history.retract(id, LOCAL_SOURCE);
+    try {
+      await current.sendCtrl({ type: 'clear', captionId: id });
+      if (lastSignerCaption.current === id) lastSignerCaption.current = null;
+    } catch { setError('The correction could not be delivered. Press “That was wrong” to retry.'); }
+  }
+  function shareGloss(words: DictatedWord[]) {
+    if (canSend) void call.current?.sendCtrl({ type: 'gloss', words: words.map(({ label, score, nmmTags }) => ({ label, score, nmmTags })) }).catch(() => {});
   }
 
   /** Queued so consecutive captions are spoken in order rather than cutting each other off. */
@@ -669,7 +691,8 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
             {speechError && <p className="call-speech__error" role="alert">{speechError}</p>}
             {deliveryError && <p className="call-speech__error" role="alert">{deliveryError}</p>}
           </section>}
-          {role === 'signer' && <SignerWords key={busy ? 'call' : 'ended'} camera={local} connected={canSend} reconnecting={reconnecting} onPending={setPendingWords} onFrame={drawTracking} onPrepare={prepareSigned} onSentence={sendSigned} />}
+          {role === 'hearing' && liveGloss.length > 0 && <div className="v2-gloss-strip" aria-label="Live signed words">{liveGloss.map((word, i) => <span key={i} className={word.score >= .8 ? 'v2-gloss high' : 'v2-gloss medium'}>{word.label} {Math.round(word.score*100)}% {(word.nmmTags ?? []).join(' ')}</span>)}</div>}
+          {role === 'signer' && <SignerWords key={busy ? 'call' : 'ended'} camera={local} connected={canSend} reconnecting={reconnecting} onPending={setPendingWords} onFrame={drawTracking} onPrepare={prepareSigned} onSentence={sendSigned} onRetract={() => void retractSigned()} onHypothesis={shareGloss} />}
           <div className="scope-note"><span className="note-icon" aria-hidden="true">i</span><p>Speech and sign recognition can make mistakes. The shared words are a small vocabulary; only confident signs are dictated automatically.</p></div>
           <p className="shortcuts">Shortcuts: <kbd>/</kbd> focus the caption box{role === 'hearing' && <> · <kbd>Alt</kbd>+<kbd>M</kbd> mute or unmute your microphone</>}</p>
         </div>

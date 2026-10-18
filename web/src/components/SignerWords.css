@@ -53,3 +53,10 @@
 .signer-words__alphabet .chip .x { min-width: 28px; color: var(--color-muted); border-left: 1px solid var(--color-field-border); }
 .signer-words__options { margin-top: 8px; }
 @media (max-width: 900px) { .signer-words__grid { grid-template-columns: 1fr; } .signer-words__sentence { position: static; } }
+
+.v2-gloss-strip { display: flex; flex-wrap: wrap; gap: .6rem; margin-block: 1rem; }
+.v2-gloss { border-radius: .8rem; padding: .5rem .7rem; color: #112920; }
+.v2-gloss.high { background: #8ce1b6; }
+.v2-gloss.medium { background: #f4cd78; }
+.v2-gloss select { max-width: 12rem; margin-inline-start: .4rem; }
+.v2-nmm { display: inline-block; font-weight: 650; margin-inline: .4rem; }

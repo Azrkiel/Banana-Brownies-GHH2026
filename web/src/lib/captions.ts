@@ -8,13 +8,19 @@ export function isCaption(v: unknown): v is Caption {
   return record(v) && text(v.id, 200) && text(v.speaker, 40) &&
     (v.role === 'signer' || v.role === 'hearing') && (v.kind === 'english' || v.kind === 'speech') &&
     text(v.text, 8000) && typeof v.final === 'boolean' && typeof v.ts === 'number' && Number.isFinite(v.ts) &&
+    (v.confidence === undefined || (typeof v.confidence === 'number' && Number.isFinite(v.confidence) && v.confidence >= 0 && v.confidence <= 1)) &&
+    (v.nmmTags === undefined || validTags(v.nmmTags)) &&
     (v.retracted === undefined || typeof v.retracted === 'boolean') &&
     (v.kind !== 'speech' || (v.role === 'hearing' && validRevision(v.revision) && !v.retracted));
 }
 
+const validTags = (value: unknown) => Array.isArray(value) && value.length <= 4 && value.every(tag => ['Q-YN', 'Q-WH', 'NEG', 'FS'].includes(tag));
+
 export function isCtrl(v: unknown): v is Ctrl {
   if (!record(v)) return false;
   switch (v.type) {
+    case 'clear': return text(v.captionId, 200);
+    case 'gloss': return Array.isArray(v.words) && v.words.length <= 20 && v.words.every(w => record(w) && text(w.label, 40) && typeof w.score === 'number' && Number.isFinite(w.score) && w.score >= 0 && w.score <= 1 && (w.nmmTags === undefined || validTags(w.nmmTags)));
     case 'caption-clear': return text(v.id, 200) && validRevision(v.revision);
     case 'signing': case 'tts': return typeof v.on === 'boolean';
     case 'clarify': case 'attention': return true;
@@ -45,12 +51,21 @@ export function createCaptionHistory(onChange: (captions: Caption[]) => void) {
       const existing = rows.get(key);
       // A peer may update only its own IDs, and may never change a row's kind.
       if (existing && existing.kind !== c.kind) return;
+      if (c.kind === 'english' && previous?.terminal) return;
       if (c.kind === 'speech') {
         if (previous?.terminal || existing?.final || (previous && c.revision! <= previous.revision)) return;
         remember(key, c.revision!, c.final);
       }
       rows.set(key, { ...c, id: key });
       while (rows.size > 200) rows.delete(rows.keys().next().value!);
+      publish();
+    },
+    retract(id: string, from: string) {
+      if (!from || !text(id, 200)) return;
+      const key = keyFor(from, id), existing = rows.get(key);
+      if (existing && (existing.kind !== 'english' || existing.role !== 'signer')) return;
+      remember(key, Number.MAX_SAFE_INTEGER, true);
+      if (existing) rows.set(key, { ...existing, retracted: true });
       publish();
     },
     clear(id: string, revision: number, from: string) {
