@@ -1,9 +1,10 @@
 # Bird-and-hand welcome
 
 The root URL and `#/welcome` show **SignLine**, a hand-drawn songbird perched on
-an open hand, and one **Begin** link. The warm paper, local Lora serif type and
-sparse copy carry through to the working UI. There are no subtitles or extra
-entry controls. Existing room, camera, recorder, speech, stats and design-kit
+an open hand, the tagline **Video calls. Shared captions.**, and one **Begin** link
+styled as the shared primary button. The warm paper, local Lora serif type and
+sparse copy carry through to the working UI. There are no extra entry controls.
+Existing room, camera, recorder, speech, stats and design-kit
 links still open directly. No device permission is requested on entry.
 
 ## Drawn layers and motion
@@ -22,7 +23,7 @@ the viewport center. Its final size matches the loading bird on every viewport.
 The hand first dips, then recoils upward and drops out of view over one second. Pencil wrist edges taper
 into the paper. There is no idle animation.
 
-Begin starts the 1.6-second sequence. The title and action clear while the bird
+Begin starts the 1.6-second sequence. The title, tagline and action clear while the bird
 takes off and stays centered. Navigation to `#/conversation` then hands the same
 registered pose and size to `BirdLoading.tsx` if the route is still pending.
 Its four flying poses loop until React's Suspense boundary resolves; there is no

@@ -50,8 +50,8 @@ opening the camera pages.
 
 ## Run and check
 
-The root URL opens the [notebook welcome](docs/intro.md): **SignLine**, a hand-drawn
-songbird perched on a hand, and **Begin**. Activating Begin plays a short drawn
+The root URL opens the [notebook welcome](docs/intro.md): **SignLine**, **Video calls.
+Shared captions.**, a hand-drawn songbird perched on a hand, and **Begin**. Activating Begin plays a short drawn
 takeoff with a gentle hand bounce. The view follows the bird into the center,
 where its wingbeats replace the loading screen until the call form is ready.
 Two songbirds facing each other on a branch illustrate the call page. Reduced motion

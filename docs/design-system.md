@@ -32,10 +32,11 @@ shared controls, surfaces and status indicators. Page CSS owns layout.
 
 ## Interface
 
-The welcome screen contains exactly **SignLine**, the illustration, and **Begin**.
+The welcome screen contains **SignLine**, the one-line tagline **Video calls.
+Shared captions.**, the illustration, and **Begin**.
 The drawing is decorative and hidden from assistive technology. Begin is a real
 link and plays the drawn takeoff before entering. There are no repeated entry
-actions, taglines, figure captions or numbered notes. See [welcome motion](intro.md)
+actions, figure captions or numbered notes. See [welcome motion](intro.md)
 for timing, ownership and immediate-entry fallbacks.
 
 The app header contains SignLine and five short links: Call, Camera, Speech,
@@ -50,10 +51,21 @@ instructional demo panels have been removed. Necessary consent, actual status,
 errors and data-loss notices remain. The local camera/video itself is displayed
 without an illustration filter; drawings appear only in standby states.
 
-Controls use transparent fills, thin irregular frames or double pencil underlines.
+Primary actions use solid graphite fills, cream text and irregular pencil frames.
+Begin, Join, Join conversation and Rejoin share the same size and interaction
+states; Begin keeps native link semantics. Other controls use transparent fills,
+thin irregular frames or double pencil underlines.
 Checkboxes and select indicators use ink paths while retaining native semantics.
 Status indicators retain labels; connected and warning states also have distinct
-shapes. Captions keep readable foregrounds and stable layout. No glass effects,
+shapes. Visible text has a 1rem minimum (16px at the default browser setting),
+with 18px body copy and darker ink for both main and supporting text. Disabled
+buttons retain readable labels rather than reducing text opacity.
+
+In calls, captions use 24–32px text in a solid cream panel, with a wider desktop
+column and keyboard-accessible scrolling. At 900px and below the caption panel
+comes before the video in both reading and visual order. Final and interim
+captions retain distinct solid/dashed edges and readable speaker labels.
+No glass effects,
 blur, glossy buttons or rounded cards remain.
 
 ## Access and verification
@@ -63,7 +75,7 @@ media cleanup and recording/speech consent remain intact. Reduced motion removes
 hover movement and skips the takeoff. Increased contrast strengthens borders. Forced colors removes
 paper imagery and decorative illustrations and restores native checkboxes/selects.
 
-Validation for this revision:
+Validation for the original notebook revision (before the readability update below):
 
 - All 158 frontend tests, TypeScript/production build, lint and whitespace checks pass.
 - Chromium passed 32 route/width combinations: eight routes at 1440, 768, 390 and
@@ -118,3 +130,27 @@ remain the shared design; no additional visual redesign was needed.
 These checks cover the rendered pages and local validation. Live provider calls,
 populated database stats, real camera tracking and two-laptop acceptance were not
 repeated. No roadmap card status was changed, and no deployment was performed.
+
+## Readability and captions update — October 17, 2026
+
+The landing tagline is **Video calls. Shared captions.** Supporting copy, labels,
+badges, captions' speaker names and controls now use at least 1rem; the 18px body
+size remains. Ink and supporting-text contrast against the base paper color are
+13.54:1 and 8.60:1 respectively. Solid graphite primary actions share 20px labels,
+52px minimum height, padding, borders and enabled/disabled interaction states.
+
+Call captions occupy a wider cream panel with 24–32px text. On smaller screens,
+they precede the video. Speaker labels, interim/retracted states, typed caption
+delivery and keyboard scrolling retain their behavior. The video standby layout
+reserves space for the larger local-preview labels without covering status text.
+
+Validation: all 178 frontend tests, production build, lint and whitespace checks
+passed. Chromium checked the nine routes at four widths again (36 combinations),
+including the 16px text floor, shared typography and no horizontal overflow.
+Separate call checks at 1440, 768, 390 and 320px verified identical Begin/Join/
+Join conversation/Rejoin styles, large received and interim captions, typed
+caption submission, keyboard access, Rejoin and nonoverlapping video standby
+content. These calls used a mocked LiveKit adapter and synthetic camera feed.
+Welcome checks at 320×568, 844×390 and 1920×1080 kept the tagline and Begin
+visible. Normal-motion takeoff and the centered loader, reduced motion, room
+validation and forced colors passed. Live provider checks were not repeated.

@@ -16,6 +16,7 @@ h2 { font-size: var(--text-subheading); }
 h3 { font-size: var(--text-body); }
 p { font-size: inherit; }
 label, small, th, td { font-family: var(--font-sans); }
+small { font-size: var(--text-sm); }
 input:not([type='checkbox']), select, textarea { width: 100%; min-width: 0; min-height: 48px; border: 0; border-radius: 0; background-image: var(--pencil-line); background-position: center bottom; background-size: 100% 6px; background-repeat: no-repeat; padding: 12px 16px; background-color: transparent; color: var(--color-ink); font-size: var(--text-sm); font-weight: 400; line-height: 1.5; transition: border-color var(--duration-fast), background var(--duration-fast); }
 input::placeholder, textarea::placeholder { color: var(--color-muted); opacity: 1; }
 input:not([type='checkbox']):hover, select:hover { border-color: var(--color-ink); }
@@ -30,7 +31,7 @@ table { border-collapse: collapse; width: 100%; font-size: var(--text-sm); text-
 th { font-weight: 500; font-size: var(--text-xs); color: var(--color-muted); }
 th, td { padding: 16px; border-bottom: 1px solid var(--color-border); white-space: nowrap; }
 tbody tr:last-child td { border-bottom: 0; }
-code { font-family: var(--font-mono); font-size: .8em; background: var(--color-canvas); border-radius: 4px; padding: .15em .35em; }
+code { font-family: var(--font-mono); font-size: max(1rem, .8em); background: var(--color-canvas); border-radius: 4px; padding: .15em .35em; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }

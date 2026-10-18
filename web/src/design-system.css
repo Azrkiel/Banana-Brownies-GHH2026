@@ -2,24 +2,22 @@
 
 .ui-icon { width: 22px; height: 22px; flex-shrink: 0; vertical-align: middle; }
 .ui-button { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 48px; max-width: 100%; padding: 10px 20px; background: transparent; color: var(--color-ink); border: 1px solid var(--color-field-border); border-radius: var(--radius-control); font: 400 1rem/1.5 var(--font-serif); text-align: center; text-decoration: none; cursor: pointer; transition: background 160ms, color 160ms; }
-.ui-button--primary { padding-inline: 8px; border: 0; border-radius: 0; font-size: 1.25rem; }
-.ui-button--primary::after { content: ''; position: absolute; left: 0; right: 0; bottom: 1px; height: 7px; background: var(--pencil-line) center / 100% 100% no-repeat; }
+.ui-button--primary { min-height: 52px; padding: 12px 24px; border-color: var(--color-action); background: var(--color-action); color: var(--color-on-action); font-size: 1.25rem; font-weight: 500; }
 .ui-button--ghost { border-color: transparent; padding-inline: 8px; text-decoration: underline; text-underline-offset: 5px; }
 .ui-button--danger { border-color: var(--color-danger); color: var(--color-danger); }
-.ui-button--small { min-height: 44px; padding: 8px 12px; font-size: 0.875rem; }
-.ui-button:not(:disabled):hover { background: var(--color-inset); }
-.ui-button--primary:not(:disabled):hover { background: transparent; color: var(--color-accent-hover); }
-.ui-button:disabled { color: var(--color-muted); border-color: var(--color-border); opacity: .65; cursor: not-allowed; }
-.ui-button--primary:disabled::after { opacity: .4; }
+.ui-button--small { min-height: 44px; padding: 8px 12px; font-size: 1rem; }
+.ui-button:not(:disabled):not([aria-disabled='true']):hover { background: var(--color-inset); }
+.ui-button--primary:not(:disabled):not([aria-disabled='true']):hover { background: var(--color-action-hover); border-color: var(--color-action-hover); }
+.ui-button:disabled, .ui-button[aria-disabled='true'] { color: var(--color-muted); border-color: var(--color-border); background: var(--color-inset); cursor: not-allowed; }
 .ui-surface { min-width: 0; padding: 24px 0; background: transparent; border: 0; border-top: 1px solid var(--color-border); border-radius: 0; }
 .page-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 40px; }
 .page-heading h1 { margin: 0; }
-.ui-badge { display: inline-flex; align-items: center; gap: 8px; padding: 4px 0; color: var(--color-muted); font-size: 0.8125rem; line-height: 1.4; white-space: nowrap; }
+.ui-badge { display: inline-flex; align-items: center; gap: 8px; padding: 4px 0; color: var(--color-muted); font-size: 1rem; line-height: 1.4; white-space: nowrap; }
 .status-dot { display: inline-block; width: 5px; height: 5px; flex-shrink: 0; background: currentColor; border-radius: 48% 54% 42% 55%; }
 .ui-badge--positive .status-dot { width: 9px; height: 5px; border-left: 1px solid currentColor; border-bottom: 1px solid currentColor; border-radius: 0; background: transparent; transform: rotate(-45deg); }
 .ui-badge--warning .status-dot { border-radius: 0; transform: rotate(45deg); }
 .field { display: grid; gap: 8px; font-size: 1rem; line-height: 1.5; }
-.check-field { display: flex; align-items: flex-start; gap: 12px; font-size: 0.9375rem; line-height: 1.6; color: var(--color-muted); cursor: pointer; }
+.check-field { display: flex; align-items: flex-start; gap: 12px; font-size: 1rem; line-height: 1.6; color: var(--color-muted); cursor: pointer; }
 .check-field input { flex-shrink: 0; margin: 3px 0 0; }
 .button-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
 .panel-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
@@ -28,4 +26,4 @@
 .state-panel { text-align: center; padding: 64px 24px; }
 .state-panel p { color: var(--color-muted); max-width: 48ch; margin-inline: auto; }
 @media (prefers-contrast: more) { :root { --color-border: #5f584c; --color-field-border: #302d27; } }
-@media (forced-colors: active) { .ui-button, input, select, textarea { border: 1px solid ButtonText; } .ui-button--primary::after { display: none; } .ui-button--primary { border-bottom: 1px solid ButtonText; } }
+@media (forced-colors: active) { .ui-button, input, select, textarea { border: 1px solid ButtonText; } .ui-button--primary { background: ButtonFace; color: ButtonText; } .ui-button:disabled, .ui-button[aria-disabled='true'] { color: GrayText; border-color: GrayText; } }

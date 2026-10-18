@@ -63,8 +63,11 @@ export default function Intro() {
   }
 
   return <main className={`intro-screen ${departing ? 'intro-screen--departing' : ''}`} id="main-content" aria-labelledby="intro-title" aria-busy={departing || undefined}>
-    <h1 id="intro-title">SignLine</h1>
+    <header className="intro-heading">
+      <h1 id="intro-title">SignLine</h1>
+      <p className="intro-tagline">Video calls. Shared captions.</p>
+    </header>
     <BirdIllustration className="intro-illustration" departing={departing} onFlightEnd={finish} />
-    <a className="intro-begin" href="#/conversation" onClick={begin} onPointerEnter={preloadCall} onFocus={preloadCall} aria-disabled={departing || undefined}>Begin <Icon name="arrow" /></a>
+    <a className="ui-button ui-button--primary intro-begin" href="#/conversation" onClick={begin} onPointerEnter={preloadCall} onFocus={preloadCall} aria-disabled={departing || undefined}>Begin <Icon name="arrow" /></a>
   </main>;
 }
