@@ -131,3 +131,30 @@ npm --prefix web run lint
 ```
 
 The Phase 4 handoff records synthetic metrics and current limitations. This section authorizes no Phase 5/6 integration, model promotion or deployment.
+
+## Phase 5 - Testing-branch release prerequisites (2026-10-18)
+
+**Scope:** Tasks5.1-5.5 code is implemented on phase-05-browser-onnx. No merge to main, production model promotion, remote migration or deployment was performed.
+
+1. **AC-5.1 / real shipping models:** Missing real commercial calibrated weights and a compliant compact Stage B architecture. Existing ignored Phase3 full smoke checkpoints prove single-file/browser compatibility only and miss strict4MB/2MB artifact budgets. Do not copy ml/out/phase5-smoke-fp16 into public/. Produce reviewed real checkpoints, then run:
+
+   ```powershell
+   ml/.venv/Scripts/python -m ml.export_onnx_v2 --c1-checkpoint ml/checkpoints/stage_c1_conformer_250/best_ema.pt --b-checkpoint ml/checkpoints/stage_b_conformer/best_ema.pt --out-dir web/public/models --quantize uint8
+   # If the strict probability check fails, retry --quantize fp16 with size-compliant architecture.
+   ```
+
+   Expected outputs: web/public/models/sign_c1_250.onnx<=4,000,000 bytes; sign_b_fingerspell.onnx<=2,000,000 bytes; manifest.json with deployable=true, SHA256 values matching the actual files, no sidecars,100 clips/model probability divergence<1e-3. Expected production hashes cannot be known before real training. Resume: rerun export, full ML tests, npm build and target-browser loading. The repeatable smoke proof is in the Phase5 Handoff Note.
+
+2. **Task5.3 / remote schema:** A non-destructive local migration is tested with real embedded Postgres, but was not applied to an external account. Use the Supabase SQL editor or inspect the CLI with npx supabase db push --help, then apply supabase/migrations/20261018162231_personal_signs_v2.sql to the intended project before deploying the new frontend. Preserve existing rows and owner policies. Expected: v1 rows remain readable; holistic-v2 accepts5568 floats; holistic_v2_emb192 accepts192 normalized floats with a C1 model SHA256. Resume: npm --prefix web test and authenticated two-account training/save/reload/deletion checks.
+
+3. **AC-5.2 through AC-5.4 / physical call:** Need real signers, cameras, target laptop/mobile hardware, LiveKit and optional TTS credentials. Prepare matching assets with npm --prefix web run setup:assets, build, and open #/bench with the v2-worker option and #/call/test-room on signer/hearing devices. Check both hand overlays, NMM badges, Top-3 correction, forced spelling, reconnect, That was wrong/Backspace (including correction-before-caption), immediate voice cancellation and uncertain text-only review. Network inspection should show no camera pixels/audio sent to /api/infer; its binary11,136-byte requests require explicit consent and slow local inference. Target: >=24FPS, worker<=15ms p50/35ms p95, real caption/TTS<=650ms. Resume: npm tests/build/lint, node web/scripts/check-onnx-worker.mjs with ignored smoke outputs, and record real measured results in the Phase5 handoff.
+
+4. **AC-5.5 / Fly/Linux:** Optional assistance stays INFER_ENABLED=0 by default. After installing compliant verified models and pinned server dependencies, set INFER_ENABLED=1 and INFER_MODEL_DIR to their models directory (Docker defaults WEB_DIR/models). Measure the entire uvicorn process tree on the actual512MB deployment: <=180MB RSS and preferably<15ms CPU compute. Local Windows proof is144.9MB active RSS over110 requests. Resume local smoke:
+   ```powershell
+   # Generate an ignored UINT8 C1 smoke file for the isolated memory harness.
+   ml/.venv/Scripts/python -c "from pathlib import Path; from ml.export_onnx_v2 import export_one; export_one(Path('ml/checkpoints/phase3-smoke-c1/best_ema.pt'),Path('ml/out/phase5-smoke/sign_c1_250.onnx'),'c1_commercial_250',smoke_test=True)"
+   ml/.venv/Scripts/python server/scripts/check_infer_smoke.py --model ml/out/phase5-smoke/sign_c1_250.onnx --manifest ml/out/phase5-smoke-fp16/manifest.json
+   ```
+   This harness creates/discards a test-only manifest outside public/; no production promotion occurs.
+
+**Known pre-existing extra browser checks:** check-personal-signs.mjs fails at line115 before entering the required label; check-camera-startup.mjs fails at line62 with an incomplete tracker mock. Both failures were reproduced on unchanged main68eea84. Their checks were not weakened. The315 frontend unit tests,61 backend tests,103 ML tests, build and lint pass.

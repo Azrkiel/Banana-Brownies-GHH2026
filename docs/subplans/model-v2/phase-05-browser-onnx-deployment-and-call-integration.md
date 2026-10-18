@@ -1,6 +1,6 @@
 # Phase 05: Browser ONNX Deployment, Server Fallback & LiveKit Video-Call Integration
 
-**Status:** `[ ]` Pending  
+**Status:** `[x]` Tasks 5.1-5.5 implemented on testing branch; production/live acceptance pending
 **Target Stage:** Stage E (Real-Time Browser Inference `>= 24 FPS`, `<= 35 ms` Model Latency, LiveKit Data-Channel Caption & Correction Sync, Personal Sign `holistic-v2` Migration)  
 **Estimated Effort:** 8–10 hours (2–3 coding agent sessions)  
 **Compute Requirements:** CPU-only (runs in local Node/Vite + Python environment; zero GPU required).
@@ -51,6 +51,14 @@ Phase 05 unifies the browser inference stack and wires the Phase 03/04 models di
 ---
 
 ## 4. Concrete Tasks (Ordered for Agent Sessions)
+
+- [x] Task 5.1: single-file exporter, manifest, strict parity and size guards.
+- [x] Task 5.2: verified ONNX worker/cache, interleaved scheduling and benchmark.
+- [x] Task 5.3: versioned personal calibration and non-destructive private-sample migration.
+- [x] Task 5.4: holistic call integration, review UI, hypotheses and owned retraction.
+- [x] Task 5.5: opt-in bounded landmark-only CPU fallback.
+
+Code checkboxes refer to automated implementation verification. The acceptance checkboxes below retain real model/live-device requirements.
 
 ### Task 5.1: Single-File Quantized ONNX Exporter & Model Manifest (`ml/export_onnx_v2.py`)
 Create `ml/export_onnx_v2.py` and replace the multi-file export behavior in `ml/export_onnx.py`:
@@ -163,7 +171,7 @@ cd web && npm run build
 - [ ] **AC-5.2 (Real-Time Frame Rate & Worker Latency):** In `#/call/demo?role=signer` and `#/bench`, total MediaPipe + ONNX Worker loop sustains `>= 24 FPS` (`<= 41 ms` frame budget) with ONNX worker inference taking `<= 15 ms` p50 / `<= 35 ms` p95.
 - [ ] **AC-5.3 (End-to-End Two-Hand Call Captioning):** Signing a two-handed word (e.g., `BOOK`, `HELP`, `FAMILY`, `FINISHED`) or fingerspelling a name (`@ALEX`) in `#/call/test-room?role=signer` displays both hand skeletons (`Left=Cyan`, `Right=Amber`), shows the confidence pill and NMM badge locally, and delivers the translated English caption + TTS audio to `#/call/test-room?role=hearing` within `<= 650 ms`.
 - [ ] **AC-5.4 (Retraction & Privacy Verification):** Clicking `"That was wrong"` immediately clears/retracts the last caption on the hearing participant's screen over the `'ctrl'` data channel, and Chrome DevTools Network inspection confirms zero raw video/image frames are ever sent to the FastAPI backend.
-- [ ] **AC-5.5 (Fly.io Memory Safety):** Running `uvicorn app.main:app` with `/api/infer` active consumes `<= 180 MB` RSS memory (well below `fly.toml`'s `512 MB` limit).
+- [x] **AC-5.5 (Fly.io Memory Safety, local CPU evidence; Fly confirmation pending):** Running `uvicorn app.main:app` with `/api/infer` active consumes `<= 180 MB` RSS memory (well below `fly.toml`'s `512 MB` limit).
 
 ---
 
@@ -180,3 +188,64 @@ cd web && npm run build
 
 > **Handoff Context (Phase 05):**  
 > Start by checking `ml/export_onnx.py` and `web/src/lib/classifier.ts`: notice why the old exporter created `.onnx.data` sidecar files that broke browser loading. Build `ml/export_onnx_v2.py` with `save_as_external_data=False` first and verify with `ls -lh web/public/models/`. Then create `web/src/lib/onnxWorker.ts` and wire `web/src/components/SignerWords.tsx` so the live call (`#/call/:room`) uses the new holistic ONNX pipeline while keeping `wordModel.ts` as an automatic fallback. Don't forget to check `self.crossOriginIsolated` before setting `ort.env.wasm.numThreads > 1` so LiveKit and MediaPipe CDN assets aren't blocked by strict COEP headers. Update `docs/subplans/model-v2/DECISIONS.md` and `docs/subplans/model-v2/README.md` when complete.
+
+## Handoff Summary - October 18, 2026 - Phase 5 only
+
+Tasks **5.1 through 5.5** are implemented on **phase-05-browser-onnx**, based on pulled main68eea84. The user changed the destination to a new testing branch before any implementation commit. Main is not advanced and nothing is deployed. Phase6 is untouched.
+
+Implementation commits:
+
+- 7198332 — Task5.1, inline exporter and original-checkpoint parity tests.
+- d567afc — Task5.2, worker/cache/client, scheduler and camera benchmark.
+- 23047e7 — Task5.3, versioned private calibration and non-destructive migration.
+- 8e5631f — Task5.4, holistic call/review, LiveKit hypotheses/retraction and legacy fallback.
+- 0ef5ae8 — Task5.5, optional bounded landmark CPU endpoint and memory harness.
+
+### Contracts and deployment behavior
+
+The current checkout uses pages/Call.tsx, personal_sign_samples real[] rows, XY174 C1 features and ASLFR90 Stage B features. See ADR-014 through ADR-018 for these deliberate corrections to the older path/schema descriptions. No feature twin, trained legacy forest or taught-letter asset was changed. The tracker retains its old scheduling by default; the v2 call and bench request alternating pose/face. The worker exposes predictWindow/extractEmbedding with lifecycle cancellation and size/hash-verified IndexedDB caching.
+
+Default camera inference remains local. The optional server upload has an explicit unchecked consent toggle, requires measured local inference>120ms, sends only11,136 bytes of float16 landmarks with a model hash, and falls back locally on error. Landmarks can be identifying; the UI does not call them anonymous. No new telemetry is sent. Models absent/unverified or initialization/runtime failures select the preserved full legacy UI. New private calibration needs the additive database migration before deploying the new frontend.
+
+### Verification evidence
+
+| Command/check | Result |
+| --- | --- |
+| npm --prefix web test |315 tests in27 files pass; existing assertions unchanged. |
+| PYTHONPATH=server ml/.venv/Scripts/python -m pytest server/tests ml/tests -q |164 pass:61 backend +103 ML;38 dependency/export warnings. |
+| npm --prefix web run build |Pass; existing LiveKit chunk advisory only. |
+| npm --prefix web run lint |Pass, no lint findings. |
+| ml/.venv/Scripts/python plan/verify.py preflight |PREFLIGHT OK. |
+| node web/scripts/check-onnx-worker.mjs |10 real Chromium checks pass, no page/browser errors; non-isolated threads1, repeat cache hits and corrupted entry recovery. |
+| server/scripts/check_infer_smoke.py |110 actual local HTTP requests;144.9MB active process-tree RSS, p50~4.0ms/p95~5.0ms compute. |
+| Legacy project ledger |DONE3 / DROPPED14 / HUMAN9 / NEEDS-HUMAN1 / SUPERSEDED10 / VERIFIED4; next prints NO AGENT TASKS LEFT (all lanes). Model-v2 acceptance remains separate. |
+
+Exact full-checkpoint smoke command, from repository root:
+
+```powershell
+ml/.venv/Scripts/python -m ml.export_onnx_v2 --c1-checkpoint ml/checkpoints/phase3-smoke-c1/best_ema.pt --b-checkpoint ml/checkpoints/phase3-smoke-b/best_ema.pt --out-dir ml/out/phase5-smoke-fp16 --quantize fp16 --smoke-test
+npm --prefix web run build
+node web/scripts/check-onnx-worker.mjs
+```
+
+| Ignored single-file smoke output | Bytes | SHA256 | Max probability error /100 clips |
+| --- | --- | --- | --- |
+| ml/out/phase5-smoke-fp16/sign_c1_250.onnx |4,791,566 |0c66ad9341e6bb56eb37df13bed6b51e453ee28e3222f487461150f6df434e9d |3.844499588012695e-6 |
+| ml/out/phase5-smoke-fp16/sign_b_fingerspell.onnx |4,714,618 |bd9a960be29c5246105931dd090f753ee9dfeaa4edcf493ce28a0fd5f963fb74 |0.0007962286472320557 |
+
+Both files contain embedded initializers and zero external sidecars. Manifest deployable=false prevents both production loaders from using them. These weights prove export/runtime compatibility only and are not recognition-accuracy evidence. The full four-block checkpoints miss the stricter C1<=4MB / B<=2MB shipping limits; UINT8 C1 fits, but UINT8 B fails probability parity. A compact two-block128-wide Stage B fixture does meet the2MB target and is covered by the exporter tests. Production export keeps the stricter budgets enabled. No synthetic artifacts, checkpoints, runtime binaries, recordings or secrets are committed.
+
+The latest real worker run measured 8.5ms p50 /9.4ms p95 (hardware-dependent); >=24FPS with camera/WebRTC, actual two-handed signs/fingerspelling, NMM and <=650ms caption/TTS still need live checks. AC-5.1 stays open for a real compliant shipping bundle; AC-5.2/5.3/5.4 stay open for target-device/live call/network inspection. AC-5.5 has local CPU/RSS evidence; Fly/Linux confirmation is still required.
+
+### Existing browser-harness failures reproduced on base main
+
+Both extra scripts were run against this branch and an ignored git-archive snapshot of unchanged68eea84, with the same failures:
+
+- check-personal-signs.mjs:115 waits for enabled Capture example while the required Sign name is empty; the UI correctly says Enter a sign name first.
+- check-camera-startup.mjs:62 waits for the camera placeholder after injecting a landmarks module that lacks the overlay export already imported by base Bench.
+
+No checks were removed, skipped or weakened. The required Vitest/build/lint/pytest checks pass. These older harness repairs are outside this phase and remain documented limitations; the new real-worker harness passes.
+
+### Next human actions
+
+See the appended Phase5 section in NEEDS_HUMAN_ACTION.md. Review/test this branch before any merge. Apply migration20261018162231_personal_signs_v2.sql to the intended Supabase project, supply real commercial calibrated checkpoints that pass strict export budgets/parity, prepare local runtime assets, then perform two-person call/privacy/latency and Linux/Fly RSS checks. Keep optional inference off until those prerequisites are satisfied. Do not promote the continuous CTC or any smoke checkpoint. No Phase6 work was started.
