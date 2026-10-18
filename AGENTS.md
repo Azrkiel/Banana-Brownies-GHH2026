@@ -11,11 +11,7 @@ merging, and pushing completed work to keep a recoverable history.
   permit it; use a branch and report the blocker if direct pushes are restricted.
 - Use repository-local Git identity `Ansonii21 <299691781+Ansonii21@users.noreply.github.com>`
   unless the owner supplies a different preferred commit identity.
-- The owner's aliases include Kevin Jiang, Lianqi Weng, and
-  `jiang.kevin28@gmail.com`; `.mailmap` records confirmed commit identities.
-  For work performed for azrkiel, use the owner identity above and do not append
-  Claude or other AI `Co-authored-by` trailers. Keep AI-tool disclosures in the
-  project credits. Preserve other contributors' attribution and existing history.
+- For each commit, use the GitHub identity of the human contributor responsible for the changes, with an email verified on that contributor's GitHub account. Do not use the repository owner's identity unless they are that contributor. If the contributor's identity is unknown, ask before committing. Do not add AI `Co-authored-by` trailers. Keep AI-tool disclosures in the project credits. Preserve other contributors' attribution and existing history.
 - Keep credentials, recordings, dependency installations, and generated model/runtime
   assets out of commits. `.env.example` contains names and non-secret defaults only.
 - Report validation outcomes and outstanding setup tasks honestly.
