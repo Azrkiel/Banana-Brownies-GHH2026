@@ -216,3 +216,5 @@ The server was untouched and `server/.venv` was absent, so the guide's condition
 **Human QA pending:** Physical two-hand signing, target-laptop FPS, and real two-person call/model recognition were not exercised. Follow [NEEDS_HUMAN_ACTION.md](NEEDS_HUMAN_ACTION.md). Automated canvas tests prove both skeletons are stroked, but do not measure real detector accuracy or hardware latency.
 
 **Scope boundary:** Phase 1 only. Phases 2-6 remain pending; no dataset acquisition, training, database migration, deployment, or later-phase integration was performed. Stop after pushing the Phase 1 commits to main, as requested by the owner.
+
+**Verified implementation and completion commit:** `340915153a7c9fe824e8b4ab5db0cd92edf66701`. This final documentation follow-up records its exact hash; it makes no implementation changes.
