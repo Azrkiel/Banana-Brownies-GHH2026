@@ -35,7 +35,40 @@ export function orderHands(hands: Pt[][]): [Pt[] | null, Pt[] | null] {
 
 export function mirrorFrame(f: Frame): Frame {
   const m = (p: Pt): Pt => ({ x: 1 - p.x, y: p.y, z: p.z });
-  return { ...f, pose: f.pose ? f.pose.map(m) : null, hands: f.hands.map((h) => h.map(m)) };
+  return { ...f, ...(f.headYaw === undefined ? {} : { headYaw: -f.headYaw }), pose: f.pose ? f.pose.map(m) : null, hands: f.hands.map((h) => h.map(m)) };
+}
+
+/** Image-space shoulder midpoint, independent of aspect ratio. */
+export function bodyCenterX(f: Frame): number {
+  return f.pose && f.pose.length >= 13 ? (f.pose[11].x + f.pose[12].x) / 2 : 0.5;
+}
+
+/** Choose one clip orientation from cumulative wrist motion; gaps never create motion. */
+export function canonicalize(frames: Frame[]): Frame[] {
+  const motion = [0, 0];
+  let previous: (Pt | null)[] = [null, null];
+  let orientation = 0;
+  for (const f of frames) {
+    const [l, r] = orderHands(f.hands);
+    const wrists: (Pt | null)[] = f.hands.length === 1
+      ? (l![0].x <= bodyCenterX(f) ? [l![0], null] : [null, l![0]])
+      : [l?.[0] ?? null, r?.[0] ?? null];
+    for (let side = 0; side < 2; side++) {
+      const p = wrists[side], prev = previous[side];
+      if (p && prev) motion[side] += Math.hypot(p.x - prev.x, p.y - prev.y);
+    }
+    // Static clips: use wrist position, then hand shape when the wrist is centred.
+    if (orientation === 0) {
+      for (const h of f.hands) {
+        const point = h.find(p => Math.abs(p.x - bodyCenterX(f)) > 1e-8);
+        if (point) { orientation = point.x - bodyCenterX(f); break; }
+      }
+    }
+    previous = wrists;
+  }
+  const delta = motion[1] - motion[0];
+  const mirror = Math.abs(delta) > 1e-8 ? delta > 0 : orientation > 0;
+  return mirror ? frames.map(mirrorFrame) : frames;
 }
 
 function pushHand(out: number[], hand: Pt[] | null, a: Anchors, asp: number) {
@@ -75,8 +108,9 @@ export function resample(seq: number[][], n: number): number[][] {
   return out;
 }
 
-/** Frames must already be mirrored for left-handed signers. Returns Float32Array(T * FEAT_PER_FRAME). */
-export function clipFeatures(frames: Frame[]): Float32Array {
+/** Canonical two-hand clip, returned as Float32Array(T * FEAT_PER_FRAME). */
+export function clipFeatures(raw: Frame[]): Float32Array {
+  const frames = canonicalize(raw);
   let first = frames.findIndex((f) => f.hands.length > 0);
   let last = frames.length - 1 - [...frames].reverse().findIndex((f) => f.hands.length > 0);
   if (first === -1) { first = 0; last = frames.length - 1; }

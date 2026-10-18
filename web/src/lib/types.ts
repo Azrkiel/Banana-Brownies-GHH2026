@@ -6,6 +6,7 @@ export type Frame = {
   w: number; h: number; // video size, for aspect correction
   pose: Pt[] | null;    // pose landmarks 0..16 only (face + shoulders + arms)
   hands: Pt[][];        // 0..2 hands x 21 points, NOT labeled left/right
+  headYaw?: number;    // nose offset from ear midpoint / ear separation; positive toward image-right
   brow: Brow | null;    // face blendshapes (updated every 3rd frame), null if face model off
 };
 export type ClipKind = 'sign' | 'letter';

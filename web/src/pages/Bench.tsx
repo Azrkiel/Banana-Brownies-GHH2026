@@ -1,6 +1,7 @@
 import { BirdScene } from '../components/BirdScene';
 import { Button, Badge, Icon, PageHeader, Surface } from '../components/ui';
 import { useCallback, useRef, useState } from 'react';
+import { drawLandmarksOverlay } from '../lib/landmarks';
 import { useCameraTracker } from '../lib/useCameraTracker';
 import type { Frame } from '../lib/types';
 import './Studio.css';
@@ -10,7 +11,12 @@ export default function Bench() {
   const [withFace, setWithFace] = useState(true);
   const [info, setInfo] = useState('Not started');
   const stats = useRef({ count: 0, ms: 0, start: 0 });
+  const overlay = useRef<HTMLCanvasElement>(null);
   const onFrame = useCallback((frame: Frame, detectMs: number) => {
+    if (overlay.current) {
+      overlay.current.width = frame.w; overlay.current.height = frame.h;
+      drawLandmarksOverlay(overlay.current, frame, { mirror: true });
+    }
     const s = stats.current;
     if (!s.start) s.start = frame.t;
     s.count++; s.ms += detectMs;
@@ -31,6 +37,7 @@ export default function Bench() {
         <div className="recorder-workspace">
           <section className="camera-stage" aria-label="Camera preview">
             <video ref={video} muted playsInline className="mirror" width={480} />
+            <canvas ref={overlay} aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none', visibility: enabled && ready ? 'visible' : 'hidden' }} />
             {(!enabled || error) && <div className="camera-stage__placeholder"><BirdScene scene="flight" className="camera-illustration" /></div>}
             {previewReady && <span className="camera-stage__label"><span className="status-dot" />Local preview · Mirrored</span>}
           </section>

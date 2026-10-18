@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createPersonalRecognizer, createWordCapture, createWordRecognizer, predictSharedAndPersonal, sharedAndPersonalLabels } from './wordRecognition';
+import { drawLive } from './landmarks';
 import type { WordForest } from './wordModel';
 import { trainPersonalModel, type PersonalSample } from './personalModel';
 
-const mocks = vi.hoisted(() => ({ create: vi.fn(), fileset: vi.fn() }));
+const mocks = vi.hoisted(() => ({ create: vi.fn(), fileset: vi.fn(), pose: vi.fn() }));
 vi.mock('@mediapipe/tasks-vision', () => ({
+  PoseLandmarker: { createFromOptions: mocks.pose },
   HandLandmarker: { createFromOptions: mocks.create }, FilesetResolver: { forVisionTasks: mocks.fileset },
 }));
 const model = {
@@ -31,6 +33,7 @@ describe('signer word recognition lifecycle', () => {
     detect = vi.fn().mockReturnValue({ landmarks: [Array.from({ length: 21 }, (_, i) => ({ x: 0.5 + i / 100, y: 0.5, z: 0 }))] });
     mocks.create.mockReset().mockResolvedValue({ close, detectForVideo: detect });
     mocks.fileset.mockReset().mockResolvedValue({});
+    mocks.pose.mockReset().mockRejectedValue(new Error('Optional pose model unavailable'));
   });
   afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
   function frame(time: number, advance = true) {
@@ -99,6 +102,79 @@ describe('signer word recognition lifecycle', () => {
     for (let i = 33; i <= 62; i++) frame(i * 34);
     expect(await result).toMatchObject({ label: 'HELLO', framesWithHand: 30 });
     recognizer.close();
+  });
+  it('requests two hands and exposes both while preserving image-left word-v1 features', async () => {
+    const left = Array.from({ length: 21 }, (_, i) => ({ x: 0.2 + i / 100, y: 0.4, z: 0 }));
+    const right = left.map(p => ({ ...p, x: p.x + 0.4 }));
+    detect.mockReturnValue({ landmarks: [right, left] });
+    const capture = await createWordCapture(video, new AbortController().signal);
+    expect(mocks.create.mock.calls[0][1]).toMatchObject({ numHands: 2 });
+    const update = vi.fn();
+    const stop = capture.watch(update);
+    for (let i = 1; i <= 30; i++) frame(i * 34);
+    const live = update.mock.calls.at(-1)![0];
+    expect(live.hands).toEqual([right, left]);
+    expect(live.points).toEqual(left);
+    expect(live.pose).toBeNull();
+    expect(live.brow).toBeNull();
+    expect(live.sample.features).toHaveLength(1260);
+    expect(live.sample.features.slice(0, 42)).toEqual(left.flatMap(p => [p.x - left[0].x, p.y - left[0].y]));
+    stop(); capture.close();
+  });
+  it('filters malformed hands without losing a second valid hand', async () => {
+    const valid = Array.from({ length: 21 }, () => ({ x: 0.5, y: 0.5, z: 0 }));
+    detect.mockReturnValue({ landmarks: [[{ x: NaN, y: 0.4, z: 0 }], valid] });
+    const capture = await createWordCapture(video, new AbortController().signal);
+    const update = vi.fn();
+    capture.watch(update); frame(34);
+    expect(update.mock.calls[0][0].hands).toEqual([valid]);
+    capture.close();
+  });
+  it('drawLive strokes both hands in distinct colours with the legacy points fallback', () => {
+    const colours: string[] = [];
+    const context = { strokeStyle: '', fillStyle: '', lineWidth: 0, drawImage: vi.fn(), beginPath: vi.fn(), moveTo: vi.fn(), lineTo: vi.fn(),
+      stroke: vi.fn(() => colours.push(context.strokeStyle)), arc: vi.fn(), fill: vi.fn() };
+    const canvas = { width: 0, height: 0, getContext: () => context } as unknown as HTMLCanvasElement;
+    const left = Array.from({ length: 21 }, () => ({ x: 0.2, y: 0.5, z: 0 }));
+    const right = left.map(p => ({ ...p, x: 0.8 }));
+    const image = { width: 640, height: 480 } as HTMLCanvasElement;
+    drawLive(canvas, { hands: [right, left], points: left, image });
+    expect(context.stroke).toHaveBeenCalledTimes(42);
+    expect(colours.slice(0, 21)).toEqual(Array(21).fill('#3ddc84'));
+    expect(colours.slice(21)).toEqual(Array(21).fill('#38bdf8'));
+    expect(context.arc).toHaveBeenCalledTimes(42);
+    context.stroke.mockClear();
+    drawLive(canvas, { points: left, image });
+    expect(context.stroke).toHaveBeenCalledTimes(21);
+  });
+  it('exposes upper-body pose and keeps tracking hands if optional pose detection fails', async () => {
+    const posePoints = Array.from({ length: 33 }, () => ({ x: 0.5, y: 0.4, z: 0 }));
+    const pose = { close: vi.fn(), detectForVideo: vi.fn().mockReturnValue({ landmarks: [posePoints] }) };
+    mocks.pose.mockResolvedValue(pose);
+    const capture = await createWordCapture(video, new AbortController().signal);
+    const update = vi.fn();
+    capture.watch(update); frame(34);
+    expect(update.mock.calls[0][0].pose).toEqual(posePoints.slice(0, 17));
+    pose.detectForVideo.mockImplementation(() => { throw new Error('Pose lost'); });
+    frame(68); frame(102);
+    expect(update).toHaveBeenCalledTimes(3);
+    expect(update.mock.calls[1][0]).toMatchObject({ pose: null, hands: [expect.any(Array)] });
+    capture.close();
+    expect(pose.close).toHaveBeenCalledOnce();
+    expect(close).toHaveBeenCalledOnce();
+  });
+  it('releases both models when stopped during optional pose initialization', async () => {
+    let finish!: (value: unknown) => void;
+    mocks.pose.mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+    const controller = new AbortController();
+    const loading = expect(createWordCapture(video, controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
+    await vi.waitFor(() => expect(mocks.pose).toHaveBeenCalled());
+    const closePose = vi.fn();
+    controller.abort(); finish({ close: closePose, detectForVideo: vi.fn() });
+    await loading;
+    expect(close).toHaveBeenCalledOnce();
+    expect(closePose).toHaveBeenCalledOnce();
+    expect(callbacks.size).toBe(0);
   });
   it('reports a missing model before initializing hand tracking', async () => {
     vi.mocked(fetch).mockResolvedValue({ ok: false } as Response);

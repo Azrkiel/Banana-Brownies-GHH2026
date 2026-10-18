@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { createPersonalRecognizer, createWordRecognizer, type LiveFrame, type WordRecognizer } from '../lib/wordRecognition';
+import { createPersonalRecognizer, createWordRecognizer, type WordRecognizer } from '../lib/wordRecognition';
+import { drawLive } from '../lib/landmarks';
 import { useAuth } from '../lib/auth';
 import { loadPersonalSamples } from '../lib/personalSigns';
 import { trainPersonalModel } from '../lib/personalModel';
@@ -23,23 +24,7 @@ function readAutoSend(): boolean {
 }
 const typingField = (el: Element | null) => el instanceof HTMLTextAreaElement || (el instanceof HTMLInputElement && !['checkbox', 'radio', 'button', 'submit'].includes(el.type)) || (el instanceof HTMLElement && el.isContentEditable);
 
-const HAND_LINKS = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12],
-  [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [0, 17], [17, 18], [18, 19], [19, 20]];
-
 const reducedMotion = () => typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-/** Draws the mirrored frame the hand model saw, with its landmarks, so the signer can see what is tracked. */
-function drawLive(canvas: HTMLCanvasElement | null, frame: LiveFrame) {
-  const context = canvas?.getContext('2d');
-  if (!canvas || !context || !frame.image.width) return;
-  canvas.width = 320; canvas.height = Math.round(320 * frame.image.height / frame.image.width);
-  context.drawImage(frame.image, 0, 0, canvas.width, canvas.height);
-  if (!frame.points) return;
-  const at = (i: number) => [frame.points![i].x * canvas.width, frame.points![i].y * canvas.height];
-  context.strokeStyle = '#3ddc84'; context.fillStyle = '#ffffff'; context.lineWidth = 2;
-  for (const [a, b] of HAND_LINKS) { context.beginPath(); context.moveTo(...at(a) as [number, number]); context.lineTo(...at(b) as [number, number]); context.stroke(); }
-  for (let i = 0; i < 21; i++) { const [x, y] = at(i); context.beginPath(); context.arc(x, y, 3, 0, Math.PI * 2); context.fill(); }
-}
 
 /** Why a guess was held back, in terms the signer can act on. */
 function heldReason(prediction: WordPrediction): string {
@@ -68,7 +53,7 @@ export function SignerWords({ camera, connected, reconnecting = false, onPending
   const [progress, setProgress] = useState(0);
   const [prediction, setPrediction] = useState<WordPrediction | null>(null);
   const [live, setLive] = useState<WordPrediction | null>(null);
-  const [tracked, setTracked] = useState(false);
+  const [tracked, setTracked] = useState(0);
   const liveCanvas = useRef<HTMLCanvasElement>(null);
   const stopLive = useRef<(() => void) | null>(null);
   const [error, setError] = useState('');
@@ -207,7 +192,7 @@ export function SignerWords({ camera, connected, reconnecting = false, onPending
     dictation.current.clear(); setSigned([]);
     stopLive.current = recognizer.watch((frame, guess) => {
       drawLive(liveCanvas.current, frame);
-      setTracked(Boolean(frame.points)); setLive(guess);
+      setTracked(frame.hands.length); setLive(guess);
       if (!dictatingRef.current) return;
       const event = dictation.current.push(guess, Boolean(frame.points), performance.now());
       if (event?.type === 'word') setSigned(event.words);
@@ -216,7 +201,7 @@ export function SignerWords({ camera, connected, reconnecting = false, onPending
   }
   function unwatchLive() {
     stopLive.current?.(); stopLive.current = null; dictation.current.clear();
-    setSigned([]); setLive(null); setTracked(false); setState('ready');
+    setSigned([]); setLive(null); setTracked(0); setState('ready');
   }
   async function capture() {
     const recognizer = engine.current;
@@ -274,7 +259,7 @@ export function SignerWords({ camera, connected, reconnecting = false, onPending
           if (!event.target.checked) { dictation.current.clear(); setSigned([]); }
         }} /><span>Live dictation</span></label>
         <p className="note">Confident signs are added as you sign. Lower your hand to review the sentence before it is sent.</p>
-        <p>{tracked ? 'Hand tracked.' : 'No hand found. Raise one hand into view.'}</p>
+        <p>{tracked === 2 ? '2 hands tracked.' : tracked === 1 ? '1 hand tracked.' : 'No hands found. Raise your hands into view.'}</p>
         {live ? <>
           <p className="signer-words__word">{signLabel(live.label)} <span>{Math.round(live.score * 100)}% match</span></p>
           <p id="signer-words-live-hint">{live.accepted ? 'Confident match over the last second.' : heldReason(live)}</p>

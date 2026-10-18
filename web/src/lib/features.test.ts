@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { clipFeatures, FEAT_PER_FRAME, frameFeatures, anchors, mirrorFrame, orderHands, resample, T } from './features';
+import { bodyCenterX, canonicalize, clipFeatures, FEAT_PER_FRAME, frameFeatures, anchors, mirrorFrame, orderHands, resample, T } from './features';
 import type { Frame, Pt } from './types';
 
 const P = (x: number, y: number): Pt => ({ x, y, z: 0 });
@@ -117,4 +117,46 @@ describe('features', () => {
       expect(() => resample([[1], [2]], count)).toThrow(RangeError);
     }
   });
+});
+
+describe('canonical handedness', () => {
+  const movingLeft = () => Array.from({ length: 8 }, (_, i) => frame([hand(0.25 + i * 0.01, 0.4), hand(0.7, 0.5)]));
+  it('mirrors a clip whose image-right hand does the moving', () => {
+    const right = movingLeft().map(mirrorFrame);
+    expect(canonicalize(right)[0].hands[0][0].x).toBeCloseTo(0.25);
+    const left = movingLeft();
+    expect(canonicalize(left)).toBe(left);
+  });
+  it('gives the same features for a sign and its mirror image', () => {
+    const clip = movingLeft();
+    const features = clipFeatures(clip);
+    clipFeatures(clip.map(mirrorFrame)).forEach((v, i) => expect(v).toBeCloseTo(features[i], 5));
+  });
+  it('handles a lone hand, static clips and single frames without mutating input', () => {
+    for (const clip of [movingLeft().map(f => ({ ...f, hands: [f.hands[0]] })), [frame([hand(0.3, 0.4)])]]) {
+      const saved = structuredClone(clip);
+      const expected = clipFeatures(clip);
+      clipFeatures(clip.map(mirrorFrame)).forEach((v, i) => expect(v).toBeCloseTo(expected[i], 5));
+      expect(clip).toEqual(saved);
+    }
+  });
+  it('uses the shoulder midpoint or image centre when pose is missing', () => {
+    expect(bodyCenterX(frame([], 0.1))).toBeCloseTo(0.6);
+    expect(bodyCenterX({ ...frame([]), pose: null })).toBe(0.5);
+  });
+  it('does not count disappearances as wrist motion and zero-fills absent hands', () => {
+    const clip = movingLeft();
+    clip.splice(3, 0, frame([]));
+    expect(canonicalize(clip)).toBe(clip);
+    const f = frame([]);
+    expect(frameFeatures(f, anchors(f, null)!)).toEqual(new Array(FEAT_PER_FRAME).fill(0));
+  });
+});
+
+it('canonicalizes a static hand with its wrist at body centre and reverses head yaw', () => {
+  const clip = [{ ...frame([hand(0.5, 0.4)]), headYaw: 0.25 }];
+  const expected = clipFeatures(clip);
+  const mirrored = clip.map(mirrorFrame);
+  expect(mirrored[0].headYaw).toBe(-0.25);
+  clipFeatures(mirrored).forEach((v, i) => expect(v).toBeCloseTo(expected[i], 5));
 });

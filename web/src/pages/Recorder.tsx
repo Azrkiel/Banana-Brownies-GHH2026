@@ -1,6 +1,7 @@
 import { BirdScene } from '../components/BirdScene';
 import { Button, Badge, Icon, PageHeader, Surface } from '../components/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { drawLandmarksOverlay } from '../lib/landmarks';
 import { useCameraTracker } from '../lib/useCameraTracker';
 import { Segmenter } from '../lib/segmenter';
 import { LETTERS, RECORD_LABELS } from '../vocab';
@@ -44,7 +45,12 @@ export default function Recorder() {
   const state = useRef({ armed, label });
   useEffect(() => { state.current = { armed, label }; }, [armed, label]);
 
+  const overlay = useRef<HTMLCanvasElement>(null);
   const onFrame = useCallback((frame: Frame) => {
+    if (overlay.current) {
+      overlay.current.width = frame.w; overlay.current.height = frame.h;
+      drawLandmarksOverlay(overlay.current, frame, { mirror: true });
+    }
     if (state.current.armed) {
       const event = segmenter.current.push(frame);
       if (event?.kind === 'end') {
@@ -120,6 +126,7 @@ export default function Recorder() {
         <div className="recorder-workspace">
           <section className="camera-stage" aria-label="Recording camera preview">
             <video ref={video} muted playsInline className="mirror" width={480} />
+            <canvas ref={overlay} aria-hidden="true" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none', visibility: camera && consent && ready ? 'visible' : 'hidden' }} />
             {(!camera || !consent || error) && <div className="camera-stage__placeholder"><BirdScene scene="preening" className="camera-illustration" /></div>}
             <span className="camera-stage__label"><span className="status-dot" />{busy ? 'Recording landmarks' : previewReady ? 'Local preview · Mirrored' : camera && consent && !error ? 'Starting camera…' : 'Camera off'}</span>
           </section>

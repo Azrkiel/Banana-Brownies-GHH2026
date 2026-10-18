@@ -7,25 +7,34 @@ const r4 = (v: number) => Math.round(v * 1e4) / 1e4;
 const toPt = (p: { x: number; y: number; z: number }): Pt => ({ x: r4(p.x), y: r4(p.y), z: r4(p.z) });
 
 /** Hand (2 hands!) + Pose lite, optional Face blendshapes every 3rd frame. All files served locally. */
-export async function createTracker(opts: { withFace: boolean }): Promise<Tracker> {
+export async function createTracker(opts: { withFace: boolean; delegate?: 'GPU' | 'CPU' }): Promise<Tracker> {
   const fileset = await FilesetResolver.forVisionTasks(`${import.meta.env.BASE_URL}mediapipe/wasm`);
-  const hand = await HandLandmarker.createFromOptions(fileset, {
-    baseOptions: { modelAssetPath: `${import.meta.env.BASE_URL}models/hand_landmarker.task`, delegate: 'GPU' },
+  const initialize = async <T>(create: (delegate: 'GPU' | 'CPU') => Promise<T>): Promise<T> => {
+    const preferred = opts.delegate ?? 'GPU';
+    try { return await create(preferred); }
+    catch (error) {
+      if (preferred === 'CPU') throw error;
+      console.warn('GPU landmark initialization failed; retrying on CPU.', error);
+      return create('CPU');
+    }
+  };
+  const hand = await initialize(delegate => HandLandmarker.createFromOptions(fileset, {
+    baseOptions: { modelAssetPath: `${import.meta.env.BASE_URL}models/hand_landmarker.task`, delegate },
     runningMode: 'VIDEO', numHands: 2, // default is 1 — two-handed signs would silently lose a hand
-  });
+  }));
   let pose: PoseLandmarker | undefined;
   let face: FaceLandmarker | null;
   try {
-    pose = await PoseLandmarker.createFromOptions(fileset, {
-    baseOptions: { modelAssetPath: `${import.meta.env.BASE_URL}models/pose_landmarker_lite.task`, delegate: 'GPU' },
-    runningMode: 'VIDEO', numPoses: 1,
-  });
+    pose = await initialize(delegate => PoseLandmarker.createFromOptions(fileset, {
+      baseOptions: { modelAssetPath: `${import.meta.env.BASE_URL}models/pose_landmarker_lite.task`, delegate },
+      runningMode: 'VIDEO', numPoses: 1,
+    }));
     face = opts.withFace
-    ? await FaceLandmarker.createFromOptions(fileset, {
-        baseOptions: { modelAssetPath: `${import.meta.env.BASE_URL}models/face_landmarker.task`, delegate: 'GPU' },
+      ? await initialize(delegate => FaceLandmarker.createFromOptions(fileset, {
+        baseOptions: { modelAssetPath: `${import.meta.env.BASE_URL}models/face_landmarker.task`, delegate },
         runningMode: 'VIDEO', numFaces: 1, outputFaceBlendshapes: true,
-      })
-    : null;
+      }))
+      : null;
   } catch (error) {
     hand.close();
     // Pose may have loaded before optional face initialization failed.
@@ -45,15 +54,64 @@ export async function createTracker(opts: { withFace: boolean }): Promise<Tracke
         brow = cats.length
           ? { raise: (g('browInnerUp') + g('browOuterUpLeft') + g('browOuterUpRight')) / 3,
               furrow: (g('browDownLeft') + g('browDownRight')) / 2 }
-          : null;
+            : null;
       }
+      const upperPose = p.landmarks[0] ? p.landmarks[0].slice(0, 17).map(toPt) : null;
       return {
         t, w: video.videoWidth, h: video.videoHeight,
-        pose: p.landmarks[0] ? p.landmarks[0].slice(0, 17).map(toPt) : null,
+        pose: upperPose, headYaw: headYawFromPose(upperPose),
         hands: h.landmarks.map((hl) => hl.map(toPt)),
         brow,
       };
     },
     close() { hand.close(); pose!.close(); face?.close(); },
   };
+}
+
+/** Relative image-space yaw proxy, available without the face model. */
+export function headYawFromPose(pose: Pt[] | null): number | undefined {
+  if (!pose || pose.length < 9) return undefined;
+  const nose = pose[0], left = pose[7], right = pose[8];
+  const width = Math.abs(right.x - left.x);
+  if (width < 1e-3 || ![nose.x, left.x, right.x].every(Number.isFinite)) return undefined;
+  return (nose.x - (left.x + right.x) / 2) / width;
+}
+
+
+const HAND_LINKS = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12],
+  [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [0, 17], [17, 18], [18, 19], [19, 20]];
+
+type OverlayFrame = { hands?: Pt[][]; points?: Pt[] | null; pose?: Pt[] | null };
+
+/** Draw normalized landmarks over either the raw preview or its mirrored display. */
+export function drawLandmarksOverlay(canvas: HTMLCanvasElement | null, frame: OverlayFrame, opts: { clear?: boolean; mirror?: boolean } = {}) {
+  const context = canvas?.getContext('2d');
+  if (!canvas || !context) return;
+  if (opts.clear !== false) context.clearRect(0, 0, canvas.width, canvas.height);
+  const displayX = (p: Pt) => opts.mirror ? 1 - p.x : p.x;
+  const at = (p: Pt): [number, number] => [displayX(p) * canvas.width, p.y * canvas.height];
+  const hands = (frame.hands ?? (frame.points ? [frame.points] : [])).filter(h => h.length === 21)
+    .slice().sort((a, b) => displayX(a[0]) - displayX(b[0]));
+  hands.forEach((hand, i) => {
+    context.strokeStyle = i === 0 ? '#3ddc84' : '#38bdf8';
+    context.fillStyle = context.strokeStyle;
+    context.lineWidth = 2;
+    for (const [a, b] of HAND_LINKS) {
+      context.beginPath(); context.moveTo(...at(hand[a])); context.lineTo(...at(hand[b])); context.stroke();
+    }
+    for (const p of hand) { context.beginPath(); context.arc(...at(p), 3, 0, Math.PI * 2); context.fill(); }
+  });
+  if (frame.pose && frame.pose.length >= 13) {
+    context.fillStyle = '#f8fafc';
+    for (const i of [0, 11, 12]) { context.beginPath(); context.arc(...at(frame.pose[i]), 2, 0, Math.PI * 2); context.fill(); }
+  }
+}
+
+/** Draw the mirrored capture image and the same overlay used by the camera tools. */
+export function drawLive(canvas: HTMLCanvasElement | null, frame: OverlayFrame & { image: HTMLCanvasElement }) {
+  const context = canvas?.getContext('2d');
+  if (!canvas || !context || !frame.image.width) return;
+  canvas.width = 320; canvas.height = Math.round(320 * frame.image.height / frame.image.width);
+  context.drawImage(frame.image, 0, 0, canvas.width, canvas.height);
+  drawLandmarksOverlay(canvas, frame, { clear: false });
 }
