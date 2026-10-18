@@ -6,6 +6,6 @@
 .home-join { position: relative; z-index: 2; padding: 32px; border: 1px solid var(--color-field-border); border-radius: var(--radius-control); background: var(--color-surface); }
 .call-branch { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none; mix-blend-mode: multiply; }
 @media (max-width: 900px) { .home-content { padding-inline: 24px; } }
-@media (max-width: 760px) { .home-join { padding: 24px; } }
-@media (max-width: 540px) { .home-content { padding-inline: 20px; } }
+@media (max-width: 600px) { .home-join { padding: 24px; } }
+@media (max-width: 600px) { .home-content { padding-inline: 16px; } }
 @media (forced-colors: active) { .call-branch { display: none; } .home-join { border-color: CanvasText; background: Canvas; } }

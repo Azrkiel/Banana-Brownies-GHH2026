@@ -19,3 +19,8 @@
 .signer-words__live > .signer-words__dictation { flex: 1 1 100%; padding-top: 12px; border-top: 1px solid var(--color-border); }
 .signer-words__dictation .signer-words__signed { font-size: 1.5rem; min-height: 1.5em; margin: 0 0 8px; overflow-wrap: anywhere; }
 .signer-words__dictation .button-row { margin: 8px 0; }
+.signer-words__preview { padding: 12px; border: 1px solid var(--color-ink); border-radius: var(--radius-sm); }
+.signer-words__preview .signer-words__signed { font-size: 1.5rem; margin: 4px 0 8px; }
+.signer-words__preview progress { height: 8px; margin: 4px 0; }
+.signer-words__preview .button-row { margin: 8px 0 0; }
+.signer-words__dictate { min-height: 44px; align-items: center; }

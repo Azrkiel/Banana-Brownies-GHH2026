@@ -23,7 +23,7 @@ export function isCtrl(v: unknown): v is Ctrl {
   }
 }
 
-/** Room-scoped ownership and ordering. Holds at most 50 rows and 512 recent IDs.
+/** Room-scoped ownership and ordering. Holds at most 200 rows and 512 recent IDs.
  * SDK sender identity, never the display name, scopes every wire ID. After 512
  * newer IDs a tombstone can expire; this is bounded session protection, not storage.
  */
@@ -50,7 +50,7 @@ export function createCaptionHistory(onChange: (captions: Caption[]) => void) {
         remember(key, c.revision!, c.final);
       }
       rows.set(key, { ...c, id: key });
-      while (rows.size > 50) rows.delete(rows.keys().next().value!);
+      while (rows.size > 200) rows.delete(rows.keys().next().value!);
       publish();
     },
     clear(id: string, revision: number, from: string) {
@@ -79,7 +79,7 @@ export function createCaptionHistory(onChange: (captions: Caption[]) => void) {
 
 export function upsertCaption(list: Caption[], c: Caption): Caption[] {
   const i = list.findIndex((x) => x.id === c.id);
-  if (i === -1) return [...list, c].slice(-50);
+  if (i === -1) return [...list, c].slice(-200);
   const next = list.slice();
   next[i] = c;
   return next;
