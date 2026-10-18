@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState, type MouseEvent } from 'react';
+import { AuthContext } from '../lib/auth';
 import { BirdIllustration } from '../components/BirdIllustration';
 import { birdAssets } from '../lib/introAssets';
 import { Icon } from '../components/ui';
@@ -10,6 +11,7 @@ const preloadCall = () => { void import('./Call').catch(() => { /* Normal naviga
 
 export default function Intro({ onDepart }: { onDepart?: (animate: boolean) => void }) {
   const [departing, setDeparting] = useState(false);
+  const signedIn = Boolean(useContext(AuthContext)?.user);
   const inFlight = useRef(false);
   const ready = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -60,14 +62,15 @@ export default function Intro({ onDepart }: { onDepart?: (animate: boolean) => v
     if (window.matchMedia(motionQuery).matches || window.matchMedia(contrastQuery).matches || !ready.current) { finish(); return; }
     setDeparting(true);
     // Animation completion is primary; this also covers disabled CSS or interrupted events.
-    timer.current = setTimeout(finish, 1800);
+    timer.current = setTimeout(finish, 600);
   }
 
   return <main className={`intro-screen ${departing ? 'intro-screen--departing' : ''}`} id="main-content" aria-labelledby="intro-title" aria-busy={departing || undefined}>
     <header className="intro-heading">
       <h1 id="intro-title">SignLine</h1>
       <p className="intro-tagline">Video calls. Shared captions.</p>
-      <a className="intro-account" href="#/training">My signs · Sign in with GitHub</a>
+      <p className="intro-purpose">For a Deaf or hard of hearing signer and a hearing participant: recognized signs become spoken English, and speech becomes captions.</p>
+      <a className="intro-account" href="#/training">{signedIn ? 'My signs' : 'Sign in with GitHub to save your own signs'}</a>
     </header>
     <BirdIllustration className="intro-illustration" departing={departing} onFlightEnd={() => finish(true)} />
     <a className="ui-button ui-button--primary intro-begin" href="#/conversation" onClick={begin} onPointerEnter={preloadCall} onFocus={preloadCall} aria-disabled={departing || undefined}>Begin <Icon name="arrow" /></a>
