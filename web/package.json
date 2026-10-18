@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:accounts": "node scripts/check-personal-signs.mjs",
     "dataset": "tsx scripts/build-dataset.ts",
     "fixtures": "tsx scripts/export-fixtures.ts",
     "setup:assets": "python3 scripts/setup_assets.py"
@@ -16,17 +17,20 @@
   "dependencies": {
     "@elevenlabs/client": "^1.28.0",
     "@mediapipe/tasks-vision": "1.1.1",
+    "@supabase/supabase-js": "2.118.0",
     "livekit-client": "^2.23.0",
     "onnxruntime-web": "1.30.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.10",
     "@types/node": "^24.19.2",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "oxlint": "^1.81.0",
+    "playwright-core": "1.64.1",
     "tsx": "^4.23.15",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",

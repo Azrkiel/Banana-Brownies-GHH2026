@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createWordRecognizer } from './wordRecognition';
+import { createPersonalRecognizer, createWordCapture, createWordRecognizer } from './wordRecognition';
+import { trainPersonalModel, type PersonalSample } from './personalModel';
 
 const mocks = vi.hoisted(() => ({ create: vi.fn(), fileset: vi.fn() }));
 vi.mock('@mediapipe/tasks-vision', () => ({
@@ -89,5 +90,31 @@ describe('signer word recognition lifecycle', () => {
     vi.mocked(fetch).mockResolvedValue({ ok: false } as Response);
     await expect(createWordRecognizer(video, new AbortController().signal)).rejects.toThrow('could not be loaded');
     expect(mocks.create).not.toHaveBeenCalled();
+  });
+  it('captures training landmarks without loading the shared forest or uploading a sample', async () => {
+    const capture = await createWordCapture(video, new AbortController().signal);
+    const result = capture.capture(vi.fn());
+    for (let i = 1; i <= 30; i++) frame(i * 34);
+    expect(await result).toMatchObject({ framesWithHand: 30 });
+    expect((await result).features).toHaveLength(1260);
+    expect(fetch).not.toHaveBeenCalled();
+    capture.close(); expect(close).toHaveBeenCalledTimes(1);
+  });
+  it('uses the same capture features for a personal model and rejects a missing hand', async () => {
+    const points = Array.from({ length: 21 }, (_, i) => ({ x: 0.5 + i / 100, y: 0.5, z: 0 }));
+    const features = Array.from({ length: 30 }, () => points.flatMap(p => [p.x - points[0].x, p.y - points[0].y])).flat();
+    const samples: PersonalSample[] = ['HELLO', 'NAME'].flatMap(label => Array.from({ length: 3 }, (_, i) => ({
+      id: `${label}-${i}`, label, createdAt: '', framesWithHand: 30,
+      features: label === 'HELLO' ? [...features] : features.map((x, j) => j % 2 ? 0.1 : x),
+    })));
+    const recognizer = await createPersonalRecognizer(video, new AbortController().signal, trainPersonalModel(samples));
+    const result = recognizer.capture(vi.fn());
+    for (let i = 1; i <= 30; i++) frame(i * 34);
+    expect(await result).toMatchObject({ label: 'HELLO', accepted: true });
+    detect.mockReturnValue({ landmarks: [] });
+    const missing = recognizer.capture(vi.fn());
+    for (let i = 31; i <= 60; i++) frame(i * 34);
+    expect((await missing).accepted).toBe(false);
+    expect(fetch).not.toHaveBeenCalled(); recognizer.close();
   });
 });

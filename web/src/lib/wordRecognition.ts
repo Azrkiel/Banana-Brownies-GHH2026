@@ -1,4 +1,5 @@
 import { parseWordForest, predictWord, wordFrame, WORD_FRAMES, type WordForest, type WordPrediction } from './wordModel';
+import { predictPersonalSign, type PersonalModel, type WordSample } from './personalModel';
 
 export type WordRecognizer = {
   labels: string[];
@@ -11,6 +12,30 @@ export async function createWordRecognizer(video: HTMLVideoElement, signal: Abor
   const response = await fetch(`${import.meta.env.BASE_URL}trained-words.json`, { signal });
   if (!response.ok) throw new Error('The trained word model could not be loaded.');
   const model: WordForest = parseWordForest(await response.json());
+  const capture = await createWordCapture(video, signal);
+  return { labels: [...model.labels], close: capture.close,
+    async capture(onProgress) {
+      const sample = await capture.capture(onProgress);
+      return predictWord(model, sample.features, sample.framesWithHand);
+    },
+  };
+}
+
+export async function createPersonalRecognizer(video: HTMLVideoElement, signal: AbortSignal, model: PersonalModel): Promise<WordRecognizer> {
+  const capture = await createWordCapture(video, signal);
+  return { labels: [...model.labels], close: capture.close,
+    async capture(onProgress) {
+      const sample = await capture.capture(onProgress);
+      if (sample.framesWithHand < 24) return { label: model.labels[0], score: 0, margin: 0, accepted: false };
+      return predictPersonalSign(model, sample);
+    },
+  };
+}
+
+export type WordCapture = { capture(onProgress: (frames: number) => void): Promise<WordSample>; close(): void };
+
+/** Same capture contract for teaching, testing, and in-call recognition. No samples are uploaded here. */
+export async function createWordCapture(video: HTMLVideoElement, signal: AbortSignal): Promise<WordCapture> {
   signal.throwIfAborted();
   const { FilesetResolver, HandLandmarker } = await import('@mediapipe/tasks-vision');
   signal.throwIfAborted();
@@ -36,7 +61,6 @@ export async function createWordRecognizer(video: HTMLVideoElement, signal: Abor
   };
   signal.addEventListener('abort', close, { once: true });
   return {
-    labels: [...model.labels],
     capture(onProgress) {
       if (closed || signal.aborted) return Promise.reject(new DOMException('Recognition stopped.', 'AbortError'));
       if (cancelCapture) return Promise.reject(new Error('A sign is already being captured.'));
@@ -48,7 +72,7 @@ export async function createWordRecognizer(video: HTMLVideoElement, signal: Abor
         let lastSample = -Infinity;
         let lastVideoTime = -1;
         const started = performance.now();
-        const finish = (result?: WordPrediction, error?: unknown) => {
+        const finish = (result?: WordSample, error?: unknown) => {
           cancelAnimationFrame(animation);
           cancelCapture = null;
           if (error) reject(error);
@@ -69,7 +93,7 @@ export async function createWordRecognizer(video: HTMLVideoElement, signal: Abor
               if (valid) framesWithHand++;
               frames++; lastSample = time; lastVideoTime = video.currentTime;
               onProgress(frames);
-              if (frames === WORD_FRAMES) { finish(predictWord(model, features, framesWithHand)); return; }
+              if (frames === WORD_FRAMES) { finish({ features, framesWithHand }); return; }
             }
             animation = requestAnimationFrame(tick);
           } catch (error) { finish(undefined, error); }

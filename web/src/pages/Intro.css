@@ -2,6 +2,7 @@
 .intro-heading { position: relative; z-index: 1; text-align: center; }
 .intro-screen h1 { font-family: var(--font-serif); font-size: clamp(4.75rem, 10vw, 8.75rem); font-weight: 400; line-height: 1.08; letter-spacing: -.065em; margin: 0; }
 .intro-tagline { margin: 16px 0 0; color: var(--color-muted); font-size: var(--text-body); line-height: 1.5; }
+.intro-account { display: inline-flex; align-items: center; min-height: 44px; margin-top: 12px; font-size: 1rem; color: var(--color-muted); }
 .intro-illustration { width: min(100%, 960px, max(0px, calc((100svh - 400px) * 1.5))); margin: 0 0 -20px; }
 .intro-begin .ui-icon { transition: transform 160ms; }
 .intro-begin:not([aria-disabled='true']):hover .ui-icon { transform: translateX(4px); }

@@ -53,6 +53,17 @@ opening the camera pages.
 
 ## Run and check
 
+### GitHub accounts and your own signs
+
+**My signs** (`#/training`) lets each person sign in with GitHub, save private
+landmark examples with custom labels, and build a personal model used in signer
+calls. See [GitHub/Supabase setup and personal training](docs/github-personal-signs.md)
+for the SQL migration, row security, OAuth setup, public client settings and
+validation. The Supabase project must be configured before sign-in works.
+Personal examples do not modify the shared model; recognition remains a small
+isolated-sign vocabulary with manual caption review.
+
+
 The root URL opens the [notebook welcome](docs/intro.md): **SignLine**, **Video calls.
 Shared captions.**, a hand-drawn songbird perched on a hand, and **Begin**. Activating Begin plays a short drawn
 takeoff with a gentle hand bounce. The view follows the bird into the center,

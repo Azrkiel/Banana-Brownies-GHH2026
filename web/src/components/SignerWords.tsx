@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState, type RefObject } from 'react';
-import { createWordRecognizer, type WordRecognizer } from '../lib/wordRecognition';
+import { createPersonalRecognizer, createWordRecognizer, type WordRecognizer } from '../lib/wordRecognition';
+import { useAuth } from '../lib/auth';
+import { loadPersonalSamples } from '../lib/personalSigns';
+import { trainPersonalModel } from '../lib/personalModel';
 import type { WordPrediction } from '../lib/wordModel';
 import { Button } from './ui';
 import './SignerWords.css';
@@ -14,6 +17,8 @@ export function SignerWords(props: Props) {
 }
 
 function SignerWordSession({ camera, connected, onUse }: Props) {
+  const { user } = useAuth();
+  const [source, setSource] = useState<'shared' | 'personal'>('shared');
   const [state, setState] = useState<State>('off');
   const [labels, setLabels] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
@@ -42,14 +47,16 @@ function SignerWordSession({ camera, connected, onUse }: Props) {
     request.current = controller;
     setError(''); setPrediction(null); setState('loading');
     try {
-      const recognizer = await createWordRecognizer(camera.current, controller.signal);
+      const recognizer = source === 'personal' && user
+        ? await createPersonalRecognizer(camera.current, controller.signal, trainPersonalModel(await loadPersonalSamples(user.id, controller.signal)))
+        : await createWordRecognizer(camera.current, controller.signal);
       if (generation.current !== attempt) { recognizer.close(); return; }
       engine.current = recognizer;
       setLabels(recognizer.labels); setState('ready');
-    } catch {
+    } catch (cause) {
       if (generation.current !== attempt) return;
       release();
-      setError('Could not start sign recognition. Try again or type your caption.');
+      setError(source === 'personal' && cause instanceof Error ? cause.message : 'Could not start sign recognition. Try again or type your caption.');
       setState('failed');
     }
   }
@@ -73,8 +80,13 @@ function SignerWordSession({ camera, connected, onUse }: Props) {
   return <section className="signer-words" aria-labelledby="signer-words-title">
     <div className="signer-words__heading"><h2 id="signer-words-title">Your trained signs</h2><span>Signer only</span></div>
     <p>Capture one trained word, then review it before adding it to your caption.</p>
+    <label className="field">Recognition model<select value={source} disabled={enabled} onChange={event => { setSource(event.target.value as 'shared' | 'personal'); setLabels([]); setError(''); }}>
+      <option value="shared">Shared seven-word model</option>
+      {user && <option value="personal">Personal signs</option>}
+    </select></label>
+    <p><a href="#/training">{user ? 'Teach or manage your personal signs' : 'Sign in with GitHub to teach your own signs'}</a></p>
     {labels.length > 0 && <p className="signer-words__vocabulary">Trained words: {labels.join(', ')}.</p>}
-    <p className="note">Recognition stays on this device and does not upload recordings or hand data. It can make mistakes.</p>
+    <p className="note">{source === 'personal' ? 'Your saved examples are downloaded privately from your account. New call captures stay on this device.' : 'Recognition stays on this device and does not upload recordings or hand data.'} It can make mistakes.</p>
     <div className="button-row">
       {!enabled ? <Button variant="primary" disabled={!connected} onClick={() => void enable()}>Enable sign recognition</Button> : <>
         <Button variant="primary" disabled={state === 'loading' || state === 'capturing'} onClick={() => void capture()}>{state === 'capturing' ? 'Capturing…' : 'Capture a sign'}</Button>

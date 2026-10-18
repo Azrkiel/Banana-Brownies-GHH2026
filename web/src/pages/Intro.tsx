@@ -66,6 +66,7 @@ export default function Intro() {
     <header className="intro-heading">
       <h1 id="intro-title">SignLine</h1>
       <p className="intro-tagline">Video calls. Shared captions.</p>
+      <a className="intro-account" href="#/training">My signs · Sign in with GitHub</a>
     </header>
     <BirdIllustration className="intro-illustration" departing={departing} onFlightEnd={finish} />
     <a className="ui-button ui-button--primary intro-begin" href="#/conversation" onClick={begin} onPointerEnter={preloadCall} onFocus={preloadCall} aria-disabled={departing || undefined}>Begin <Icon name="arrow" /></a>

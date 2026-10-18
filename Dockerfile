@@ -7,6 +7,9 @@ WORKDIR /src/web
 COPY web/package.json web/package-lock.json ./
 RUN npm ci
 COPY web/ ./
+# Public browser configuration is supplied at build time; never pass service-role keys.
+ARG VITE_SUPABASE_URL
+ARG VITE_SUPABASE_PUBLISHABLE_KEY
 RUN python3 scripts/setup_assets.py && npm run build
 
 FROM python:3.12-slim

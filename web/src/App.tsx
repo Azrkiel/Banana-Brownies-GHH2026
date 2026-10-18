@@ -10,6 +10,7 @@ const Call = lazy(() => import('./pages/Call'))
 const CallRoom = lazy(() => import('./pages/Call').then(module => ({ default: module.CallRoom })))
 const Stats = lazy(() => import('./pages/Stats'))
 const DesignKit = lazy(() => import('./pages/DesignKit'))
+const PersonalSigns = lazy(() => import('./pages/PersonalSigns'))
 // This commits only after a lazy screen is ready, so focus never lands in a discarded fallback.
 function PageContent({ children }: { children: ReactNode }) {
   useLayoutEffect(() => {
@@ -21,7 +22,7 @@ function PageContent({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
-  const [hash, setHash] = useState(window.location.hash)
+  const [hash, setHash] = useState(new URLSearchParams(window.location.search).has('auth_callback') ? '#/training' : window.location.hash)
   useEffect(() => {
     const update = () => setHash(window.location.hash)
     window.addEventListener('hashchange', update)
@@ -38,6 +39,7 @@ export default function App() {
     { route: 'bench', label: 'Camera' },
     { route: 'speech-check', label: 'Speech' },
     { route: 'record', label: 'Record' },
+    { route: 'training', label: 'My signs' },
     { route: 'stats', label: 'Stats' },
   ]
   if (isIntro) return <Intro key={hash} />
@@ -53,7 +55,7 @@ export default function App() {
     </header>
     <Suspense fallback={<BirdLoading />}>
       <PageContent key={`${route}?${query}`}>
-        {route === 'speech-check' ? <SpeechCheck /> : route === 'design-kit' ? <DesignKit /> : route === 'stats' ? <Stats /> : route === 'record' ? <Recorder /> : route === 'bench' ? <Bench /> : route === 'room' ? <CallRoom key={query} query={query} /> : <Call />}
+        {route === 'training' ? <PersonalSigns /> : route === 'speech-check' ? <SpeechCheck /> : route === 'design-kit' ? <DesignKit /> : route === 'stats' ? <Stats /> : route === 'record' ? <Recorder /> : route === 'bench' ? <Bench /> : route === 'room' ? <CallRoom key={query} query={query} /> : <Call />}
       </PageContent>
     </Suspense>
   </>
