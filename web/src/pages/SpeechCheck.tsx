@@ -1,4 +1,4 @@
-import { Button } from '../components/ui';
+import { Badge, Button } from '../components/ui';
 import { BirdScene } from '../components/BirdScene';
 import { useEffect, useRef, useState } from 'react';
 import { type Stt, type SttState } from '../lib/stt';
@@ -110,14 +110,14 @@ export default function SpeechCheck() {
 
   return (
     <main className="speech-check" id="main-content">
-      <header className="speech-check__heading"><h1>Speech</h1></header>
+      <header className="speech-check__heading"><h1>Speech check</h1><p className="speech-check__lead">Test your microphone and see how your speech turns into captions before a call.</p></header>
 
       <div className="speech-check__layout">
         <div className="speech-check__workspace">
           <section className={`speech-check__live speech-check__live--${state}`} aria-labelledby="speech-live-title">
             <div className="speech-check__live-top">
               <h2 id="speech-live-title">Live draft</h2>
-              <span className="speech-check__badge"><span />{state === 'listening' ? 'LIVE' : state === 'stopping' ? 'STOPPING' : state === 'retrying' ? 'RETRYING' : state === 'failed' ? 'ATTENTION' : busy ? 'CONNECTING' : 'STANDBY'}</span>
+              <Badge tone={state === 'listening' ? 'positive' : state === 'failed' || state === 'retrying' ? 'warning' : 'neutral'}>{state === 'listening' ? 'Listening' : state === 'stopping' ? 'Stopping' : state === 'retrying' ? 'Reconnecting' : state === 'failed' ? 'Needs attention' : busy ? 'Connecting' : 'Microphone off'}</Badge>
             </div>
             <div className="speech-check__draft" aria-live="off">
               {draft || (!busy ? <BirdScene scene="singing" className="speech-check__illustration" /> : <p className="speech-check__placeholder">…</p>)}
@@ -129,21 +129,21 @@ export default function SpeechCheck() {
             <div className="speech-check__phrases" role="log" aria-live="polite" aria-relevant="additions" aria-label="Finished speech captions">
               {phrases.length ? phrases.map(phrase => <p key={phrase.id} className="speech-check__phrase">{phrase.text}</p>) : <div className="speech-check__empty"><p>No captions</p></div>}
             </div>
-            <div className="speech-check__history-footer"><span>{phrases.length} captions</span><Button className="speech-check__clear" disabled={!phrases.length && !draft} onClick={() => { setDraft(''); setPhrases([]); }}>Clear text</Button></div>
+            <div className="speech-check__history-footer"><Button className="speech-check__clear" disabled={!phrases.length} onClick={() => { setDraft(''); setPhrases([]); }}>Clear text</Button></div>
           </section>
         </div>
 
         <aside className="speech-check__sidebar" aria-label="Microphone controls">
           <section className="speech-check__controls">
-            <div className="speech-check__mic" aria-hidden="true"><MicIcon /></div>
             <div role="status" aria-live="polite"><h2>{stateText[state].label}</h2>{stateText[state].detail && state !== 'idle' && <p className="speech-check__detail">{stateText[state].detail}</p>}</div>
             {!secure && <p className="speech-check__notice" role="alert">Open this page on localhost or HTTPS to use a microphone.</p>}
             {!supported && <p className="speech-check__notice" role="alert">Microphone streaming is unavailable in this browser. Use a current browser on HTTPS or localhost.</p>}
             {message && <p className="speech-check__notice" role={state === 'failed' ? 'alert' : 'status'}>{message}</p>}
-            <label className="speech-check__consent"><input type="checkbox" checked={consented} onChange={event => { setConsented(event.target.checked); if (!event.target.checked && running.current) stop(); }} /><span>I understand my microphone audio may be sent to my browser’s speech service for recognition.</span></label>
+            <label className="speech-check__consent"><input type="checkbox" checked={consented} onChange={event => { setConsented(event.target.checked); if (!event.target.checked && running.current) stop(); }} /><span>I agree to send my microphone audio to SignLine’s speech-to-text provider (ElevenLabs) for this test.</span></label>
             <div className="speech-check__buttons">
-              <Button variant={busy ? 'secondary' : 'primary'} className={busy ? 'speech-check__stop' : 'speech-check__start'} disabled={!busy && (!consented || !supported || !secure)} onClick={busy ? stop : start}>{busy ? <><span aria-hidden="true" />Stop</> : <><MicIcon />Start captions</>}</Button>
+              <Button aria-describedby={!busy && supported && secure && !consented ? 'speech-start-hint' : undefined} variant={busy ? 'secondary' : 'primary'} className={busy ? 'speech-check__stop' : 'speech-check__start'} disabled={!busy && (!consented || !supported || !secure)} onClick={busy ? stop : start}>{busy ? <><span aria-hidden="true" />Stop</> : <><MicIcon />Start captions</>}</Button>
             </div>
+            {!busy && supported && secure && !consented && <p id="speech-start-hint" className="speech-check__hint">Tick the consent box to start.</p>}
             <p className="speech-check__privacy">No audio saved. Captions stay in this tab.</p>
           </section>
 
