@@ -6,7 +6,7 @@ import { CallRoom } from '../pages/Call';
 describe('room entry gate', () => {
   it.each(['signer', 'hearing'])('opens direct %s room links in pre-call checks without joining', role => {
     const html = renderToStaticMarkup(createElement(CallRoom, { query: `room=my-room-42&name=Kev&role=${role}` }));
-    expect(html).toContain('Before you join');
+    expect(html).toContain('<h1>Devices</h1>');
     expect(html).toContain('my-room-42');
     expect(html).toContain('Kev');
     expect(html).toContain('Start camera');

@@ -94,3 +94,27 @@ hand recoil, CSS completion, double activation, Escape, route cancellation,
 return-to-welcome reset, a missing image, disabled CSS animation, reduced motion
 and preference changes. Static layout checks cover the working routes as well.
 The call form and its validation remain unchanged by the bird animation.
+
+## Notebook UI consistency check — October 17, 2026
+
+The approved `animation/centered-bird-loader` branch is already included in
+`main` through PR #4. Its paper, bird artwork, Lora typography and pencil controls
+remain the shared design; no additional visual redesign was needed.
+
+- Chromium checked welcome, call, camera, speech, recorder, stats, both signer
+  and hearing device checks, and the design kit at 1440, 768, 390 and 320 px.
+  All 36 combinations loaded local Lora and the paper texture, without document
+  horizontal overflow, browser errors, or device requests before user action.
+- Desktop and phone screenshots were reviewed for the shared notebook styling.
+  Device checks retained their disabled Join gate and role-specific microphone
+  controls. Reduced-motion entry, invalid-room validation and forced colors passed.
+- Normal-motion playback verified takeoff, changing wing frames in the centered
+  loader, and entry into the call form. The call-module request was delayed for
+  the recording to make the loading state visible.
+- All 178 frontend tests, production build and lint passed. The pre-call render
+  tests now assert the approved `Devices` heading instead of the previous
+  `Before you join` copy; their room, role, camera and disabled-Join checks remain.
+
+These checks cover the rendered pages and local validation. Live provider calls,
+populated database stats, real camera tracking and two-laptop acceptance were not
+repeated. No roadmap card status was changed, and no deployment was performed.
