@@ -59,11 +59,16 @@ export function wordProbabilities(model: WordForest, features: readonly number[]
   return result;
 }
 
+/** Lowest top score that counts as a sign (lowered from 0.6 on Oct 18: live signs were held back too often). */
+export const MIN_WORD_SCORE = 0.4;
+/** The top word must also lead the runner-up by this much, so near-ties are still held back. */
+export const MIN_WORD_MARGIN = 0.15;
+
 /** A model score is not measured accuracy. Every result still requires confirmation. */
 export function predictWord(model: WordForest, features: readonly number[], framesWithHand: number): WordPrediction {
   const probabilities = wordProbabilities(model, features);
   const order = probabilities.map((score, index) => ({ score, index })).sort((a, b) => b.score - a.score || a.index - b.index);
   const score = order[0].score;
   const margin = score - order[1].score;
-  return { label: model.labels[order[0].index], score, margin, accepted: framesWithHand >= 24 && score >= 0.6 && margin >= 0.15 };
+  return { label: model.labels[order[0].index], score, margin, accepted: framesWithHand >= 24 && score >= MIN_WORD_SCORE && margin >= MIN_WORD_MARGIN };
 }

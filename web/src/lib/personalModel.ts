@@ -44,6 +44,11 @@ export function trainPersonalModel(samples: readonly PersonalSample[], minSigns 
   return { labels: [...counts.keys()].sort(), examples };
 }
 
+/** Closest saved example must be within this distance, and the third closest within the next (both loosened
+ * from 0.35 / 0.5 on Oct 18 so live signs are held back less often). */
+export const MAX_NEAREST_DISTANCE = 0.45;
+export const MAX_THIRD_DISTANCE = 0.65;
+
 /** A small nearest-neighbor model for personal isolated signs, not a general ASL translator. */
 export function predictPersonalSign(model: PersonalModel, sample: WordSample): WordPrediction {
   const input = normalized(sample);
@@ -57,5 +62,5 @@ export function predictPersonalSign(model: PersonalModel, sample: WordSample): W
   // With one personal sign there is no runner-up; the distance gates decide whether it matched.
   const margin = score - (votes[1]?.score ?? 0);
   return { label: votes[0].label, score, margin,
-    accepted: score >= 2 / 3 && margin >= 0.3 && nearest[0].distance <= 0.35 && nearest[2].distance <= 0.5 };
+    accepted: score >= 2 / 3 && margin >= 0.3 && nearest[0].distance <= MAX_NEAREST_DISTANCE && nearest[2].distance <= MAX_THIRD_DISTANCE };
 }
