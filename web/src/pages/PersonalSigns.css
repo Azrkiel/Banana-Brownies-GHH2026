@@ -32,3 +32,4 @@
 .inline-confirm { flex-basis: 100%; padding: 16px; margin: 4px 0 0; border: 1px solid var(--color-field-border); border-radius: var(--radius-control); }
 .inline-confirm p { margin: 0 0 12px; }
 .inline-confirm .button-row { margin: 0; }
+.account-welcome__call { display: inline-flex; align-items: center; min-height: 44px; }

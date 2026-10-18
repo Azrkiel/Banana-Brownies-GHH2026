@@ -28,7 +28,7 @@ export default function PersonalSigns() {
         }}>Sign in with GitHub</Button>
         {!auth.configured && <p role="status">Account sign-in is being set up. Calls are still available.</p>}
         <p className="note">GitHub creates your account on your first sign-in. We do not request access to your repositories.</p>
-        <a href="#/conversation">Continue to Call</a>
+        <a className="account-welcome__call" href="#/call">Go to Call</a>
       </div>
     </Surface> : <TrainingWorkspace key={auth.user.id} userId={auth.user.id} name={typeof auth.user.user_metadata.user_name === 'string' ? auth.user.user_metadata.user_name : 'your account'} />}
   </main>;
@@ -147,7 +147,7 @@ function TrainingWorkspace({ userId, name }: { userId: string; name: string }) {
       await deletePersonalSamples(userId, ids, signal, value === '*' ? null : value);
       if (signal.aborted) return;
       setSamples(current => current.filter(x => !ids.includes(x.id)));
-      setMessage(value === '*' ? 'All your training examples have been deleted.' : `Deleted your examples of ${displayLabel(value)}.`);
+      setMessage(value === '*' ? 'All your examples have been deleted.' : `Deleted your examples of ${displayLabel(value)}.`);
     } catch (cause) { if (!signal.aborted) { setError(cause instanceof Error ? cause.message : 'Delete failed.'); setLoaded(false); } }
     finally { if (!signal.aborted) setSaving(false); }
   }

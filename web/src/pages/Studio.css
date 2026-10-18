@@ -41,3 +41,9 @@
 .recorder-note { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 24px; }
 .recorder-note > .ui-icon { flex-shrink: 0; margin-top: 4px; color: var(--color-muted); }
 .recorder-note p { margin: 0; max-width: 70ch; color: var(--color-muted); font-size: 1rem; }
+.studio-details > summary { justify-content: space-between; gap: 12px; list-style: none; min-height: 48px; }
+.studio-details > summary::-webkit-details-marker { display: none; }
+.studio-details > summary::after { content: ''; flex: none; width: 10px; height: 10px; margin-right: 6px; border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(45deg) translateY(-2px); transition: transform .2s; }
+.studio-details[open] > summary::after { transform: rotate(-135deg); }
+.studio-details > summary:hover { color: var(--color-accent, inherit); }
+@media (prefers-reduced-motion: reduce) { .studio-details > summary::after { transition: none; } }

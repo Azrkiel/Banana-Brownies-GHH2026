@@ -1,0 +1,6 @@
+main.not-found { max-width: 720px; }
+.not-found__card { display: grid; grid-template-columns: minmax(120px, 200px) minmax(0, 1fr); gap: 24px; align-items: center; }
+.not-found__bird { width: 100%; height: auto; }
+.not-found__links { display: flex; flex-wrap: wrap; gap: 4px 20px; }
+.not-found__links a { display: inline-flex; align-items: center; min-height: 44px; }
+@media (max-width: 600px) { .not-found__card { grid-template-columns: 1fr; gap: 12px; } .not-found__bird { max-width: 200px; margin: auto; } }
