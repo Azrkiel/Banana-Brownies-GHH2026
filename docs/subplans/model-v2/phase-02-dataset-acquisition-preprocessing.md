@@ -224,3 +224,6 @@ The server was untouched and `server/.venv` is absent, so the guide's conditiona
 Commits already created: `a36e45c` (Task 2.1 vocabulary) and `c36c539` (Task 2.2 acquisition/provenance). The Task 2.3 implementation/completion commit is titled `phase-02: complete offline preprocessing and synthetic verification`; its exact hash is recorded in the documentation follow-up below.
 
 **Scope boundary:** Stop after pushing Phase 2 to `main`. A future agent must obtain explicit authorization before starting Phase 3. Full dataset conversion timing, real MediaPipe/codec quality, publisher checksums and Phase 1 physical webcam/call QA remain human verification; synthetic success makes no real-data accuracy or timing claim.
+
+
+**Verified Phase 2 implementation and completion commit:** `aa3c4333b4ac7ac42bf2ed26cf8c32955cf6c87a`. This documentation follow-up records the exact hash; it makes no implementation changes.
