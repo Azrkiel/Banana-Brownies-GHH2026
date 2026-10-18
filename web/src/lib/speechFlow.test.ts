@@ -3,12 +3,12 @@ import { createCaptionHistory } from './captions';
 import { createSpeechCaptions } from './speechCaptions';
 import { createCallSpeech } from './callSpeech';
 import type { Caption } from './types';
-import type { startWebSpeech } from './stt';
+import { startWebSpeech } from './stt';
 
 let cleanups: (() => void)[];
 beforeEach(() => { vi.useFakeTimers(); cleanups = []; });
-afterEach(() => { cleanups.forEach(fn => fn()); expect(vi.getTimerCount()).toBe(0); vi.useRealTimers(); });
-function setup() {
+afterEach(() => { cleanups.forEach(fn => fn()); expect(vi.getTimerCount()).toBe(0); vi.useRealTimers(); vi.unstubAllGlobals(); });
+function setup(useSharedAdapter = false) {
   let localRows: Caption[] = [], remoteRows: Caption[] = [];
   const local = createCaptionHistory(rows => { localRows = rows; });
   const remote = createCaptionHistory(rows => { remoteRows = rows; });
@@ -19,7 +19,7 @@ function setup() {
     onError: error,
   });
   const start = vi.fn<typeof startWebSpeech>(() => ({ kind: 'webspeech', stop: vi.fn() }));
-  const capture = createCallSpeech({ role: 'hearing', start, transcript: sender.transcript, clearDraft: sender.clearDraft, onState: vi.fn(), onError: error });
+  const capture = createCallSpeech({ role: 'hearing', ...(useSharedAdapter ? {} : { start }), transcript: sender.transcript, clearDraft: sender.clearDraft, onState: vi.fn(), onError: error });
   sender.connection(true); capture.connection(true); capture.consent(true); capture.enable(true);
   cleanups.push(() => { capture.dispose(); sender.dispose(); });
   const say = (text: string, final: boolean) => start.mock.calls.at(-1)![0](text, final);
@@ -47,5 +47,62 @@ describe('recognition to room caption flow (mock transport)', () => {
     expect(flow.remoteRows()).toEqual([]);
     flow.capture.mute(false); flow.say('new phrase', true); await vi.advanceTimersByTimeAsync(0);
     expect(flow.remoteRows().map(c => c.text)).toEqual(['new phrase']);
+  });
+});
+
+describe('shared Speech check adapter wired to room captions', () => {
+  function browser() {
+    const recognizers: Recognition[] = [];
+    class Recognition {
+      continuous = false;
+      interimResults = false;
+      lang = '';
+      onstart: (() => void) | null = null;
+      onend: (() => void) | null = null;
+      onerror: ((event: { error: string }) => void) | null = null;
+      onresult: ((event: { resultIndex: number; results: { isFinal: boolean; 0: { transcript: string } }[] }) => void) | null = null;
+      constructor() { recognizers.push(this); }
+      start() { this.onstart?.(); }
+      abort() { this.onend?.(); }
+      say(text: string, final: boolean) {
+        this.onresult?.({ resultIndex: 0, results: [{ isFinal: final, 0: { transcript: text } }] });
+      }
+    }
+    vi.stubGlobal('window', { SpeechRecognition: Recognition });
+    return recognizers;
+  }
+
+  it('delivers shared-adapter drafts and finals through the default call pipeline', async () => {
+    const recognizers = browser();
+    const flow = setup(true); // No injected recognizer: exercise production default wiring.
+    expect(recognizers).toHaveLength(1);
+    expect(recognizers[0]).toMatchObject({ continuous: true, interimResults: true, lang: 'en-US' });
+    recognizers[0].say('hello', false);
+    await vi.advanceTimersByTimeAsync(200);
+    expect(flow.remoteRows()).toMatchObject([{ text: 'hello', final: false }]);
+    recognizers[0].say('hello from the speech check engine', true);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(flow.localRows()).toMatchObject([{ text: 'hello from the speech check engine', final: true }]);
+    expect(flow.remoteRows()).toMatchObject([{ text: 'hello from the speech check engine', final: true }]);
+    expect(flow.error).not.toHaveBeenCalled();
+  });
+
+  it('reproduces the screenshot error in both standalone and call paths on provider network failure', async () => {
+    const recognizers = browser();
+    const standaloneText = vi.fn(), standaloneError = vi.fn();
+    const standalone = startWebSpeech(standaloneText, standaloneError);
+    cleanups.push(() => standalone?.stop());
+    const flow = setup(true);
+    for (const delay of [1000, 2000, 4000, 0]) {
+      // Both paths receive the same external browser-service failure.
+      for (const recognizer of recognizers.slice(-2)) recognizer.onerror?.({ error: 'network' });
+      await vi.advanceTimersByTimeAsync(delay);
+    }
+    expect(standaloneError.mock.lastCall?.[0]).toContain('could not connect after three retries');
+    expect(flow.error.mock.lastCall).toEqual(standaloneError.mock.lastCall);
+    expect(standaloneText).not.toHaveBeenCalled();
+    expect(flow.localRows()).toEqual([]);
+    expect(flow.remoteRows()).toEqual([]);
+    expect(recognizers).toHaveLength(8);
   });
 });
