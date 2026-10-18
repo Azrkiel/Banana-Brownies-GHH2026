@@ -87,8 +87,7 @@ export function PreCall({ room, name, role, onJoin }: { room: string; name: stri
     onJoin();
   }
   return <main className="studio-page precall-page" id="main-content">
-    <PageHeader eyebrow="CONVERSATION / DEVICE CHECK" title="Before you join"
-      description={`Get comfortable, ${name}. Check your devices before entering ${room}.`}
+    <PageHeader title="Devices"
       accessory={<Badge tone={ready ? 'positive' : 'neutral'}>{ready ? 'Ready to join' : 'Only you can see this'}</Badge>} />
     <div className="studio-layout">
       <section className="camera-stage" aria-label="Pre-call camera preview">

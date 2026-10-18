@@ -1,69 +1,59 @@
-# Earthrise welcome screen
+# Bird-and-hand welcome
 
-The root URL and `#/welcome` open a full-screen introduction before the app.
-**Begin** makes a short 650 ms departure transition to `#/conversation`;
-**Skip intro** enters immediately. The conversation page's **Back to the stars**
-link replays it. Existing room, camera, recorder, speech, stats, and design-kit
-links open directly, without an introduction in front of them.
+The root URL and `#/welcome` show **SignLine**, a hand-drawn songbird perched on
+an open hand, and one **Begin** link. The warm paper, local Lora serif type and
+sparse copy carry through to the working UI. There are no subtitles or extra
+entry controls. Existing room, camera, recorder, speech, stats and design-kit
+links still open directly. No device permission is requested on entry.
 
-The visual direction comes from the user's Moon/Earth references and the star
-spiral in their Astra screenshot. The supplied
-[Astra page](https://openai.com/index/gpt-6-astra/) returned an HTTPS proxy 403
-during implementation, so its exact moving sequence could not be inspected.
-This implementation uses an original three-arm orbital particle animation.
+## Drawn layers and motion
 
-## Scene and motion
+`BirdIllustration.tsx` composes two local transparent WebP assets on a registered
+3:2 stage: `perch-hand.webp` and `bird-frames.webp`. The latter is a 1536 × 1024
+sprite sheet containing six separately illustrated poses in a 3-column/2-row grid:
+perched, preparation, wings up, wings out, wings down, and recovery. They were
+created with OpenAI image generation from the approved bird-on-hand concept.
+The hand is a separate illustration, so its movement does not drag the bird.
 
-- `web/public/intro/earthrise.png` is an original generated background, created
-  with OpenAI image generation from the user's visual direction. It is included
-  locally; the intro does not depend on an external image host.
-- `web/src/pages/Intro.tsx` owns entry, skip, replay presentation, pause, and the
-  departure timer. It does not request camera or microphone access.
-- `web/src/components/OrbitalStars.tsx` renders deterministic particles on a
-  transparent 2D canvas over the photographic scene. Tilted, shallow elliptical
-  projections create the spiral; distant particles are occluded by the Earth,
-  and particles fade before the lunar foreground.
-- `web/src/pages/Intro.css` owns the dark scene, responsive image crop, typography,
-  glass Begin control, and reduced-effects/forced-colors treatments. It does not
-  replace the main app's saved appearance preference.
+`BirdIllustration.css` uses stepped sprite positions with small registration
+corrections to keep the chest/head aligned while the wings change. The flight
+wrapper starts with a rising leftward path, then the view tracks its chest into
+the viewport center. Its final size matches the loading bird on every viewport.
+The hand first dips, then recoils upward and drops out of view over one second. Pencil wrist edges taper
+into the paper. There is no idle animation.
 
-The image is 1672 × 941 px. The renderer's Earth anchors are approximately
-`(0.659, 0.441)` in source-image coordinates with a radius of `0.247` times
-the rendered image height. The mobile crop differs from desktop; update the
-image positioning and particle anchors together if replacing the background.
+Begin starts the 1.6-second sequence. The title and action clear while the bird
+takes off and stays centered. Navigation to `#/conversation` then hands the same
+registered pose and size to `BirdLoading.tsx` if the route is still pending.
+Its four flying poses loop until React's Suspense boundary resolves; there is no
+extra loading delay or visible filler copy. A screen-reader status announces
+loading. Failed art and forced colors show a plain loading status; reduced motion
+keeps a still illustration. The paper tile stays aligned between both scenes.
+The working header/form ease in over 320 ms. The call module is prefetched on
+Begin focus/hover and at activation. Direct routes use the same bird loading state.
 
-Motion runs at up to 30 fps with device pixel ratio capped at 1.6. Narrow screens
-use 650 orbital and 130 background particles; larger screens use 1100 and 260.
-Glow sprites are created once per renderer lifecycle and reused. Render time
-advances only while playing. Pausing, reduced motion, a hidden document, or
-unmounting stops the animation loop; resize and visibility observers are cleaned
-up with it. The component also cleans up any pending departure timer when leaving.
+The call form and room standby use `Songbirds.tsx`: two birds facing each other
+on a leafy branch, matching the approved natural-history reference. Camera and
+recorder standby screens retain the static bird on a hand. Space art is unused.
 
-## Access and loading
+## Ownership and fallbacks
 
-Begin and Skip remain available without waiting through a timed presentation.
-The pause control exposes its state and accessible name. With reduced motion,
-stars are static and Begin skips the departure animation. Increased contrast,
-reduced transparency, and forced colors have explicit fallbacks.
+`Intro.tsx` preloads and decodes both art assets. Once ready, Begin guards against
+repeat clicks and waits for the bird path's CSS `animationend`. A bounded 1.8-second
+fallback handles disabled/interrupted CSS animations. Navigation away cancels the
+fallback and listeners, including navigation between root and `#/welcome` aliases.
+Returning starts a new perched scene. Escape skips the departure.
 
-Main app screens are lazy-loaded. The welcome screen therefore does not load the
-LiveKit call or MediaPipe camera modules. After a lazy screen is ready, keyboard
-focus moves into its main content. Direct room links preserve their room query
-parameters and title. The browser's Back button can return to the introduction.
+Reduced motion, forced colors, or unavailable art enter the call form immediately.
+Changing to reduced motion/forced colors during flight also finishes immediately.
+The native Begin link preserves modified-click navigation. Keyboard activation and
+focus transfer to the working main landmark remain intact. The art is decorative;
+all text and controls are semantic HTML. None of the animation is used to enable
+camera or microphone access.
 
-## Verification
+Browser checks cover a deliberately delayed call module at desktop and phone
+sizes: the tracked chest and loader align within 2 px, wingbeats continue while
+pending, and the call form replaces them only when ready. Reduced motion, forced
+colors, missing loading art and navigation away during loading are also exercised.
 
-- All 158 existing frontend tests pass, along with TypeScript/production build,
-  lint, and whitespace checks.
-- Chromium checks verified visible motion, pause/resume, stopped rendering after
-  entry, cancellation of a pending transition, reduced-motion entry, keyboard
-  Skip, direct links, room error handling, and no device access from the intro.
-- Layouts were checked at 320 × 720, 390 × 844, 768 × 1024, 1440 × 900,
-  1920 × 1080, and 844 × 390. No document horizontal overflow was found. Begin
-  is visible on the tested 390 × 844 phone layout; Skip remains visible in all.
-- The production entry bundle is about 234 kB before gzip, with call/camera
-  modules deferred. Vite still warns about the separate LiveKit call chunk
-  exceeding 500 kB.
-
-These checks do not establish real-device GPU/frame pacing, Safari behavior, or
-live provider/camera acceptance. The existing roadmap statuses are unchanged.
+See [design system](design-system.md) for the shared paper style and font license.

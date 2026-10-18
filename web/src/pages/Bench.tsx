@@ -1,3 +1,4 @@
+import { BirdIllustration } from '../components/BirdIllustration';
 import { Button, Badge, Icon, PageHeader, Surface } from '../components/ui';
 import { useCallback, useRef, useState } from 'react';
 import { useCameraTracker } from '../lib/useCameraTracker';
@@ -7,7 +8,7 @@ import './Studio.css';
 export default function Bench() {
   const [enabled, setEnabled] = useState(false);
   const [withFace, setWithFace] = useState(true);
-  const [info, setInfo] = useState('Start the camera to measure tracking performance.');
+  const [info, setInfo] = useState('Not started');
   const stats = useRef({ count: 0, ms: 0, start: 0 });
   const onFrame = useCallback((frame: Frame, detectMs: number) => {
     const s = stats.current;
@@ -22,17 +23,16 @@ export default function Bench() {
   const { video, ready, error } = useCameraTracker(enabled, withFace, onFrame);
   return (
     <main className="studio-page" id="main-content">
-      <PageHeader eyebrow="SIGNLINE / CAMERA CHECK" title="Camera check"
-        description="Check hand and body tracking before a conversation. Nothing is recorded or uploaded."
+      <PageHeader title="Camera"
         accessory={<Badge tone={ready ? 'positive' : 'neutral'}>{ready ? 'Camera ready' : 'Camera standby'}</Badge>} />
       <div className="studio-layout">
         <section className="camera-stage" aria-label="Camera benchmark preview">
           <video ref={video} muted playsInline className="mirror" width={480} />
-          {!ready && <div className="camera-stage__placeholder"><span className="camera-stage__icon"><Icon name="camera" /></span><h2>A clearer connection.</h2><p>{enabled ? 'Preparing your camera and tracking models…' : 'Your camera preview will appear here.'}</p></div>}
+          {!ready && <div className="camera-stage__placeholder"><BirdIllustration className="camera-illustration" />{enabled && <p>Loading camera…</p>}</div>}
           <span className="camera-stage__label"><span className="status-dot" />{ready ? 'Local preview · Mirrored' : 'Camera off'}</span>
         </section>
         <aside className="studio-sidebar">
-          <Surface aria-labelledby="bench-controls"><span className="icon-well"><Icon name="camera" /></span><h2 id="bench-controls">Make yourself comfortable.</h2><p className="note">Good light and a little space help keep your hands in view.</p>
+          <Surface aria-label="Camera controls">
             <label className="check-field"><input type="checkbox" checked={withFace} onChange={(e) => {
               stats.current = { count: 0, ms: 0, start: 0 };
               setWithFace(e.target.checked);
@@ -42,10 +42,10 @@ export default function Bench() {
               setEnabled(!enabled);
             }}><Icon name="camera" />{enabled ? 'Stop camera' : 'Start camera'}</Button>
           </Surface>
-          <Surface aria-labelledby="bench-performance"><p className="eyebrow">TRACKING PERFORMANCE</p><h2 id="bench-performance">Smooth feels natural.</h2><p className="studio-target">20<span> FPS target</span></p><p className="studio-status" role="status">{error || (enabled && !ready ? 'Starting camera and models…' : info)}</p></Surface>
+          <Surface aria-labelledby="bench-performance"><h2 id="bench-performance">Tracking</h2><p className="studio-target">20<span> FPS target</span></p><p className="studio-status" role="status">{error || (enabled && !ready ? 'Starting camera and models…' : info)}</p></Surface>
         </aside>
       </div>
-      <p className="studio-privacy"><Icon name="shield" />Processed on this device. Check one-hand and two-hand tracking before recording.</p>
+      <p className="studio-privacy"><Icon name="shield" />On-device processing. Nothing recorded.</p>
     </main>
   );
 }

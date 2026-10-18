@@ -1,53 +1,70 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import OrbitalStars from '../components/OrbitalStars';
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
+import { BirdIllustration } from '../components/BirdIllustration';
+import { birdAssets } from '../lib/introAssets';
 import { Icon } from '../components/ui';
 import './Intro.css';
 
 const motionQuery = '(prefers-reduced-motion: reduce)';
-function subscribeMotion(change: () => void) {
-  const preference = window.matchMedia(motionQuery);
-  preference.addEventListener('change', change);
-  return () => preference.removeEventListener('change', change);
-}
-const readMotion = () => window.matchMedia(motionQuery).matches;
+const contrastQuery = '(forced-colors: active)';
+const preloadCall = () => { void import('./Call').catch(() => { /* Normal navigation can retry loading the route. */ }); };
 
 export default function Intro() {
-  const reducedMotion = useSyncExternalStore(subscribeMotion, readMotion);
-  const [paused, setPaused] = useState(false);
   const [departing, setDeparting] = useState(false);
-  const transition = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    document.title = 'A little closer · SignLine';
-    return () => { if (transition.current) clearTimeout(transition.current); };
+  const inFlight = useRef(false);
+  const ready = useRef(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const finish = useCallback(() => {
+    if (!inFlight.current) return;
+    inFlight.current = false;
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    window.location.hash = '/conversation';
   }, []);
 
-  function begin() {
-    if (departing) return;
-    if (reducedMotion) { window.location.hash = '/conversation'; return; }
+  useEffect(() => {
+    document.title = 'SignLine';
+    let disposed = false;
+    const assets = Object.values(birdAssets).map(src => {
+      const image = new Image();
+      image.src = src;
+      return image.decode();
+    });
+    void Promise.all(assets).then(() => { if (!disposed) ready.current = true; }).catch(() => {
+      // A missing illustration must never block entry to the working UI.
+      ready.current = false;
+    });
+    const preference = window.matchMedia(motionQuery);
+    const contrast = window.matchMedia(contrastQuery);
+    const motionChanged = () => { if (preference.matches || contrast.matches) finish(); };
+    const skip = (event: KeyboardEvent) => { if (event.key === 'Escape') finish(); };
+    preference.addEventListener('change', motionChanged);
+    contrast.addEventListener('change', motionChanged);
+    window.addEventListener('keydown', skip);
+    return () => {
+      disposed = true;
+      inFlight.current = false;
+      if (timer.current) clearTimeout(timer.current);
+      preference.removeEventListener('change', motionChanged);
+      contrast.removeEventListener('change', motionChanged);
+      window.removeEventListener('keydown', skip);
+    };
+  }, [finish]);
+
+  function begin(event: MouseEvent<HTMLAnchorElement>) {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault();
+    if (inFlight.current) return;
+    preloadCall();
+    inFlight.current = true;
+    if (window.matchMedia(motionQuery).matches || window.matchMedia(contrastQuery).matches || !ready.current) { finish(); return; }
     setDeparting(true);
-    transition.current = setTimeout(() => { window.location.hash = '/conversation'; }, 650);
+    // Animation completion is primary; this also covers disabled CSS or interrupted events.
+    timer.current = setTimeout(finish, 1800);
   }
 
-  return <main className={`intro-screen ${departing ? 'intro-screen--departing' : ''}`} id="main-content" aria-labelledby="intro-title" data-motion={paused || reducedMotion ? 'paused' : 'playing'}>
-    <div className="intro-scene" aria-hidden="true">
-      <img className="intro-landscape" src={`${import.meta.env.BASE_URL}intro/earthrise.png`} alt="" fetchPriority="high" />
-      <OrbitalStars paused={paused} reducedMotion={reducedMotion} departing={departing} />
-      <div className="intro-vignette" />
-    </div>
-    <header className="intro-header">
-      <a className="intro-brand" href="#/welcome" aria-label="SignLine welcome"><Icon name="captions" />SignLine<span className="intro-brand__dot" /></a>
-      <a className="intro-skip" href="#/conversation">Skip intro <Icon name="arrow" /></a>
-    </header>
-    <section className="intro-copy" aria-label="Welcome">
-      <p className="intro-eyebrow"><span /> A DIFFERENT PERSPECTIVE</p>
-      <h1 id="intro-title">A world<br />within reach.</h1>
-      <p className="intro-description"><span>Different ways to speak.</span>{' '}<span>One place to connect.</span></p>
-      <button className="intro-begin" type="button" onClick={begin} disabled={departing}><span>{departing ? 'Let’s begin' : 'Begin'}</span><Icon name="arrow" /></button>
-    </section>
-    <footer className="intro-footer">
-      <p><span className="intro-coordinate">01 / EARTHRISE</span><span>A little closer. Even from here.</span></p>
-      <button className="intro-motion" type="button" disabled={reducedMotion} aria-pressed={paused || reducedMotion} onClick={() => setPaused(value => !value)} aria-label={reducedMotion ? 'Animation off: reduced motion is enabled' : paused ? 'Play star animation' : 'Pause star animation'}><span className={`intro-motion__icon ${paused || reducedMotion ? 'intro-motion__icon--paused' : ''}`} aria-hidden="true" />{reducedMotion ? 'Motion off' : paused ? 'Play motion' : 'Pause motion'}</button>
-    </footer>
+  return <main className={`intro-screen ${departing ? 'intro-screen--departing' : ''}`} id="main-content" aria-labelledby="intro-title" aria-busy={departing || undefined}>
+    <h1 id="intro-title">SignLine</h1>
+    <BirdIllustration className="intro-illustration" departing={departing} onFlightEnd={finish} />
+    <a className="intro-begin" href="#/conversation" onClick={begin} onPointerEnter={preloadCall} onFocus={preloadCall} aria-disabled={departing || undefined}>Begin <Icon name="arrow" /></a>
   </main>;
 }

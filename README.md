@@ -50,11 +50,19 @@ opening the camera pages.
 
 ## Run and check
 
-The root URL opens the Moon/Earth [welcome screen](docs/intro.md). Choose **Begin**
-or **Skip intro** to reach the conversation options. Shared `#/room?...` links and
-the camera, recorder, speech, stats, and design-kit routes still open directly.
-The welcome screen supports pausing the stars and the system's reduced-motion
-preference; it does not request camera or microphone access.
+The root URL opens the [notebook welcome](docs/intro.md): **SignLine**, a hand-drawn
+songbird perched on a hand, and **Begin**. Activating Begin plays a short drawn
+takeoff with a gentle hand bounce. The view follows the bird into the center,
+where its wingbeats replace the loading screen until the call form is ready.
+Two songbirds facing each other on a branch illustrate the call page. Reduced motion
+enters immediately. Shared `#/room?...` links and the camera,
+recorder, speech, stats and design-kit routes open directly.
+
+The interface uses textured paper, local Lora serif fonts and pencil-stroke
+controls. Navigation and page copy are reduced to names, actions and necessary
+consent/status messages. See [design system](docs/design-system.md) for the visual
+rules, generated assets and font license. No camera or microphone is requested
+from the welcome or call form.
 
 ```sh
 cd web
