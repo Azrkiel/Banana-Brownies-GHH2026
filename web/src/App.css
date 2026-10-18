@@ -83,3 +83,10 @@ main:focus-visible { outline: none; }
 /* The working screen settles onto the same sheet after the bird leaves. */
 .home-page, .site-header { animation: notebook-arrive 320ms ease-out both; }
 @keyframes notebook-arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.signer-voice { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 12px; }
+.caption-composer .signer-voice label { margin: 0; font-size: var(--text-sm); }
+.signer-voice__toggle { display: flex; align-items: center; gap: 8px; }
+.signer-voice__select { display: flex; align-items: center; gap: 8px; }
+.signer-voice__select select { min-width: 0; }
+.signer-voice p { flex-basis: 100%; margin: 0; font-size: var(--text-sm); color: var(--color-muted); }
+.signer-voice p:empty { display: none; }

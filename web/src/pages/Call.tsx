@@ -10,6 +10,8 @@ import { SignerWords } from '../components/SignerWords';
 import { createCaptionHistory } from '../lib/captions';
 import { createSpeechCaptions } from '../lib/speechCaptions';
 import { createCallSpeech, type CallSpeechState } from '../lib/callSpeech';
+import { getVoices, type VoiceInfo } from '../lib/api';
+import { createSignerVoice, speakToRoom, MAX_SPOKEN_CHARS, type SignerVoice } from '../lib/signerVoice';
 import type { Caption, Role } from '../lib/types';
 import './CallSpeech.css';
 
@@ -114,6 +116,13 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
   const [muted, setMuted] = useState(false);
   const [muting, setMuting] = useState(false);
   const [history] = useState(() => createCaptionHistory(setCaptions));
+  const [voices, setVoices] = useState<VoiceInfo[]>([]);
+  const [voiceId, setVoiceId] = useState('');
+  const [speakAloud, setSpeakAloud] = useState(true);
+  const [speaking, setSpeaking] = useState(0);
+  const [voiceError, setVoiceError] = useState('');
+  const voice = useRef<SignerVoice | null>(null);
+  const speechQueue = useRef<Promise<void>>(Promise.resolve());
   const speech = useRef<ReturnType<typeof createCallSpeech> | null>(null);
   const delivery = useRef<ReturnType<typeof createSpeechCaptions> | null>(null);
   const mutingRef = useRef(false);
@@ -132,6 +141,14 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
   const speechEnabled = !['disabled', 'failed', 'stopped'].includes(speechState);
 
   useEffect(() => {
+    if (role !== 'signer') return;
+    let live = true;
+    getVoices().then(list => { if (live && list.length) { setVoices(list); setVoiceId(id => id || list[0].id); } },
+      () => { if (live) setVoiceError('Voices could not be loaded. Captions are still sent as text.'); });
+    return () => { live = false; };
+  }, [role]);
+
+  useEffect(() => {
     document.title = `${room} · SignLine`;
     void join();
   // Join once on load; the room and identity come from this tab's link and never change.
@@ -146,6 +163,7 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
       delivery.current?.dispose(); delivery.current = null;
       connectionAbort.current?.abort();
       stream.current?.getTracks().forEach(track => track.stop());
+      voice.current?.close(); voice.current = null;
       if (remote.current) remoteTrack.current?.detach(remote.current);
       const previous = call.current; call.current = null;
       void previous?.leave().catch(() => {});
@@ -160,6 +178,8 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
   function resetMedia() {
     stream.current?.getTracks().forEach(track => track.stop());
     stream.current = null;
+    voice.current?.close(); voice.current = null;
+    setSpeaking(0);
     if (local.current) local.current.srcObject = null;
     if (remote.current) {
       remoteTrack.current?.detach(remote.current);
@@ -213,8 +233,15 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
       if (!active()) { media.getTracks().forEach(track => track.stop()); return; }
       stream.current = media;
       if (local.current) local.current.srcObject = media;
+      // The signer's spoken captions travel as this call's microphone track.
+      voice.current?.close();
+      voice.current = null;
+      if (role === 'signer') {
+        try { voice.current = createSignerVoice(); }
+        catch { setVoiceError('This browser cannot play a voice into the call. Captions are still sent as text.'); }
+      }
       const connected = await joinCall({
-        room, name, role, camera: media.getVideoTracks()[0], signal: connectionAbort.current.signal,
+        room, name, role, camera: media.getVideoTracks()[0], voice: voice.current?.track, signal: connectionAbort.current.signal,
         h: {
           onCaption: (caption, identity) => { if (active()) history.receive(caption, identity); },
           onCtrl: (message, identity) => {
@@ -304,11 +331,29 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
       if (generation.current !== attempt) return;
       history.receive(caption, 'local');
       setDraft(value => value === draft ? '' : value);
+      if (role === 'signer' && speakAloud) speak(text);
     } catch {
       if (generation.current === attempt) setError('Your caption wasn’t sent. Your text is still here; try sending it again.');
     } finally {
       if (generation.current === attempt) { setSending(false); sendingRef.current = false; }
     }
+  }
+
+  /** Queued so consecutive captions are spoken in order rather than cutting each other off. */
+  function speak(text: string) {
+    const current = call.current;
+    const signerVoice = voice.current;
+    if (!current || !signerVoice || !voiceId) return;
+    const attempt = generation.current;
+    setSpeaking(count => count + 1); setVoiceError('');
+    speechQueue.current = speechQueue.current.then(async () => {
+      if (generation.current !== attempt) return;
+      try { await speakToRoom({ text, voiceId, voice: signerVoice, sendCtrl: message => current.sendCtrl(message) }); }
+      catch (cause) {
+        if (generation.current === attempt) setVoiceError(cause instanceof Error && cause.message.includes(`${MAX_SPOKEN_CHARS}`)
+          ? cause.message : 'Your caption was sent as text, but it could not be spoken. Try sending it again.');
+      } finally { if (generation.current === attempt) setSpeaking(count => Math.max(0, count - 1)); }
+    });
   }
 
   async function enableAudio() {
@@ -356,12 +401,20 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
             <div className="local-tile"><video ref={local} autoPlay muted playsInline className="mirror local-video" aria-label="Your camera preview" />{!busy && <span className="camera-off" aria-hidden="true">Camera off</span>}<span className="video-label">{inRoom ? name : 'You'} <span>· {role === 'signer' ? 'Signer' : 'Hearing'}</span></span></div>
             {remoteVisible && <span className="peer-label">{peer ?? 'Other participant'}</span>}
           </div>
-          <div className="call-toolbar"><p><span className="privacy-dot" />{status === 'joining' ? 'Waiting for camera access and call connection' : inRoom ? role === 'signer' ? 'Camera on · microphone off' : muted ? 'Call microphone muted · speech recognition paused' : 'Camera and call microphone enabled' : 'Camera and microphone stay off until you join.'}</p><div className="call-actions">{role === 'hearing' && inRoom && <Button disabled={!canSend || muting} onClick={() => void toggleMicrophone()}>{muting ? 'Changing microphone…' : muted ? 'Unmute microphone' : 'Mute microphone'}</Button>}{status === 'audio-blocked' && <Button onClick={enableAudio}>Enable audio</Button>}{busy ? <Button variant="danger" onClick={leave}>{status === 'joining' ? 'Cancel' : 'Leave room'}</Button> : <Button variant="primary" onClick={onRecheck}>Rejoin <Icon name="arrow" /></Button>}</div></div>
+          <div className="call-toolbar"><p><span className="privacy-dot" />{status === 'joining' ? 'Waiting for camera access and call connection' : inRoom ? role === 'signer' ? speakAloud ? 'Camera on · captions spoken by ElevenLabs voice' : 'Camera on · microphone off' : muted ? 'Call microphone muted · speech recognition paused' : 'Camera and call microphone enabled' : 'Camera and microphone stay off until you join.'}</p><div className="call-actions">{role === 'hearing' && inRoom && <Button disabled={!canSend || muting} onClick={() => void toggleMicrophone()}>{muting ? 'Changing microphone…' : muted ? 'Unmute microphone' : 'Mute microphone'}</Button>}{status === 'audio-blocked' && <Button onClick={enableAudio}>Enable audio</Button>}{busy ? <Button variant="danger" onClick={leave}>{status === 'joining' ? 'Cancel' : 'Leave room'}</Button> : <Button variant="primary" onClick={onRecheck}>Rejoin <Icon name="arrow" /></Button>}</div></div>
         </div>
         <section className="caption-panel" aria-labelledby="caption-title">
           <div className="caption-header"><div><h2 id="caption-title">Captions</h2></div><span className="text-badge" aria-hidden="true">Aa</span></div>
           <div className="caption-scroll" role="region" aria-label="Conversation captions" tabIndex={0}>{captions.length ? <CaptionLane captions={captions} me={name} /> : <div className="caption-empty"><p>Captions will appear here as people sign or speak.</p></div>}</div>
-          <form className="caption-composer" onSubmit={send}><label htmlFor="caption-draft">Type a caption</label><div className="composer-input"><input id="caption-draft" value={draft} maxLength={1000} disabled={!canSend} placeholder={canSend ? 'Say something…' : 'Connect to send a caption'} onChange={event => setDraft(event.target.value)} /><Button type="submit" aria-label="Send caption" disabled={!canSend || !draft.trim() || sending}>{sending ? '…' : '↑'}</Button></div><p>{canSend ? 'Press Enter to send to the room.' : 'Your conversation will appear when you connect.'}</p></form>
+          <form className="caption-composer" onSubmit={send}><label htmlFor="caption-draft">Type a caption</label><div className="composer-input"><input id="caption-draft" value={draft} maxLength={1000} disabled={!canSend} placeholder={canSend ? 'Say something…' : 'Connect to send a caption'} onChange={event => setDraft(event.target.value)} /><Button type="submit" aria-label="Send caption" disabled={!canSend || !draft.trim() || sending}>{sending ? '…' : '↑'}</Button></div><p>{canSend ? role === 'signer' && speakAloud ? 'Press Enter to send. It is also spoken aloud to the room.' : 'Press Enter to send to the room.' : 'Your conversation will appear when you connect.'}</p>
+            {role === 'signer' && <div className="signer-voice">
+              <label className="signer-voice__toggle"><input type="checkbox" checked={speakAloud} onChange={event => setSpeakAloud(event.target.checked)} /><span>Speak my captions aloud</span></label>
+              <label className="signer-voice__select">Voice<select value={voiceId} disabled={!voices.length} onChange={event => setVoiceId(event.target.value)}>
+                {voices.map(option => <option key={option.id} value={option.id}>{option.name.split(' - ')[0]}</option>)}
+              </select></label>
+              <p role="status">{speaking ? 'Speaking to the room…' : ''}</p>
+              {voiceError && <p className="call-speech__error" role="alert">{voiceError}</p>}
+            </div>}</form>
         </section>
         <div className="call-details">
           {role === 'hearing' && <section className="call-speech" aria-labelledby="call-speech-title">
