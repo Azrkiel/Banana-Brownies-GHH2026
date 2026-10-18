@@ -1,5 +1,4 @@
-import { useCallback, useContext, useEffect, useRef, useState, type MouseEvent } from 'react';
-import { AuthContext } from '../lib/auth';
+import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
 import { BirdIllustration } from '../components/BirdIllustration';
 import { birdAssets } from '../lib/introAssets';
 import { Icon } from '../components/ui';
@@ -7,11 +6,15 @@ import './Intro.css';
 
 const motionQuery = '(prefers-reduced-motion: reduce)';
 const contrastQuery = '(forced-colors: active)';
+// The landing page skips the supabase bundle, so read its persisted session key instead of the auth context.
+function hasStoredSession(): boolean {
+  try { return Object.keys(localStorage).some(key => /^sb-.+-auth-token$/.test(key) && Boolean(localStorage.getItem(key))); } catch { return false; }
+}
 const preloadCall = () => { void import('./Call').catch(() => { /* Normal navigation can retry loading the route. */ }); };
 
 export default function Intro({ onDepart }: { onDepart?: (animate: boolean) => void }) {
   const [departing, setDeparting] = useState(false);
-  const signedIn = Boolean(useContext(AuthContext)?.user);
+  const [signedIn] = useState(hasStoredSession);
   const inFlight = useRef(false);
   const ready = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
