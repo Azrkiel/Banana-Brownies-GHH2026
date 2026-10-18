@@ -10,7 +10,8 @@ import { SignerWords } from '../components/SignerWords';
 import { createCaptionHistory } from '../lib/captions';
 import { createSpeechCaptions } from '../lib/speechCaptions';
 import { createCallSpeech, type CallSpeechState } from '../lib/callSpeech';
-import { getVoices, type VoiceInfo } from '../lib/api';
+import { getVoices, translateGloss, type VoiceInfo } from '../lib/api';
+import { glossToEnglish } from '../lib/signedSentence';
 import { createSignerVoice, speakToRoom, MAX_SPOKEN_CHARS, type SignerVoice } from '../lib/signerVoice';
 import type { Caption, Role } from '../lib/types';
 import './CallSpeech.css';
@@ -119,6 +120,7 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
   const [voices, setVoices] = useState<VoiceInfo[]>([]);
   const [voiceId, setVoiceId] = useState('');
   const [speakAloud, setSpeakAloud] = useState(true);
+  const [polish, setPolish] = useState(true);
   const [speaking, setSpeaking] = useState(0);
   const [voiceError, setVoiceError] = useState('');
   const voice = useRef<SignerVoice | null>(null);
@@ -339,6 +341,27 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
     }
   }
 
+  /** A dictated sentence is sent without a button press: only confident signs reach here. */
+  async function sendSigned(words: { label: string; score: number }[]): Promise<string | null> {
+    const current = call.current;
+    if (!current || !canSend || !words.length) return null;
+    const attempt = generation.current;
+    const context = captions.filter(caption => caption.role === 'hearing' && caption.final && !caption.retracted).slice(-3).map(caption => caption.text);
+    const text = polish ? await glossToEnglish(words, context, translateGloss) : words.map(word => word.label).join(' ');
+    if (generation.current !== attempt) return null;
+    const caption: Caption = { id: crypto.randomUUID(), speaker: name, role, kind: 'english', text, final: true, ts: Date.now() };
+    try {
+      await current.sendCaption(caption);
+      if (generation.current !== attempt) return null;
+      history.receive(caption, 'local');
+      if (speakAloud) speak(text);
+      return text;
+    } catch {
+      if (generation.current === attempt) setError('Your signed sentence wasn’t sent. Sign it again or type it.');
+      return null;
+    }
+  }
+
   /** Queued so consecutive captions are spoken in order rather than cutting each other off. */
   function speak(text: string) {
     const current = call.current;
@@ -409,6 +432,7 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
           <form className="caption-composer" onSubmit={send}><label htmlFor="caption-draft">Type a caption</label><div className="composer-input"><input id="caption-draft" value={draft} maxLength={1000} disabled={!canSend} placeholder={canSend ? 'Say something…' : 'Connect to send a caption'} onChange={event => setDraft(event.target.value)} /><Button type="submit" aria-label="Send caption" disabled={!canSend || !draft.trim() || sending}>{sending ? '…' : '↑'}</Button></div><p>{canSend ? role === 'signer' && speakAloud ? 'Press Enter to send. It is also spoken aloud to the room.' : 'Press Enter to send to the room.' : 'Your conversation will appear when you connect.'}</p>
             {role === 'signer' && <div className="signer-voice">
               <label className="signer-voice__toggle"><input type="checkbox" checked={speakAloud} onChange={event => setSpeakAloud(event.target.checked)} /><span>Speak my captions aloud</span></label>
+              <label className="signer-voice__toggle"><input type="checkbox" checked={polish} onChange={event => setPolish(event.target.checked)} /><span>Turn signed words into English with Gemini</span></label>
               <label className="signer-voice__select">Voice<select value={voiceId} disabled={!voices.length} onChange={event => setVoiceId(event.target.value)}>
                 {voices.map(option => <option key={option.id} value={option.id}>{option.name.split(' - ')[0]}</option>)}
               </select></label>
@@ -424,7 +448,7 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
             {speechError && <p className="call-speech__error" role="alert">{speechError}</p>}
             {deliveryError && <p className="call-speech__error" role="alert">{deliveryError}</p>}
           </section>}
-          {role === 'signer' && <SignerWords camera={local} connected={canSend} onUse={word => {
+          {role === 'signer' && <SignerWords camera={local} connected={canSend} onSentence={sendSigned} onUse={word => {
             const next = `${draft.trim()}${draft.trim() ? ' ' : ''}${word}`;
             if (next.length > 1000) {
               setError('Your caption is full. Send or shorten it before adding a sign.');

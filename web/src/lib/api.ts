@@ -25,8 +25,8 @@ export type GlossResult = {
   confidence: number;
   uncertain: string[];
 };
-export const translateGloss = (signs: GlossSign[], tags: string[], context: string[]) =>
-  post<GlossResult>('/api/gloss', { signs, tags, context }, 3000);
+export const translateGloss = (signs: GlossSign[], tags: string[], context: string[], timeoutMs = 3000) =>
+  post<GlossResult>('/api/gloss', { signs, tags, context }, timeoutMs);
 
 export async function fetchTts(text: string, voiceId: string): Promise<Blob> {
   const res = await fetch(`${API_BASE}/api/tts`, {

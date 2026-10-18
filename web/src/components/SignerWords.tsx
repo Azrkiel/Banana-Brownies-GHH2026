@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth';
 import { loadPersonalSamples } from '../lib/personalSigns';
 import { trainPersonalModel } from '../lib/personalModel';
 import type { WordPrediction } from '../lib/wordModel';
+import { createDictation, type DictatedWord } from '../lib/dictation';
 import { Button } from './ui';
 import './SignerWords.css';
 
@@ -31,15 +32,19 @@ function heldReason(prediction: WordPrediction): string {
   if (hands < 24) return `Your hand was tracked in ${hands} of 30 frames; it needs 24. Keep one whole hand in view.`;
   return `Closest guess was ${prediction.label} at ${Math.round(prediction.score * 100)}%, which is not confident enough.`;
 }
-type Props = { camera: RefObject<HTMLVideoElement | null>; connected: boolean; onUse(word: string): boolean };
+type Props = {
+  camera: RefObject<HTMLVideoElement | null>; connected: boolean; onUse(word: string): boolean;
+  /** Sends a dictated sentence; resolves to the text that was sent, or null if it was not. */
+  onSentence(words: DictatedWord[]): Promise<string | null>;
+};
 
-/** Signer-only, explicit capture and confirmation; suggestions never send themselves. */
+/** Signer-only. Live dictation sends only confident signs; capture mode always waits for confirmation. */
 export function SignerWords(props: Props) {
   // A connection change invalidates the entire recognition session and its review.
   return <SignerWordSession key={props.connected ? 'connected' : 'disconnected'} {...props} />;
 }
 
-function SignerWordSession({ camera, connected, onUse }: Props) {
+function SignerWordSession({ camera, connected, onUse, onSentence }: Props) {
   const { user } = useAuth();
   const [source, setSource] = useState<'shared' | 'personal'>('shared');
   const [state, setState] = useState<State>('off');
@@ -54,9 +59,24 @@ function SignerWordSession({ camera, connected, onUse }: Props) {
   const engine = useRef<WordRecognizer | null>(null);
   const request = useRef<AbortController | null>(null);
   const generation = useRef(0);
+  const [dictating, setDictating] = useState(true);
+  const [signed, setSigned] = useState<DictatedWord[]>([]);
+  const [sentStatus, setSentStatus] = useState('');
+  const dictation = useRef(createDictation());
+  const dictatingRef = useRef(true);
+  const sentenceRef = useRef(onSentence);
+  useEffect(() => { sentenceRef.current = onSentence; dictatingRef.current = dictating; });
 
+  async function deliver(words: DictatedWord[]) {
+    if (!words.length) return;
+    const attempt = generation.current;
+    setSigned([]); setSentStatus(`Sending ${words.map(word => word.label).join(' ')}…`);
+    const sent = await sentenceRef.current(words).catch(() => null);
+    if (attempt === generation.current) setSentStatus(sent ? `Sent: ${sent}` : 'That sentence was not sent. Sign it again or type it.');
+  }
   function release() {
     generation.current++;
+    dictation.current.clear(); setSigned([]);
     stopLive.current?.(); stopLive.current = null;
     request.current?.abort(); request.current = null;
     engine.current?.close(); engine.current = null;
@@ -97,12 +117,20 @@ function SignerWordSession({ camera, connected, onUse }: Props) {
     const recognizer = engine.current;
     if (!connected || !recognizer || stopLive.current) return;
     setPrediction(null); setError(''); setState('live');
+    dictation.current.clear(); setSigned([]);
     stopLive.current = recognizer.watch((frame, guess) => {
       drawLive(liveCanvas.current, frame);
       setTracked(Boolean(frame.points)); setLive(guess);
+      if (!dictatingRef.current) return;
+      const event = dictation.current.push(guess, Boolean(frame.points), performance.now());
+      if (event?.type === 'word') setSigned(event.words);
+      if (event?.type === 'sentence') void deliver(event.words);
     });
   }
-  function unwatchLive() { stopLive.current?.(); stopLive.current = null; setLive(null); setTracked(false); setState('ready'); }
+  function unwatchLive() {
+    stopLive.current?.(); stopLive.current = null; dictation.current.clear();
+    setSigned([]); setLive(null); setTracked(false); setState('ready');
+  }
   async function capture() {
     const recognizer = engine.current;
     if (!connected || !recognizer || state === 'capturing') return;
@@ -142,13 +170,25 @@ function SignerWordSession({ camera, connected, onUse }: Props) {
     {state === 'live' && <div className="signer-words__live">
       <canvas ref={liveCanvas} aria-label="What the hand model sees" />
       <div role="status" aria-live="off">
+        <label className="signer-words__dictate"><input type="checkbox" checked={dictating} onChange={event => {
+          setDictating(event.target.checked);
+          if (!event.target.checked) { dictation.current.clear(); setSigned([]); }
+        }} /><span>Live dictation: confident signs are added as you sign, and the sentence is sent and spoken when you lower your hand.</span></label>
         <p>{tracked ? 'Hand tracked.' : 'No hand found. Raise one hand into view.'}</p>
         {live ? <>
           <p className="signer-words__word">{live.label} <span>{Math.round(live.score * 100)}%</span></p>
           <p>{live.accepted ? 'Confident match over the last second.' : heldReason(live)}</p>
-          <Button variant="primary" disabled={!live.accepted} onClick={() => { if (live.accepted) onUse(live.label); }}>Add {live.label} to caption</Button>
+          {!dictating && <Button variant="primary" disabled={!live.accepted} onClick={() => { if (live.accepted) onUse(live.label); }}>Add {live.label} to caption</Button>}
         </> : <p>Collecting the first second of frames…</p>}
       </div>
+      {dictating && <div className="signer-words__dictation" aria-live="polite">
+        <p className="signer-words__signed">{signed.length ? signed.map(word => word.label).join(' ') : 'Sign a word to start a sentence.'}</p>
+        {signed.length > 0 && <div className="button-row">
+          <Button variant="primary" onClick={() => void deliver(dictation.current.flush()?.words ?? [])}>Send now</Button>
+          <Button onClick={() => { dictation.current.clear(); setSigned([]); }}>Clear</Button>
+        </div>}
+        {sentStatus && <p className="note">{sentStatus}</p>}
+      </div>}
     </div>}
     {state === 'capturing' && <progress aria-label="Sign capture progress" max={30} value={progress} />}
     {prediction && <div className="signer-words__review" role="status">
