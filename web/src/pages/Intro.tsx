@@ -24,7 +24,7 @@ export default function Intro({ onDepart }: { onDepart?: (animate: boolean) => v
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
     onDepart?.(animate);
-    window.location.hash = '/conversation';
+    window.location.hash = '/call';
   }, [onDepart]);
 
   useEffect(() => {
@@ -76,6 +76,6 @@ export default function Intro({ onDepart }: { onDepart?: (animate: boolean) => v
       <a className="intro-account" href="#/training">{signedIn ? 'My signs' : 'Sign in with GitHub to save your own signs'}</a>
     </header>
     <div className="intro-stage"><BirdIllustration className="intro-illustration" departing={departing} onFlightEnd={() => finish(true)} /></div>
-    <a className="ui-button ui-button--primary intro-begin" href="#/conversation" onClick={begin} onPointerEnter={preloadCall} onFocus={preloadCall} aria-disabled={departing || undefined}>Begin <Icon name="arrow" /></a>
+    <a className="ui-button ui-button--primary intro-begin" href="#/call" onClick={begin} onPointerEnter={preloadCall} onFocus={preloadCall} aria-disabled={departing || undefined}>Begin <Icon name="arrow" /></a>
   </main>;
 }

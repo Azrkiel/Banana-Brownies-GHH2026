@@ -89,9 +89,11 @@ export default function Call({ welcomeFlight = false, onLanded }: { welcomeFligh
   const [role, setRole] = useState<Role>('signer');
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState('');
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(copyTimer.current), []);
   const roomValid = ROOM_PATTERN.test(room);
   const canJoin = Boolean(name.trim()) && roomValid;
-  const hint = !name.trim() ? 'Enter your name to join' : !roomValid ? 'Fix the room name to join' : '';
+  const hint = !name.trim() ? 'Enter your name to join' : !roomValid ? 'Fix the call name to join' : '';
 
   function open(event: FormEvent) {
     event.preventDefault();
@@ -100,11 +102,12 @@ export default function Call({ welcomeFlight = false, onLanded }: { welcomeFligh
   }
   async function copyInvite() {
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}#/conversation?room=${encodeURIComponent(room)}`);
+      await navigator.clipboard.writeText(`${window.location.origin}${window.location.pathname}#/call?room=${encodeURIComponent(room)}`);
       setCopyError('');
       setCopied(true);
-      setTimeout(() => setCopied(false), 3000);
-    } catch { setCopied(false); setCopyError('Couldn’t copy the link. Copy it from the address bar after joining.'); }
+      clearTimeout(copyTimer.current);
+      copyTimer.current = setTimeout(() => setCopied(false), 3000);
+    } catch { clearTimeout(copyTimer.current); setCopied(false); setCopyError('Couldn’t copy the link. Copy it from the address bar after joining.'); }
   }
 
   return (
@@ -117,13 +120,13 @@ export default function Call({ welcomeFlight = false, onLanded }: { welcomeFligh
             <form className="join-bar" onSubmit={open}>
               <label>Name<input autoComplete="given-name" placeholder="Your name" value={name} maxLength={40} required onChange={event => setName(event.target.value)} /></label>
               <div className="join-field">
-                <label>Room name<input value={room} required spellCheck={false} autoCapitalize="none" aria-invalid={!roomValid || undefined} aria-describedby={roomValid ? 'room-help' : 'room-help room-error'} onChange={event => setRoom(normalizeRoom(event.target.value))} onBlur={() => setRoom(value => normalizeRoom(value).replace(/^-+|-+$/g, ''))} /></label>
-                <p className="join-help" id="room-help">3–32 lowercase letters, numbers or hyphens. Share the invite link so the other person joins the same room.</p>
+                <label>Call name<input value={room} required spellCheck={false} autoCapitalize="none" aria-invalid={!roomValid || undefined} aria-describedby={roomValid ? 'room-help' : 'room-help room-error'} onChange={event => setRoom(normalizeRoom(event.target.value))} onBlur={() => setRoom(value => normalizeRoom(value).replace(/^-+|-+$/g, ''))} /></label>
                 {!roomValid && <p className="join-error" id="room-error">Use 3–32 lowercase letters, numbers or hyphens.</p>}
                 <div className="join-invite">
                   <Button type="button" onClick={() => void copyInvite()} disabled={!roomValid}>Copy invite link</Button>
                   <span role="status" className="join-help">{copied ? 'Copied' : ''}</span>
                 </div>
+                <p className="join-help" id="room-help">3–32 lowercase letters, numbers or hyphens. Send the invite link so the other person joins this call.</p>
                 {copyError && <p className="join-error" role="alert">{copyError}</p>}
               </div>
               <fieldset className="join-roles"><legend>Role</legend>
@@ -132,8 +135,10 @@ export default function Call({ welcomeFlight = false, onLanded }: { welcomeFligh
                   <span><span className="role-option__label">{option.label}</span><span className="join-help" id={`role-${option.value}`}>{option.help}</span></span>
                 </label>)}
               </fieldset>
-              <Button variant="primary" type="submit" disabled={!canJoin} aria-describedby="join-hint">Join <Icon name="arrow" /></Button>
-              <p className="join-help" id="join-hint">{hint ? `${hint}. ` : ''}Next: a quick camera and microphone check before you join.</p>
+              <div className="join-submit">
+                <Button variant="primary" type="submit" disabled={!canJoin} aria-describedby="join-hint">Join <Icon name="arrow" /></Button>
+                <p className="join-help" id="join-hint">{hint ? `${hint}. ` : ''}Next: a quick camera and microphone check.</p>
+              </div>
             </form>
           </section>
         </div>
@@ -154,7 +159,7 @@ export function CallRoom({ query }: { query: string }) {
   if (!params) {
     return (
       <main className="call-page" id="main-content">
-        <div className="error-banner" role="alert">This room link is missing a valid name, room, or role. <a href="#/conversation">Go back and join a room</a>.</div>
+        <div className="error-banner" role="alert">This call link is missing a valid name, call name, or role. <a href="#/call">Go back to call setup</a>.</div>
       </main>
     );
   }

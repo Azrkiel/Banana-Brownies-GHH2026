@@ -146,3 +146,39 @@ body[data-in-call] .site-header nav { display: none; }
   .stage-top { left: 12px; right: 12px; } .local-tile { bottom: 12px; right: 12px; }
   .stage { height: clamp(320px, 45svh, 420px); } .stage-placeholder { justify-content: flex-start; padding-bottom: 140px; }
 }
+
+/* setup2: pass 2 */
+.home-page .home-join { padding: 20px 28px; margin-top: -64px; }
+.home-page .home-layout { align-items: start; }
+.home-page .join-field { grid-template-columns: minmax(0, 1fr) auto; align-items: end; column-gap: 10px; }
+.home-page .join-field > .join-help, .home-page .join-field > .join-error { grid-column: 1 / -1; }
+.home-page .join-invite { flex-wrap: nowrap; }
+.home-page .join-bar > .ui-button { justify-self: start; }
+.home-page .home-heading { margin-bottom: 8px; }
+.home-page .join-bar { gap: 14px; }
+.home-page .join-bar label { gap: 4px; font-size: 1rem; }
+.home-page .join-bar input { min-height: 44px; font-size: 1.125rem; }
+.home-page .join-field { gap: 4px; }
+.home-page .join-invite { gap: 8px; }
+.home-page .join-roles { grid-template-columns: 1fr 1fr; gap: 8px; font-size: 1rem; }
+.home-page .join-roles legend { grid-column: 1 / -1; margin-bottom: 0; }
+.home-page .join-bar .role-option { padding: 8px 10px; border: 1px solid var(--color-field-border); border-radius: var(--radius-control); }
+.home-page .join-bar .role-option:has(input:checked) { border-color: var(--color-ink); box-shadow: inset 0 0 0 1px var(--color-ink); }
+.home-page .role-option__label { font-size: 1rem; }
+.home-page .join-bar > .ui-button { margin-top: 0; }
+.home-page .join-help { font-size: .875rem; line-height: 1.4; }
+@media (max-width: 900px) { .home-page .join-roles { grid-template-columns: 1fr; } }
+@media (max-width: 600px) {
+  .home-page .home-layout { align-items: stretch; }
+  .home-page { padding-top: 8px; padding-bottom: 24px; }
+  .home-page .home-heading { margin-bottom: 0; }
+  .home-page .home-illustration { margin: -24px auto -28px; max-width: 220px; }
+  .home-page .home-join { padding: 12px; margin-top: 0; }
+  .home-page .join-roles { grid-template-columns: 1fr 1fr; }
+  .home-page .join-bar { gap: 10px; }
+  .home-page .join-bar .role-option { flex-direction: column; gap: 4px; }
+  .home-page .join-bar .role-option .join-help { display: none; }
+}
+.home-page .join-submit { display: flex; align-items: center; gap: 12px; }
+.home-page .join-submit > .join-help { flex: 1; }
+@media (max-width: 600px) { .home-page .join-submit { flex-direction: column; align-items: stretch; gap: 4px; } .home-page .join-submit > .ui-button { width: 100%; } .home-page .join-submit > .join-help { text-align: center; order: 2; } }

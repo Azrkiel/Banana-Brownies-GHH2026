@@ -90,7 +90,7 @@ export function PreCall({ room, name, role, onJoin }: { room: string; name: stri
   }
   return <main className="studio-page precall-page" id="main-content">
     <p className="eyebrow precall-room">Call · {room}</p>
-    <PageHeader title="Check your camera and mic"
+    <PageHeader title={role === 'signer' ? 'Check your camera' : 'Check your camera and mic'}
       accessory={<Badge tone={ready ? 'positive' : 'neutral'}>{ready ? 'Ready to join' : 'Checks needed'}</Badge>} />
     <div className="studio-layout">
       <div className="precall-stage"><section className="camera-stage" aria-label="Pre-call camera preview">
@@ -122,12 +122,12 @@ export function PreCall({ room, name, role, onJoin }: { room: string; name: stri
         </Surface>
       </aside>
     </div>
-    <p className="studio-privacy"><Icon name="shield" />Checks stay on this device. Nothing is recorded or sent to the room until you join. Your browser’s default camera and microphone are used.</p>
+    <p className="studio-privacy"><Icon name="shield" />Checks stay on this device. Nothing is recorded or sent to the call until you join. {role === 'signer' ? 'Your browser’s default camera is used.' : 'Your browser’s default camera and microphone are used.'}</p>
     <div className={`precall-join${ready ? " precall-join--ready" : ""}`} role="group" aria-label="Join the call">
       <div className="precall-join__info"><p className="precall-join__title">Joining as {name} · {roleLabel}</p>
         <p className="note" id="precall-join-hint">{ready ? 'Checks passed. You can join.' : `Still needed: ${needed.join(' and ')}.`}</p></div>
       <Button variant="primary" disabled={!ready} aria-describedby="precall-join-hint" onClick={join}>Join call <Icon name="arrow" /></Button>
-      <a className="precall-back" href="#/conversation">Back to call setup</a>
     </div>
+    <a className="precall-back" href="#/call">Back to call setup</a>
   </main>;
 }

@@ -15,10 +15,10 @@ const CallRoom = lazy(() => import('./pages/Call').then(module => ({ default: mo
 const DesignKit = lazy(() => import('./pages/DesignKit'))
 const PersonalSigns = lazy(() => import('./pages/PersonalSigns'))
 const DEV = import.meta.env.DEV
-const KNOWN_ROUTES = new Set(['', 'welcome', 'conversation', 'room', 'bench', 'speech-check', 'record', 'training'])
-const TITLES: Record<string, string> = { conversation: 'Call', room: 'Call', 'speech-check': 'Speech check', record: 'Record', training: 'My signs', bench: 'Camera check', 'design-kit': 'Design kit' }
+const KNOWN_ROUTES = new Set(['', 'welcome', 'call', 'conversation', 'room', 'bench', 'speech-check', 'record', 'training'])
+const TITLES: Record<string, string> = { call: 'Call', conversation: 'Call', room: 'Call', 'speech-check': 'Speech check', record: 'Record', training: 'My signs', bench: 'Camera check', 'design-kit': 'Design kit' }
 function NotFound() {
-  return <main id="main-content" className="not-found"><h1>Page not found</h1><p>That page does not exist. <a href="#/conversation">Back to Call</a></p></main>
+  return <main id="main-content" className="not-found"><h1>Page not found</h1><p>That page does not exist. <a href="#/call">Back to Call</a></p></main>
 }
 // This commits only after a lazy screen is ready, so focus never lands in a discarded fallback.
 function PageContent({ children, title }: { children: ReactNode; title: string }) {
@@ -38,7 +38,7 @@ export default function App() {
   const finishLanding = useCallback(() => setWelcomeFlight(false), [])
   useEffect(() => {
     const update = () => {
-      if (!/^#\/?conversation(?:\?|$)/.test(window.location.hash)) setWelcomeFlight(false)
+      if (!/^#\/?(?:call|conversation)(?:\?|$)/.test(window.location.hash)) setWelcomeFlight(false)
       setHash(window.location.hash)
     }
     window.addEventListener('hashchange', update)
@@ -50,7 +50,7 @@ export default function App() {
   const title = `${known ? TITLES[route] ?? 'Call' : 'Not found'} · SignLine`
   // Camera check (#/bench) and Record (#/record) are developer tools: reachable by URL, not listed.
   const links = [
-    { route: 'conversation', label: 'Call' },
+    { route: 'call', label: 'Call' },
     { route: 'speech-check', label: 'Speech check' },
     { route: 'training', label: 'My signs' },
   ]
@@ -63,7 +63,7 @@ export default function App() {
     }}>Skip to content</a>
     <header className="site-header">
       <a className="brand" href="#/welcome">SignLine</a>
-      <nav aria-label="Main navigation">{links.map(link => <a key={link.route} href={`#/${link.route}`} aria-current={(link.route === 'conversation' ? ['conversation', 'room'].includes(route) : route === link.route) ? 'page' : undefined}>{link.label}</a>)}</nav>
+      <nav aria-label="Main navigation">{links.map(link => <a key={link.route} href={`#/${link.route}`} aria-current={(link.route === 'call' ? ['call', 'conversation', 'room'].includes(route) : route === link.route) ? 'page' : undefined}>{link.label}</a>)}</nav>
     </header>
     <Suspense fallback={<BirdLoading />}>
       <AuthProvider>
