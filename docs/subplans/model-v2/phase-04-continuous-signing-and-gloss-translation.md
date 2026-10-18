@@ -2,10 +2,10 @@
 
 **Status:** `[ ]` Pending  
 **Target Stage:** Stage D (Continuous Signing Stream Segmentation, Non-Manual Facial Grammar Markers & Lattice-Aware Gloss-to-English Captioning)  
-**Estimated Effort:** 6â€“9 hours (2â€“3 coding agent sessions + optional 3-hour GPU run for continuous CTC fine-tuning)  
+**Estimated Effort:** 6–9 hours (2–3 coding agent sessions + optional 3-hour GPU run for continuous CTC fine-tuning)  
 **Compute Requirements:**
 - **Browser / Server Sliding-Window Segmenter + NMM Extractor + LLM Lattice Rescorer:** CPU-only (0 GPU hours).
-- **Continuous CTC Sequence Head (`SignContinuousCTC` on stitched isolated clips + [How2Sign Holistic](https://www.google.com/search?q=https%3A%2F%2Fhuggingface.co%2Fdatasets%2FPSewmuthu%2FHow2Sign_Holistic)):** 1Ã— NVIDIA T4 / L4 GPU for ~2â€“3 hours.
+- **Continuous CTC Sequence Head (`SignContinuousCTC` on stitched isolated clips + [How2Sign Holistic](https://www.google.com/search?q=https%3A%2F%2Fhuggingface.co%2Fdatasets%2FPSewmuthu%2FHow2Sign_Holistic)):** 1× NVIDIA T4 / L4 GPU for ~2–3 hours.
 
 ---
 
@@ -14,7 +14,7 @@
 ### 1.1 Current State & Problem
 1. **Brittle Fixed-Stride Sliding Window (`web/src/components/SignerWords.tsx:167-189` & `web/src/lib/decoder.ts:14-60`):**
    - Currently, `SignerWords.tsx` runs inference every `stride = 3` frames (`~100 ms`) on a fixed `30`-frame buffer (`~1.0 s`), requiring `2` consecutive identical predictions (`stabilityWindow = 2`) above `confidenceThreshold = 0.60`, followed by a `cooldownMs = 900` lockout.
-   - During continuous multi-sign sentences, **co-articulation (movement epenthesis)**â€”the transitional motion as the hands move from the end location of Sign $i$ to the start location of Sign $i+1$â€”causes the fixed window to either fire false positives mid-transition or swallow rapid 2-sign phrases during the `900 ms` cooldown.
+   - During continuous multi-sign sentences, **co-articulation (movement epenthesis)**—the transitional motion as the hands move from the end location of Sign $i$ to the start location of Sign $i+1$—causes the fixed window to either fire false positives mid-transition or swallow rapid 2-sign phrases during the `900 ms` cooldown.
 2. **Unused Face Landmarks (`web/src/lib/features.ts:75-86`):**
    - Although `landmarks.ts` extracts 8 face points (nose, eyes, mouth corners, chin, eyebrows), nothing in the inference pipeline extracts **ASL Non-Manual Markers (NMMs)**: eyebrow raise (`[Q-YN]` yes/no questions), eyebrow furrow (`[Q-WH]` wh-questions), or headshake (`[NEG]` negation). Without NMMs, `YOU GO STORE` as a statement is indistinguishable from `"Are you going to the store?"` or `"You aren't going to the store."`
 3. **Top-1 Gloss Prompt Without Uncertainty or Offline Fallback (`server/app/gloss.py:13-53`):**
@@ -24,7 +24,7 @@
 ### 1.2 Why This Phase Matters
 Real ASL conversation is continuous, combines lexical signs with fingerspelled names/nouns, and encodes question/negation grammar on the face and head. Phase 04 bridges the gap between isolated word classification (Stage C) and natural live captions (Stage D) through a pragmatic two-tier architecture:
 - **Tier D1 (Deployable Immediately on Commercial Data):** A kinematic **Motion-Onset / Hold Boundary Segmenter** + **Dual-Stream Isolated/Fingerspelling Router** + **Facial Non-Manual Marker (`NMM`) Extractor** + **Top-3 Lattice Gloss-to-English Translator** (with an instant deterministic rule-based fallback for offline/zero-key environments).
-- **Tier D2 (Stretch / Research Track):** A **Continuous Sliding-Window CTC Sequence Model (`SignContinuousCTC`)** trained on synthetic co-articulated sign chains (3â€“6 signs stitched with cubic spline transitions) and fine-tuned on [How2Sign Holistic](https://www.google.com/search?q=https%3A%2F%2Fhuggingface.co%2Fdatasets%2FPSewmuthu%2FHow2Sign_Holistic) (`CC BY-NC 4.0`).
+- **Tier D2 (Stretch / Research Track):** A **Continuous Sliding-Window CTC Sequence Model (`SignContinuousCTC`)** trained on synthetic co-articulated sign chains (3–6 signs stitched with cubic spline transitions) and fine-tuned on [How2Sign Holistic](https://www.google.com/search?q=https%3A%2F%2Fhuggingface.co%2Fdatasets%2FPSewmuthu%2FHow2Sign_Holistic) (`CC BY-NC 4.0`).
 
 ---
 
@@ -41,7 +41,7 @@ Real ASL conversation is continuous, combines lexical signs with fingerspelled n
 |---|---|---|---|---|
 | **Option A: Kinematic Boundary Segmenter + Top-K Lattice Rescoring (Tier D1)** | Detects sign boundaries from hand velocity minima/holds + wrist height; runs Stage C isolated classifier & Stage B fingerspelling CTC on active segments; passes Top-3 `(gloss, prob)` lattice + NMM tags to LLM/grammar rescorer | Works **100% on commercial-safe data** (GISLR + ASLFR); zero sequence-level training needed; `<5 ms` overhead in browser | Can miss boundaries in rapid native signing without pauses | **Primary Production Pipeline (Stage D1)** |
 | **Option B: Sliding-Window CTC over Continuous Sign Streams (Tier D2)** | `SignConformerV2` encoder over `T=128` frames (`~4.2s`) with a vocabulary-level CTC head (`blank=0` + gloss classes), trained on synthetic stitched sign chains + How2Sign | Explicitly models co-articulation transitions between signs without heuristic velocity thresholds | Requires synthetic transition blending or NC-licensed How2Sign data; higher browser memory (`T=128`) | **Secondary / Stretch Pipeline (Stage D2)** |
-| **Option C: End-to-End Video/Landmark-to-English Seq2Seq Transformer** | Encoder-decoder directly predicting English tokens from landmark streams (e.g., TarrÃ©s et al. 2023 on How2Sign) | Single network from landmarks to English | Hallucinates English sentences when signer vocabulary drifts; requires `>500h` parallel corpus (`BLEU ~8â€“15` on How2Sign) | **Rejected for direct browser inference** (keep translation decoupled via gloss lattice) |
+| **Option C: End-to-End Video/Landmark-to-English Seq2Seq Transformer** | Encoder-decoder directly predicting English tokens from landmark streams (e.g., Tarrés et al. 2023 on How2Sign) | Single network from landmarks to English | Hallucinates English sentences when signer vocabulary drifts; requires `>500h` parallel corpus (`BLEU ~8–15` on How2Sign) | **Rejected for direct browser inference** (keep translation decoupled via gloss lattice) |
 
 ---
 
@@ -50,7 +50,7 @@ Real ASL conversation is continuous, combines lexical signs with fingerspelled n
 Execution checklist (code verification is separate from real-data acceptance below):
 
 - [x] Task 4.1: Kinematic segmenter, spelling router and top-three decoder.
-- [ ] Task 4.2: NMM extraction with a Python counterpart.
+- [x] Task 4.2: NMM extraction with a Python counterpart.
 - [ ] Task 4.3: Lattice/NMM API and shared offline grammar.
 - [ ] Task 4.4: Continuous CTC stitching, training and evaluation.
 
@@ -59,11 +59,11 @@ Create `web/src/lib/segmenter.ts` and upgrade `web/src/lib/decoder.ts`:
 1. **Kinematic State Machine (`REST -> ONSET -> STROKE_HOLD -> TRANSITION`):**
    - Computes per-frame wrist & fingertip kinetic energy $E_t = \|\Delta H_t^L\|_2^2 + \|\Delta H_t^R\|_2^2$ and normalized wrist elevation relative to the hip/shoulder line from the `F=174` frame vector.
    - **`REST`:** Hands below lower chest threshold (`y_wrist > y_shoulder + 0.65 * shoulder_width`) or $E_t < \epsilon_{\text{idle}}$ for `>= 12` frames (`400 ms`). Suppresses classifier firing completely.
-   - **`ONSET` / `STROKE_HOLD`:** Hand enters signing space and reaches local velocity dip (sign hold/apex) or completes a `24â€“36` frame active window. Triggers Stage C isolated classifier.
+   - **`ONSET` / `STROKE_HOLD`:** Hand enters signing space and reaches local velocity dip (sign hold/apex) or completes a `24–36` frame active window. Triggers Stage C isolated classifier.
    - **`TRANSITION` Gate:** Detects rapid ballistic movement between two sign holds ($E_t > \epsilon_{\text{transition}}$ with monotonic wrist trajectory) and masks out predictions during the transition frames instead of relying solely on a blind `900 ms` timer cooldown.
 2. **Automatic Isolated-vs.-Fingerspelling Mode Router:**
    - Computes a fingerspelling likelihood heuristic (`isFingerspellingCandidate`): single dominant hand localized near shoulder/chin region (`\|\Delta \text{wrist}\|_2 < 0.08` over `20` frames) with high distal finger-joint articulation ($\text{Var}(\text{fingertips}) / \text{Var}(\text{wrist}) > 4.5$).
-   - When triggered (or when the user toggles `[Fingerspell Mode]` in UI), routes the rolling `64â€“128` frame buffer to the Stage B `FingerspellingCTCMini` model and emits spelled tokens (`@NAME` or word) into the sentence buffer.
+   - When triggered (or when the user toggles `[Fingerspell Mode]` in UI), routes the rolling `64–128` frame buffer to the Stage B `FingerspellingCTCMini` model and emits spelled tokens (`@NAME` or word) into the sentence buffer.
 
 ### Task 4.2: Non-Manual Facial Grammar Marker (`NMM`) Extractor (`web/src/lib/nmm.ts` & `ml/nmm.py`)
 Create `web/src/lib/nmm.ts` (and matching Python `ml/nmm.py`) operating on the 8 face landmarks in `[150:174]` (`nose=0, L_eye=1, R_eye=2, L_mouth=3, R_mouth=4, chin=5, L_brow=6, R_brow=7`):
@@ -155,11 +155,11 @@ python -m ml.continuous_ctc \
 ## 7. Acceptance Criteria
 
 - [x] **AC-4.1 (Kinematic Transition Suppression):** On a synthetic or recorded 4-sign sequence with transitional hand movements, `web/src/lib/segmenter.ts` reduces false-positive mid-transition triggers by `>= 50%` compared to the legacy fixed-stride decoder while supporting back-to-back signs separated by `350 ms` (down from `900 ms`).
-- [ ] **AC-4.2 (Non-Manual Marker Detection):** Unit tests in `src/lib/__tests__/nmm.test.ts` verify that synthetic/recorded brow raise triggers `[Q-YN]`, brow furrow triggers `[Q-WH]`, and horizontal headshake triggers `[NEG]`, while overall head pitch/distance scaling (`0.7x` to `1.4x`) does not cause false triggers.
+- [x] **AC-4.2 (Non-Manual Marker Detection):** Unit tests in `src/lib/__tests__/nmm.test.ts` verify that synthetic/recorded brow raise triggers `[Q-YN]`, brow furrow triggers `[Q-WH]`, and horizontal headshake triggers `[NEG]`, while overall head pitch/distance scaling (`0.7x` to `1.4x`) does not cause false triggers.
 - [ ] **AC-4.3 (Offline & LLM Gloss-to-English Quality):**
   - Without `GEMINI_API_KEY`, `POST /api/gloss` converts `{"glosses": ["ME", "WANT", "WATER"], "nmm_tags": ["Q-YN"]}` -> `"Do I want water?"` and `{"glosses": ["YOU", "NEED", "HELP"], "nmm_tags": ["Q-YN"]}` -> `"Do you need help?"` in `< 5 ms`.
   - With `GEMINI_API_KEY`, passing a 3-slot lattice where Slot 2 has `[{"gloss": "DEER", "score": 0.46}, {"gloss": "THIRSTY", "score": 0.44}]` followed by `WATER (0.91)` resolves to `"I am thirsty and want some water."`
-- [ ] **AC-4.4 (Continuous Signing Benchmark â€” Stage D):** Achieves `<= 28%` Gloss Word Error Rate (`WER`) on stitched 3-to-5 sign commercial validation streams (`<= 35%` WER on [How2Sign Holistic](https://www.google.com/search?q=https%3A%2F%2Fhuggingface.co%2Fdatasets%2FPSewmuthu%2FHow2Sign_Holistic) validation sentences).
+- [ ] **AC-4.4 (Continuous Signing Benchmark — Stage D):** Achieves `<= 28%` Gloss Word Error Rate (`WER`) on stitched 3-to-5 sign commercial validation streams (`<= 35%` WER on [How2Sign Holistic](https://www.google.com/search?q=https%3A%2F%2Fhuggingface.co%2Fdatasets%2FPSewmuthu%2FHow2Sign_Holistic) validation sentences).
 
 ---
 
