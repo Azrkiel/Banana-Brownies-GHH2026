@@ -7,7 +7,7 @@ const r4 = (v: number) => Math.round(v * 1e4) / 1e4;
 const toPt = (p: { x: number; y: number; z: number }): Pt => ({ x: r4(p.x), y: r4(p.y), z: r4(p.z) });
 
 /** Hand (2 hands!) + Pose lite, optional Face blendshapes every 3rd frame. All files served locally. */
-export async function createTracker(opts: { withFace: boolean; delegate?: 'GPU' | 'CPU' }): Promise<Tracker> {
+export async function createTracker(opts: { withFace: boolean; delegate?: 'GPU' | 'CPU'; interleaved?: boolean }): Promise<Tracker> {
   const fileset = await FilesetResolver.forVisionTasks(`${import.meta.env.BASE_URL}mediapipe/wasm`);
   const initialize = async <T>(create: (delegate: 'GPU' | 'CPU') => Promise<T>): Promise<T> => {
     const preferred = opts.delegate ?? 'GPU';
@@ -44,11 +44,16 @@ export async function createTracker(opts: { withFace: boolean; delegate?: 'GPU' 
 
   let n = 0;
   let brow: Brow | null = null;
+  let upperPose: Pt[] | null = null;
   return {
     detect(video, t) {
       const h = hand.detectForVideo(video, t);
-      const p = pose!.detectForVideo(video, t);
-      if (face && n++ % 3 === 0) {
+      const index = n++;
+      if (!opts.interleaved || index % 2 === 0) {
+        const p = pose!.detectForVideo(video, t);
+        upperPose = p.landmarks[0] ? p.landmarks[0].slice(0, 17).map(toPt) : null;
+      }
+      if (face && (opts.interleaved ? index % 2 === 1 : index % 3 === 0)) {
         const cats = face.detectForVideo(video, t).faceBlendshapes?.[0]?.categories ?? [];
         const g = (name: string) => cats.find((c) => c.categoryName === name)?.score ?? 0;
         brow = cats.length
@@ -56,7 +61,6 @@ export async function createTracker(opts: { withFace: boolean; delegate?: 'GPU' 
               furrow: (g('browDownLeft') + g('browDownRight')) / 2 }
             : null;
       }
-      const upperPose = p.landmarks[0] ? p.landmarks[0].slice(0, 17).map(toPt) : null;
       return {
         t, w: video.videoWidth, h: video.videoHeight,
         pose: upperPose, headYaw: headYawFromPose(upperPose),
@@ -81,7 +85,7 @@ export function headYawFromPose(pose: Pt[] | null): number | undefined {
 const HAND_LINKS = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12],
   [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [0, 17], [17, 18], [18, 19], [19, 20]];
 
-type OverlayFrame = { hands?: Pt[][]; points?: Pt[] | null; pose?: Pt[] | null };
+type OverlayFrame = { overlayPalette?: 'v2'; hands?: Pt[][]; points?: Pt[] | null; pose?: Pt[] | null };
 
 /** Draw normalized landmarks over either the raw preview or its mirrored display. */
 export function drawLandmarksOverlay(canvas: HTMLCanvasElement | null, frame: OverlayFrame, opts: { clear?: boolean; mirror?: boolean } = {}) {
@@ -93,7 +97,7 @@ export function drawLandmarksOverlay(canvas: HTMLCanvasElement | null, frame: Ov
   const hands = (frame.hands ?? (frame.points ? [frame.points] : [])).filter(h => h.length === 21)
     .slice().sort((a, b) => displayX(a[0]) - displayX(b[0]));
   hands.forEach((hand, i) => {
-    context.strokeStyle = i === 0 ? '#3ddc84' : '#38bdf8';
+    context.strokeStyle = frame.overlayPalette === 'v2' ? (i === 0 ? '#22d3ee' : '#fbbf24') : (i === 0 ? '#3ddc84' : '#38bdf8');
     context.fillStyle = context.strokeStyle;
     context.lineWidth = 2;
     for (const [a, b] of HAND_LINKS) {
@@ -130,9 +134,9 @@ export function drawTileOverlay(canvas: HTMLCanvasElement | null, video: HTMLVid
   const boxW = video.videoWidth * scale, boxH = video.videoHeight * scale, left = (width - boxW) / 2, top = (height - boxH) / 2;
   const at = (p: Pt): [number, number] => [left + p.x * boxW, top + p.y * boxH];
   const line = Math.max(2, Math.min(width, height) / 160);
-  const hands = (frame.hands ?? (frame.points ? [frame.points] : [])).filter(h => h.length === 21);
+  const hands = (frame.hands ?? (frame.points ? [frame.points] : [])).filter(h => h.length === 21).slice().sort((a,b) => a[0].x-b[0].x);
   hands.forEach((hand, i) => {
-    context.strokeStyle = i === 0 ? '#3ddc84' : '#38bdf8';
+    context.strokeStyle = frame.overlayPalette === 'v2' ? (i === 0 ? '#22d3ee' : '#fbbf24') : (i === 0 ? '#3ddc84' : '#38bdf8');
     context.fillStyle = context.strokeStyle;
     context.lineWidth = line; context.lineCap = 'round';
     for (const [a, b] of HAND_LINKS) { context.beginPath(); context.moveTo(...at(hand[a])); context.lineTo(...at(hand[b])); context.stroke(); }

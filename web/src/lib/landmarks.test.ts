@@ -136,3 +136,15 @@ describe('shared preview overlay', () => {
     expect(ctx.stroke).toHaveBeenCalledTimes(42);
   });
 });
+
+it('interleaves pose and face at 15 Hz while preserving both hands every frame', async () => {
+  const tracker = await createTracker({ withFace: true, interleaved: true });
+  const video = { videoWidth: 640, videoHeight: 480 } as HTMLVideoElement;
+  expect(tracker.detect(video, 0).brow).toBeNull();
+  expect(tracker.detect(video, 33).brow).not.toBeNull();
+  for (const t of [66,99,132,165]) expect(tracker.detect(video,t).hands).toHaveLength(2);
+  expect(mocks.hand.detectForVideo).toHaveBeenCalledTimes(6);
+  expect(mocks.pose.detectForVideo).toHaveBeenCalledTimes(3);
+  expect(mocks.face.detectForVideo).toHaveBeenCalledTimes(3);
+  tracker.close();
+});

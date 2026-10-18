@@ -3,7 +3,7 @@ import { createTracker, type Tracker } from './landmarks';
 import type { Frame } from './types';
 
 /** One owner for the camera, model instances, and animation loop. */
-export function useCameraTracker(enabled: boolean, withFace: boolean, onFrame: (frame: Frame, detectMs: number) => void) {
+export function useCameraTracker(enabled: boolean, withFace: boolean, onFrame: (frame: Frame, detectMs: number) => void, interleaved = false) {
   const video = useRef<HTMLVideoElement>(null);
   const [previewReady, setPreviewReady] = useState(false);
   const [ready, setReady] = useState(false);
@@ -40,7 +40,7 @@ export function useCameraTracker(enabled: boolean, withFace: boolean, onFrame: (
         if (stopped) { release(); return; }
         // Live video is available before the tracking models finish loading.
         setPreviewReady(true);
-        tracker = await createTracker({ withFace });
+        tracker = await createTracker({ withFace, interleaved });
         if (stopped) { release(); return; }
         setReady(true);
         let lastTime = -1;
@@ -74,7 +74,7 @@ export function useCameraTracker(enabled: boolean, withFace: boolean, onFrame: (
       }
     })();
     return () => { stopped = true; release(); };
-  }, [enabled, withFace, onFrame]);
+  }, [enabled, withFace, onFrame, interleaved]);
 
   return { video, previewReady: enabled && previewReady, ready: enabled && ready, error: enabled ? error : '' };
 }
