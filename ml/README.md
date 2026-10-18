@@ -88,3 +88,41 @@ accuracy on a new signer. The browser uses a newer MediaPipe detector than the
 original recorder; real-camera checks with the trained signer remain necessary.
 Browser lifecycle checks use synthetic camera/landmark inputs and a mocked
 LiveKit connection. The canonical ONNX/GISLR roadmap remains separate.
+
+## Retrain on new recordings
+
+Record on the `#/train-words` page (one signer per file, 10+ samples per word, each
+word signed over about one second with one hand in view). Save the downloads into
+`data/words/` (ignored by Git). Then, from the repository root:
+
+```powershell
+# Windows PowerShell (one-time setup as above: ml\.venv + requirements-export.txt)
+.\ml\.venv\Scripts\python.exe ml\train_words.py data\words --parity-out data\word-parity.json
+.\web\node_modules\.bin\tsx.cmd web\scripts\verify-word-parity.ts data\word-parity.json data\words\trained-words.candidate.json
+```
+
+```sh
+# macOS/Linux
+ml/.venv/bin/python ml/train_words.py data/words --parity-out data/word-parity.json
+web/node_modules/.bin/tsx web/scripts/verify-word-parity.ts data/word-parity.json data/words/trained-words.candidate.json
+```
+
+Useful flags: `--legacy` adds the 105 recovered samples (checksum-verified; run
+`fetch_legacy_assets.py` first), `--trees`, `--seed`, `--min-per-label` (default 10),
+`--baseline <model.json>`, `--report-out <file.json>`. Samples with fewer than 24
+hand frames are dropped.
+
+The trainer prints its report before fitting: sample counts, stratified
+cross-validation (optimistic), leave-one-signer-out (the honest number for a new
+person, needs 2+ signers), the share of samples the live gate would accept and the
+accuracy among those, and the currently shipped model scored on the same new
+recordings. Read it, and confirm the parity check prints `PASS`. Only then, if the
+candidate beats the shipped model, copy it over by hand:
+
+```powershell
+Copy-Item data\words\trained-words.candidate.json web\public\trained-words.json
+```
+
+The trainer never writes to `web/public`. The candidate records only sample counts
+(no signer names) in `trainedOn`, and `sourceSha256` hashes the input files. The
+recordings and candidate stay out of commits.
