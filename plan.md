@@ -44,7 +44,7 @@ another way `SUPERSEDED` (see §2).
   voice.
 - **Personal signs** (`#/training`, `3d8733e`): GitHub sign-in through Supabase, private per-user samples with
   row-level security, and an in-browser nearest-neighbour model.
-- Server routes, Gemini prompt/eval, Tiger Data schema and the stats page (`#/stats`), as before.
+- Server routes and the Gemini prompt/eval, as before. The stats page was removed on October 18 (stats dropped).
 
 **Verified in this session (Oct 18):** 224 frontend tests, type-check, lint and build pass, and
 `python plan/verify.py ledger` passes for every DONE/NEEDS-HUMAN row. On the live site, headless Chromium and Brave
@@ -53,8 +53,7 @@ two browsers in one room, a signer caption reached the hearing side as text and 
 through dictation has not been run automatically, because a fake camera cannot sign. The two-laptop golden path is a
 human check.
 
-**Not built (known gaps):** "That was wrong" caption retraction, latency/event logging into `#/stats` (`metrics.ts`,
-so the dashboard stays empty), an offline TTS fallback (if ElevenLabs is down, the caption is still sent as text),
+**Not built (known gaps):** "That was wrong" caption retraction, an offline TTS fallback (if ElevenLabs is down, the caption is still sent as text),
 and measured recognition accuracy. Lisa's model was trained on 105 samples of one signer, so it is rarely confident
 on other people; the demo should rely on taught personal signs.
 
@@ -69,13 +68,11 @@ the first request takes about 2.5 s, and the first recognition start downloads a
 
 ### What is left
 
-The only open agent row is **2.A2** (`PARTIAL`): metrics logging and Chips. `python plan/verify.py next` selects it.
-It is optional for the demo; drop it if the team will not build it.
+No agent rows are open: `python plan/verify.py next` prints `NO AGENT TASKS LEFT`.
 
 Optional work, if time allows (none of it is a ledger card):
 
 - [ ] "That was wrong": let the signer retract a sent sentence (`Caption.retracted` already exists in `types.ts`).
-- [ ] Log utterance latency events so `#/stats` shows real numbers (the 2.A2 metrics subset).
 - [ ] Tune the dictation timings in `web/src/lib/dictation.ts` after rehearsal (hold 350 ms, end 1.5 s).
 - [ ] Add the live view to the My signs page's "Test a fresh sign".
 
@@ -84,18 +81,17 @@ Human checks and tasks, in working order:
 - [ ] **0.3:** learn Lisa's seven words and the personal signs you will teach for the demo.
 - [ ] **Teach demo signs** on `#/training` with three to five examples each, using the hand and framing you will
   use on stage.
-- [ ] **1.A1 / 3.3:** two-laptop golden path: teach signs, dictate a sentence, hear the voice and read the caption on
+- [ ] **3.3:** two-laptop golden path: teach signs, dictate a sentence, hear the voice and read the caption on
   the other laptop. If the hearing laptop shows **Enable audio**, click it.
-- [ ] **1.B1:** Bench FPS on both laptops.
-- [ ] **1.C1 / 1.C5 / 1.C4:** mark VERIFIED (live health, token, stats and HTTPS checks already pass; see Evidence).
 - [ ] **1.C2:** run the 12-case Gemini eval and record p50 in the README.
 - [ ] **1.C3:** pick the demo voice in the call.
-- [ ] **4.2:** after a golden-path run, check the stats page.
 - [ ] **4.1 / 4.6 / 4.7 / 5:** golden path on the deployed URL, pitch and slides (include the limitations slide),
   backup video, failure drills, then freeze, rehearse and submit by Sun Oct 18, 17:00 EDT.
 
+Verified by the owner on October 18: 1.B1 (camera), 1.A1 (call), 1.C1 (API routes), 1.C4 (deploy).
+
 Dropped in the current direction (see each ledger row): 1.0, 1.B2, 1.B4, 2.B2, 2.B3, 4.3, 2.B4, 1.B5, 1.B6, 0.2,
-1.D1, 4.8. Superseded by shipped work: 2.B1, 2.B5, 3.1, 2.A1, 2.C1, 2.A3, 3.2, 4.4, 4.5.
+1.D1, 4.8, and stats (1.C5, 4.2). Superseded by shipped work: 2.B1, 2.B5, 3.1, 2.A1, 2.C1, 2.A2, 2.A3, 3.2, 4.4, 4.5.
 
 ### Status rules
 
@@ -184,7 +180,7 @@ lane needs another lane's output, `next --lane` prints `WAITING` and `wait --lan
 |---|---|---|---|
 | `recog` | vocab/types (contracts everyone uses), features, classifier, letters, Recorder, Bench, signer pipeline, eyebrows | 0.4 → 1.0 → 2.B1 → 1.B2 (these unblock the other lanes; do them first and push each one immediately) | 3.1 needs `metrics.ts` (call 2.A2); 4.3 needs 3.2 (call) |
 | `call` | voice, offline English, STT, Chips/Consent, the ASL-switch call screen, recognizer wiring, Scribe, teach-my-sign | 2.A1 | 2.C1 needs 0.4 + 2.B1 (recog); 2.A3 needs 1.0 (recog); 3.2 needs 3.1 (recog) |
-| `server` | requirements fix, Gemini test/eval, schema, deploy files, stats page | 0.5 | nothing |
+| `server` | requirements fix, Gemini test/eval, schema, deploy files | 0.5 | nothing |
 | `ml` | train/eval/ONNX with a synthetic smoke test, Python feature twin + parity, Kaggle converter | 2.B4 | 1.B5 needs 1.B2 (recog) |
 
 Rules for parallel agents:
@@ -260,7 +256,7 @@ Owns: `web/src/vocab.*`, `web/src/lib/{types,features,segmenter,landmarks,useCam
 | [2.B1](plan/tasks/2.B1.md) | Classifier, ONNX loader, kNN | AGENT | 0.4 | SUPERSEDED | Lisa's 7-word random forest in wordModel.ts (d16f79c) + personal kNN in personalModel.ts (3d8733e, 7a54221); no ONNX |
 | [1.B2](plan/tasks/1.B2.md) | Features with canonical handedness | AGENT | 1.0 | DROPPED | owner 2026-10-18: features are the recovered trainer's 30x42 wrist-relative layout (wordModel.ts) |
 | [1.B3](plan/tasks/1.B3.md) | Segmenter | AGENT | 1.B2 | DONE | audit 2026-10-17 on 9dced31 |
-| [1.B1](plan/tasks/1.B1.md) | Tracker + benchmark | AGENT then HUMAN-CHECK | 1.0 | NEEDS-HUMAN | code on 9dced31; FPS check on laptops pending |
+| [1.B1](plan/tasks/1.B1.md) | Tracker + benchmark | AGENT then HUMAN-CHECK | 1.0 | VERIFIED | owner 2026-10-18: camera, hand tracking and live view confirmed on the team laptops; code on 9dced31 |
 | [1.B4](plan/tasks/1.B4.md) | Recorder page on vocab v2 | AGENT then HUMAN-CHECK | 1.0 | DROPPED | owner 2026-10-18: shared-model recording replaced by per-user teaching on #/training (3d8733e) |
 | [2.B2](plan/tasks/2.B2.md) | Fingerspelling letters K E V | AGENT | 1.B2 | DROPPED | owner 2026-10-18: fingerspelling cut; a name can be taught as a personal sign |
 | [2.B3](plan/tasks/2.B3.md) | Dataset builder + synthetic sessions | AGENT then HUMAN-CHECK | 1.0, 1.B2, 2.B2 | DROPPED | owner 2026-10-18: no dataset build or retraining |
@@ -274,27 +270,27 @@ Owns: `web/src/lib/{api,call,captions,voice,stt,metrics,gloss}.ts`, `web/src/com
 
 | ID | Task | Owner | Depends on | Status | Evidence |
 |---|---|---|---|---|---|
-| [1.A1](plan/tasks/1.A1.md) | Call skeleton: API client, LiveKit, captions, routes | AGENT then HUMAN-CHECK | 1.0 | NEEDS-HUMAN | verify PASS 2026-10-18 on 8239bb7; two headless browsers on live site: join + signer caption and voice reach hearing side; two-laptop check pending |
+| [1.A1](plan/tasks/1.A1.md) | Call skeleton: API client, LiveKit, captions, routes | AGENT then HUMAN-CHECK | 1.0 | VERIFIED | owner 2026-10-18: call, captions and signer voice confirmed working; verify PASS on 8239bb7 |
 | [2.A1](plan/tasks/2.A1.md) | Voice into the call + TTS cache script | AGENT then HUMAN-CHECK | 1.A1 | SUPERSEDED | signerVoice.ts plays ElevenLabs audio into a published call mic track (4c9b4a7); 2-browser live test heard it; MP3 cache + cache_tts.py dropped |
 | [2.C1](plan/tasks/2.C1.md) | Gloss buffer + offline English | AGENT | 0.4, 2.B1 | SUPERSEDED | Gemini /api/gloss via signedSentence.ts, used only at confidence >= 0.6, else the signed words (0f36b58); offline English rules not built |
-| [2.A2](plan/tasks/2.A2.md) | STT, metrics, Chips, Consent | AGENT | 1.A1, 2.C1 | PARTIAL | STT done: ElevenLabs Scribe call captions (13b6b5d, 766c965); consent = per-feature checkboxes; metrics.ts (event logging for #/stats) and Chips not built |
+| [2.A2](plan/tasks/2.A2.md) | STT, metrics, Chips, Consent | AGENT | 1.A1, 2.C1 | SUPERSEDED | STT shipped (ElevenLabs Scribe call captions, 13b6b5d, 766c965); metrics dropped with the stats page; Chips replaced by dictation Send now/Clear |
 | [2.A3](plan/tasks/2.A3.md) | Call screen with the ASL → voice switch | AGENT then HUMAN-CHECK | 1.0, 2.A1, 2.A2, 2.C1 | SUPERSEDED | no ASL switch: live dictation, Send now/Clear, speak toggle, voice picker in the signer panel (0f36b58, 4c9b4a7); "That was wrong" retraction not built |
 | [3.2](plan/tasks/3.2.md) | Recognizer on the ASL switch | AGENT then HUMAN-CHECK | 3.1, 2.A3 | SUPERSEDED | live dictation wired into Call.tsx; sentences sent and spoken without a button (0f36b58) |
 | [4.4](plan/tasks/4.4.md) | Scribe captions with fallback | AGENT then HUMAN-CHECK | 2.A3 | SUPERSEDED | ElevenLabs Scribe in speech check + call captions (766c965); differs from the card's startScribe/fallback API |
 | [4.5](plan/tasks/4.5.md) | Teach my sign | AGENT then HUMAN-CHECK | 3.2 | SUPERSEDED | My signs: GitHub sign-in, private Supabase samples, in-browser kNN that extends the shared words (3d8733e, 7a54221) |
 
-### Lane server — FastAPI server, Gemini prompt, database schema, deploy files, stats page
+### Lane server — FastAPI server, Gemini prompt, database schema, deploy files
 
-Owns: `server/` (except `scripts/cache_tts.py`), `web/src/pages/Stats.{tsx,css}`, `web/src/App.tsx`
+Owns: `server/` (except `scripts/cache_tts.py`), `web/src/App.tsx`
 
 | ID | Task | Owner | Depends on | Status | Evidence |
 |---|---|---|---|---|---|
 | [0.5](plan/tasks/0.5.md) | Server scaffold (Windows-installable requirements) | AGENT | — | DONE | verify PASS 2026-10-17 on b16cf44+ |
-| [1.C1](plan/tasks/1.C1.md) | API routes | AGENT then HUMAN-CHECK | 0.5 | NEEDS-HUMAN | code matches plan on 9dced31; live curl 2026-10-17 on signline-api.fly.dev: health all true, token eyJ… |
+| [1.C1](plan/tasks/1.C1.md) | API routes | AGENT then HUMAN-CHECK | 0.5 | VERIFIED | owner 2026-10-18; live on signline-api.fly.dev: health all true, /api/token JWT, /api/tts and /api/gloss 200 |
 | [1.C2](plan/tasks/1.C2.md) | Gemini prompt test + eval script | AGENT then HUMAN-CHECK | 1.C1 | NEEDS-HUMAN | verify PASS 2026-10-17 on 8d6cd13+ |
-| [1.C5](plan/tasks/1.C5.md) | Tiger Data schema | AGENT then HUMAN-CHECK | 1.C1 | NEEDS-HUMAN | verify PASS 2026-10-17 on f944542+; live /api/stats 2026-10-17 → configured:true (DB auth + schema OK) |
-| [1.C4](plan/tasks/1.C4.md) | Deploy files (+ human VM deploy) | AGENT then HUMAN-CHECK | 1.C1 | NEEDS-HUMAN | verify PASS 2026-10-17 on 10a4f30+; VM never created — API deployed to Fly.io instead (86df6f7), HTTPS health OK |
-| [4.2](plan/tasks/4.2.md) | Live stats page (Tiger Data) | AGENT then HUMAN-CHECK | 1.C5 | NEEDS-HUMAN | verify PASS 2026-10-17 on de011a8+; DB credentials fixed 2026-10-17 (live /api/stats configured:true, deployed #/stats loads); golden-path data + browser visual QA pending |
+| [1.C5](plan/tasks/1.C5.md) | Tiger Data schema | AGENT then HUMAN-CHECK | 1.C1 | DROPPED | owner 2026-10-18: stats dropped; the Tiger Data events schema and /api/events, /api/stats routes remain on the server, unused |
+| [1.C4](plan/tasks/1.C4.md) | Deploy files (+ human VM deploy) | AGENT then HUMAN-CHECK | 1.C1 | VERIFIED | owner 2026-10-18; Fly.io deploy instead of the VM (fly.toml, Dockerfile), HTTPS health OK |
+| [4.2](plan/tasks/4.2.md) | Live stats page (Tiger Data) | AGENT then HUMAN-CHECK | 1.C5 | DROPPED | owner 2026-10-18: stats dropped; the #/stats page and nav tab were removed from the web app |
 
 ### Lane ml — Python training: train/eval with a synthetic smoke test, feature twin + parity, Kaggle converter
 
@@ -348,8 +344,7 @@ limitations slide.
 | Vocabulary | `web/src/vocab.json` → `web/src/vocab.ts`, read by `ml/train.py` | Labels must agree across recorder, training, model meta, Gemini, and offline English |
 | Shared types | `web/src/lib/types.ts` | Frame/Session/Caption/Ctrl shapes cross tracker, recorder, call, and captions |
 | Features | `web/src/lib/features.ts` ≡ `ml/features.py` (T=32, F=174) | Train/serve parity. After touching either: `cd web && npm run fixtures`, then `ml/.venv/bin/python -m pytest ml/tests/test_parity.py` |
-| API | `server/app/main.py` routes ↔ `web/src/lib/api.ts`, `metrics.ts`, `Stats.tsx` | Request/response shapes |
-| Events schema | `server/sql/schema.sql` ↔ `server/app/db.py` SQL ↔ `metrics.ts` | Column names |
+| API | `server/app/main.py` routes ↔ `web/src/lib/api.ts` | Request/response shapes |
 | Model files | `web/public/models/{sign.onnx, sign_meta.json, knn.*, letters.*}` | Written by `train.py`/`build-dataset.ts`, read by `onnx.ts`/`knn.ts`/`letters.ts` |
 
 Speech integration in `13b6b5d` adds optional Caption.revision, Ctrl caption-clear (id/revision), and authenticated
@@ -367,7 +362,7 @@ only in `server/.env`.
 ## 5. Layout (target)
 
 ```
-web/      Vite + React + TS. lib/ = logic (tested in Node), pages/ = Call, Bench, Recorder, Stats; components/
+web/      Vite + React + TS. lib/ = logic (tested in Node), pages/ = Call, Bench, Recorder, PersonalSigns; components/
 server/   FastAPI. app/{main,gloss,db}.py, sql/schema.sql, scripts/, deploy/, tests/
 ml/       Python training: features.py (twin), gislr_to_features.py, train.py, eval_report.py, tests/
 presage/  optional Node sidecar (Task 4.3)

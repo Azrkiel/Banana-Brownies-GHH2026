@@ -70,7 +70,7 @@ takeoff with a gentle hand bounce. The view follows the bird into the center,
 where its wingbeats replace the loading screen until the call form is ready.
 Two songbirds facing each other on a branch illustrate the call page. Reduced motion
 enters immediately. Shared `#/room?...` links and the camera,
-recorder, speech, stats and design-kit routes open directly.
+recorder, speech and design-kit routes open directly.
 
 The interface uses textured paper, local Lora serif fonts and pencil-stroke
 controls. Navigation and page copy are reduced to names, actions and necessary

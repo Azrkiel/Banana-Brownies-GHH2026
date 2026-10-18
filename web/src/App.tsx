@@ -8,7 +8,6 @@ const Bench = lazy(() => import('./pages/Bench'))
 const Recorder = lazy(() => import('./pages/Recorder'))
 const Call = lazy(() => import('./pages/Call'))
 const CallRoom = lazy(() => import('./pages/Call').then(module => ({ default: module.CallRoom })))
-const Stats = lazy(() => import('./pages/Stats'))
 const DesignKit = lazy(() => import('./pages/DesignKit'))
 const PersonalSigns = lazy(() => import('./pages/PersonalSigns'))
 // This commits only after a lazy screen is ready, so focus never lands in a discarded fallback.
@@ -45,7 +44,6 @@ export default function App() {
     { route: 'speech-check', label: 'Speech' },
     { route: 'record', label: 'Record' },
     { route: 'training', label: 'My signs' },
-    { route: 'stats', label: 'Stats' },
   ]
   if (isIntro) return <Intro key={hash} onDepart={setWelcomeFlight} />
   return <>
@@ -60,7 +58,7 @@ export default function App() {
     </header>
     <Suspense fallback={<BirdLoading />}>
       <PageContent key={`${route}?${query}`}>
-        {route === 'training' ? <PersonalSigns /> : route === 'speech-check' ? <SpeechCheck /> : route === 'design-kit' ? <DesignKit /> : route === 'stats' ? <Stats /> : route === 'record' ? <Recorder /> : route === 'bench' ? <Bench /> : route === 'room' ? <CallRoom key={query} query={query} /> : <Call welcomeFlight={welcomeFlight} onLanded={finishLanding} />}
+        {route === 'training' ? <PersonalSigns /> : route === 'speech-check' ? <SpeechCheck /> : route === 'design-kit' ? <DesignKit /> : route === 'record' ? <Recorder /> : route === 'bench' ? <Bench /> : route === 'room' ? <CallRoom key={query} query={query} /> : <Call welcomeFlight={welcomeFlight} onLanded={finishLanding} />}
       </PageContent>
     </Suspense>
   </>
