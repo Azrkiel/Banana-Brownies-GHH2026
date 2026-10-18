@@ -458,7 +458,7 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
             document.getElementById('caption-draft')?.focus();
             return true;
           }} />}
-          <div className="scope-note"><span className="note-icon" aria-hidden="true">i</span><p>Speech and sign recognition can make mistakes. Trained signs cover a small vocabulary and always need your confirmation.</p></div>
+          <div className="scope-note"><span className="note-icon" aria-hidden="true">i</span><p>Speech and sign recognition can make mistakes. Trained signs cover a small vocabulary; only confident signs are dictated automatically.</p></div>
         </div>
       </div>
 

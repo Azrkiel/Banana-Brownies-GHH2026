@@ -151,7 +151,7 @@ function SignerWordSession({ camera, connected, onUse, onSentence }: Props) {
   const enabled = !['off', 'failed'].includes(state);
   return <section className="signer-words" aria-labelledby="signer-words-title">
     <div className="signer-words__heading"><h2 id="signer-words-title">Your trained signs</h2><span>Signer only</span></div>
-    <p>Capture one trained word, then review it before adding it to your caption.</p>
+    <p>Sign live and confident signs are dictated, then sent and spoken when you lower your hand. Or capture one word at a time and review it.</p>
     <label className="field">Recognition model<select value={source} disabled={enabled} onChange={event => { setSource(event.target.value as 'shared' | 'personal'); setLabels([]); setError(''); }}>
       <option value="shared">Shared seven-word model</option>
       {user && <option value="personal">Shared words + my signs</option>}
@@ -182,7 +182,8 @@ function SignerWordSession({ camera, connected, onUse, onSentence }: Props) {
         </> : <p>Collecting the first second of frames…</p>}
       </div>
       {dictating && <div className="signer-words__dictation" aria-live="polite">
-        <p className="signer-words__signed">{signed.length ? signed.map(word => word.label).join(' ') : 'Sign a word to start a sentence.'}</p>
+        <p className="signer-words__signed">{signed.map(word => word.label).join(' ')}</p>
+        {!signed.length && <p className="note">Sign a word to start a sentence.</p>}
         {signed.length > 0 && <div className="button-row">
           <Button variant="primary" onClick={() => void deliver(dictation.current.flush()?.words ?? [])}>Send now</Button>
           <Button onClick={() => { dictation.current.clear(); setSigned([]); }}>Clear</Button>
