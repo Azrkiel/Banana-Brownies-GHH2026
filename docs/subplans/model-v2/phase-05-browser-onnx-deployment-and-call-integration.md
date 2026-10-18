@@ -211,7 +211,7 @@ Default camera inference remains local. The optional server upload has an explic
 
 | Command/check | Result |
 | --- | --- |
-| npm --prefix web test |315 tests in27 files pass; existing assertions unchanged. |
+| npm --prefix web test |316 tests in27 files pass; existing assertions unchanged. |
 | PYTHONPATH=server ml/.venv/Scripts/python -m pytest server/tests ml/tests -q |164 pass:61 backend +103 ML;38 dependency/export warnings. |
 | npm --prefix web run build |Pass; existing LiveKit chunk advisory only. |
 | npm --prefix web run lint |Pass, no lint findings. |
@@ -249,3 +249,7 @@ No checks were removed, skipped or weakened. The required Vitest/build/lint/pyte
 ### Next human actions
 
 See the appended Phase5 section in NEEDS_HUMAN_ACTION.md. Review/test this branch before any merge. Apply migration20261018162231_personal_signs_v2.sql to the intended Supabase project, supply real commercial calibrated checkpoints that pass strict export budgets/parity, prepare local runtime assets, then perform two-person call/privacy/latency and Linux/Fly RSS checks. Keep optional inference off until those prerequisites are satisfied. Do not promote the continuous CTC or any smoke checkpoint. No Phase6 work was started.
+
+### Final testing-branch integration
+
+Documentation commitf6a32d3 records the five implementation commits above. Before pushing, main advanced tofd7ee05; merge commit0c2e673 preserves its trained-word toggle, incomplete-example handling, Start over/Escape, double-Enter shortcuts and homepage spacing. The final branch passes316 frontend tests plus build/lint; the backend/ML suite passes164. The original main branch ref was not advanced by this work. No PR, merge to main or deployment is created by this session.

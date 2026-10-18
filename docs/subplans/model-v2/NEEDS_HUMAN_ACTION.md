@@ -157,4 +157,4 @@ The Phase 4 handoff records synthetic metrics and current limitations. This sect
    ```
    This harness creates/discards a test-only manifest outside public/; no production promotion occurs.
 
-**Known pre-existing extra browser checks:** check-personal-signs.mjs fails at line115 before entering the required label; check-camera-startup.mjs fails at line62 with an incomplete tracker mock. Both failures were reproduced on unchanged main68eea84. Their checks were not weakened. The315 frontend unit tests,61 backend tests,103 ML tests, build and lint pass.
+**Known pre-existing extra browser checks:** check-personal-signs.mjs fails at line115 before entering the required label; check-camera-startup.mjs fails at line62 with an incomplete tracker mock. Both failures were reproduced on unchanged main68eea84. Their checks were not weakened. The316 frontend unit tests,61 backend tests,103 ML tests, build and lint pass.
