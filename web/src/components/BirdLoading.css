@@ -1,4 +1,6 @@
 .bird-loading { position: fixed; inset: 0; z-index: 40; max-width: none; margin: 0; padding: 0; overflow: hidden; background: var(--color-canvas) url('/notebook/paper.webp') 0 0 / 768px 512px; }
+/* Covered links must not remain keyboard targets behind the loading sheet. */
+.site-header:has(~ .bird-loading) { visibility: hidden; }
 .bird-loading__flight { position: absolute; left: 50%; top: 50%; width: min(52vw, 320px); aspect-ratio: 1; transform: translate(-44%, -61%); }
 .bird-loading__flight .bird-illustration__sprite { animation: bird-hover-wings 560ms steps(1, end) infinite; }
 .bird-loading__status { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
