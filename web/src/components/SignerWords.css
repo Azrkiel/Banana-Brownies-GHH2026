@@ -10,3 +10,8 @@
 .signer-words__review .signer-words__word { font-size: 2rem; margin-bottom: 8px; overflow-wrap: anywhere; }
 .signer-words__review .note { margin: 16px 0 0; }
 .signer-words__error { color: var(--color-danger); overflow-wrap: anywhere; }
+.signer-words__live { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; padding: 16px; margin-top: 16px; background: var(--color-surface); border: 1px solid var(--color-field-border); border-radius: var(--radius-panel); }
+.signer-words__live canvas { width: min(320px, 100%); height: auto; border-radius: 8px; background: #000; }
+.signer-words__live > div { flex: 1 1 200px; min-width: 0; }
+.signer-words__live .signer-words__word { font-size: 2rem; margin: 8px 0; overflow-wrap: anywhere; }
+.signer-words__live .signer-words__word span { font-size: var(--text-sm); color: var(--color-muted); }

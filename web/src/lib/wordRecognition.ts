@@ -1,9 +1,12 @@
 import { parseWordForest, predictWord, wordFrame, WORD_FRAMES, type WordForest, type WordPrediction } from './wordModel';
 import { predictPersonalSign, type PersonalModel, type WordSample } from './personalModel';
+import type { Pt } from './types';
 
 export type WordRecognizer = {
   labels: string[];
   capture(onProgress: (frames: number) => void): Promise<WordPrediction>;
+  /** Predicts on the latest 30 frames, every frame, until the returned stop function runs. */
+  watch(onUpdate: (frame: LiveFrame, prediction: WordPrediction | null) => void): () => void;
   close(): void;
 };
 
@@ -13,16 +16,19 @@ export async function loadWordForest(signal: AbortSignal): Promise<WordForest> {
   return parseWordForest(await response.json());
 }
 
+function recognizer(labels: string[], capture: WordCapture, predict: (sample: WordSample) => WordPrediction): WordRecognizer {
+  const scored = (sample: WordSample) => ({ ...predict(sample), framesWithHand: sample.framesWithHand });
+  return { labels, close: capture.close,
+    async capture(onProgress) { return scored(await capture.capture(onProgress)); },
+    watch: onUpdate => capture.watch(frame => onUpdate(frame, frame.sample ? scored(frame.sample) : null)),
+  };
+}
+
 /** Shares the call's existing video; never requests a second camera or microphone. */
 export async function createWordRecognizer(video: HTMLVideoElement, signal: AbortSignal): Promise<WordRecognizer> {
   const model = await loadWordForest(signal);
   const capture = await createWordCapture(video, signal);
-  return { labels: [...model.labels], close: capture.close,
-    async capture(onProgress) {
-      const sample = await capture.capture(onProgress);
-      return predictWord(model, sample.features, sample.framesWithHand);
-    },
-  };
+  return recognizer([...model.labels], capture, sample => predictWord(model, sample.features, sample.framesWithHand));
 }
 
 export function sharedAndPersonalLabels(shared: WordForest | null, personal: PersonalModel): string[] {
@@ -41,14 +47,16 @@ export function predictSharedAndPersonal(shared: WordForest | null, personal: Pe
 export async function createPersonalRecognizer(video: HTMLVideoElement, signal: AbortSignal, model: PersonalModel): Promise<WordRecognizer> {
   const shared = await loadWordForest(signal);
   const capture = await createWordCapture(video, signal);
-  return { labels: sharedAndPersonalLabels(shared, model), close: capture.close,
-    async capture(onProgress) {
-      return predictSharedAndPersonal(shared, model, await capture.capture(onProgress));
-    },
-  };
+  return recognizer(sharedAndPersonalLabels(shared, model), capture, sample => predictSharedAndPersonal(shared, model, sample));
 }
 
-export type WordCapture = { capture(onProgress: (frames: number) => void): Promise<WordSample>; close(): void };
+/** `image` is the mirrored frame the hand model saw; `sample` is null until 30 frames have been seen. */
+export type LiveFrame = { points: Pt[] | null; image: HTMLCanvasElement; sample: WordSample | null };
+export type WordCapture = {
+  capture(onProgress: (frames: number) => void): Promise<WordSample>;
+  watch(onFrame: (frame: LiveFrame) => void): () => void;
+  close(): void;
+};
 
 /** Same capture contract for teaching, testing, and in-call recognition. No samples are uploaded here. */
 export async function createWordCapture(video: HTMLVideoElement, signal: AbortSignal): Promise<WordCapture> {
@@ -76,6 +84,19 @@ export async function createWordCapture(video: HTMLVideoElement, signal: AbortSi
     hand.close();
   };
   signal.addEventListener('abort', close, { once: true });
+  let lastSample = -Infinity;
+  let lastVideoTime = -1;
+  /** Samples at most 30 fps and only new video frames; undefined means no new frame yet. */
+  const sampleFrame = (time: number): Pt[] | null | undefined => {
+    if (video.readyState < 2 || !video.videoWidth || !video.videoHeight || video.currentTime === lastVideoTime || time - lastSample < 1000 / 30 - 2) return undefined;
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    // The original OpenCV trainer flips each image before extracting landmarks.
+    context.setTransform(-1, 0, 0, 1, canvas.width, 0);
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const points = hand.detectForVideo(canvas, time).landmarks[0] ?? null;
+    lastSample = time; lastVideoTime = video.currentTime;
+    return points?.length === 21 && points.every(point => Number.isFinite(point.x) && Number.isFinite(point.y)) ? points : null;
+  };
   return {
     capture(onProgress) {
       if (closed || signal.aborted) return Promise.reject(new DOMException('Recognition stopped.', 'AbortError'));
@@ -85,8 +106,6 @@ export async function createWordCapture(video: HTMLVideoElement, signal: AbortSi
         let frames = 0;
         let framesWithHand = 0;
         let animation = 0;
-        let lastSample = -Infinity;
-        let lastVideoTime = -1;
         const started = performance.now();
         const finish = (result?: WordSample, error?: unknown) => {
           cancelAnimationFrame(animation);
@@ -98,16 +117,11 @@ export async function createWordCapture(video: HTMLVideoElement, signal: AbortSi
         const tick = (time: number) => {
           if (time - started > 6000) { finish(undefined, new Error('The camera paused. Try capturing the sign again.')); return; }
           try {
-            if (video.readyState >= 2 && video.videoWidth && video.videoHeight && video.currentTime !== lastVideoTime && time - lastSample >= 1000 / 30 - 2) {
-              canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-              // The original OpenCV trainer flips each image before extracting landmarks.
-              context.setTransform(-1, 0, 0, 1, canvas.width, 0);
-              context.drawImage(video, 0, 0, canvas.width, canvas.height);
-              const points = hand.detectForVideo(canvas, time).landmarks[0] ?? null;
-              const valid = points?.length === 21 && points.every(point => Number.isFinite(point.x) && Number.isFinite(point.y));
-              features.push(...wordFrame(valid ? points : null));
-              if (valid) framesWithHand++;
-              frames++; lastSample = time; lastVideoTime = video.currentTime;
+            const points = sampleFrame(time);
+            if (points !== undefined) {
+              features.push(...wordFrame(points));
+              if (points) framesWithHand++;
+              frames++;
               onProgress(frames);
               if (frames === WORD_FRAMES) { finish({ features, framesWithHand }); return; }
             }
@@ -116,6 +130,28 @@ export async function createWordCapture(video: HTMLVideoElement, signal: AbortSi
         };
         animation = requestAnimationFrame(tick);
       });
+    },
+    watch(onFrame) {
+      if (closed || signal.aborted || cancelCapture) return () => {};
+      const recent: { features: number[]; hand: boolean }[] = [];
+      let animation = 0;
+      const stop = () => { cancelAnimationFrame(animation); if (cancelCapture === stop) cancelCapture = null; };
+      cancelCapture = stop;
+      const tick = (time: number) => {
+        try {
+          const points = sampleFrame(time);
+          if (points !== undefined) {
+            recent.push({ features: wordFrame(points), hand: Boolean(points) });
+            if (recent.length > WORD_FRAMES) recent.shift();
+            const sample = recent.length === WORD_FRAMES
+              ? { features: recent.flatMap(frame => frame.features), framesWithHand: recent.filter(frame => frame.hand).length } : null;
+            onFrame({ points, image: canvas, sample });
+          }
+        } catch { stop(); return; }
+        animation = requestAnimationFrame(tick);
+      };
+      animation = requestAnimationFrame(tick);
+      return stop;
     },
     close,
   };

@@ -87,6 +87,19 @@ describe('signer word recognition lifecycle', () => {
     expect(progress).toHaveBeenCalledTimes(1);
     expect(callbacks.size).toBe(0); recognizer.close();
   });
+  it('predicts live on a rolling 30-frame window and stops cleanly', async () => {
+    const recognizer = await createWordRecognizer(video, new AbortController().signal);
+    const updates: (string | null)[] = [];
+    const stop = recognizer.watch((liveFrame, guess) => { expect(liveFrame.points).toHaveLength(21); updates.push(guess?.label ?? null); });
+    for (let i = 1; i <= 32; i++) frame(i * 34);
+    expect(updates.slice(0, 29).every(x => x === null)).toBe(true);
+    expect(updates.slice(29)).toEqual(['HELLO', 'HELLO', 'HELLO']);
+    stop(); expect(callbacks.size).toBe(0);
+    const result = recognizer.capture(vi.fn());
+    for (let i = 33; i <= 62; i++) frame(i * 34);
+    expect(await result).toMatchObject({ label: 'HELLO', framesWithHand: 30 });
+    recognizer.close();
+  });
   it('reports a missing model before initializing hand tracking', async () => {
     vi.mocked(fetch).mockResolvedValue({ ok: false } as Response);
     await expect(createWordRecognizer(video, new AbortController().signal)).rejects.toThrow('could not be loaded');

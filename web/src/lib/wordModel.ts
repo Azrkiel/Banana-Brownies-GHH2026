@@ -8,7 +8,7 @@ export type WordForest = {
   labels: string[]; trees: Node[][];
   preprocessing: 'mirrored-one-hand-wrist-relative-xy';
 };
-export type WordPrediction = { label: string; score: number; margin: number; accepted: boolean };
+export type WordPrediction = { label: string; score: number; margin: number; accepted: boolean; framesWithHand?: number };
 
 const record = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
 const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
