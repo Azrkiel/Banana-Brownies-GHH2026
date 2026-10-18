@@ -21,6 +21,27 @@ export type Call = {
   leave(): Promise<void>;
 };
 
+/** A browser device refusal, tagged with which device so the message names the right one. */
+export class DeviceError extends Error {
+  device: 'camera' | 'microphone';
+  reason: unknown;
+  constructor(device: 'camera' | 'microphone', reason: unknown) { super(`${device} unavailable`); this.name = 'DeviceError'; this.device = device; this.reason = reason; }
+}
+
+export const SECURE_CONTEXT_ERROR = 'Camera access requires a secure browser context.';
+/** Plain-English reason a join failed, naming the camera or the microphone as appropriate. */
+export function joinErrorMessage(error: unknown): string {
+  const device = error instanceof DeviceError ? error.device : 'camera';
+  const reason = error instanceof DeviceError ? error.reason : error;
+  if (reason instanceof DOMException) {
+    if (reason.name === 'NotAllowedError') return `${device === 'camera' ? 'Camera' : 'Microphone'} access was denied. Allow the ${device} in your browser settings, then try again.`;
+    if (reason.name === 'NotFoundError') return `No ${device} was found. Connect one and try again.`;
+    if (reason.name === 'NotReadableError') return `Your ${device} may be in use by another app. Close it there and try again.`;
+  }
+  if (error instanceof Error && error.message === SECURE_CONTEXT_ERROR) return 'Camera access needs a secure (HTTPS) page. Open SignLine from its https:// address.';
+  return 'Couldn’t reach SignLine. Check your connection and try again.';
+}
+
 export async function joinCall(o: {
   room: string; name: string; role: Role;
   camera: MediaStreamTrack;
@@ -113,7 +134,10 @@ export async function joinCall(o: {
     o.signal?.throwIfAborted();
     if (o.voice) await room.localParticipant.publishTrack(o.voice, { source: Track.Source.Microphone, name: 'voice' });
     o.signal?.throwIfAborted();
-    if (o.role === 'hearing') await room.localParticipant.setMicrophoneEnabled(true);
+    if (o.role === 'hearing') {
+      try { await room.localParticipant.setMicrophoneEnabled(true); }
+      catch (cause) { throw cause instanceof DOMException ? new DeviceError('microphone', cause) : cause; }
+    }
     o.signal?.throwIfAborted();
     ready = true;
     transport = 'connected';

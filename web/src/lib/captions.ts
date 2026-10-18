@@ -84,3 +84,23 @@ export function upsertCaption(list: Caption[], c: Caption): Caption[] {
   next[i] = c;
   return next;
 }
+
+/** The caption-history source for this tab's own captions; peers use their SDK identity. */
+export const LOCAL_SOURCE = 'local';
+/** Own captions are identified by the history source baked into the row ID, never by display name. */
+export function isOwnCaption(c: Pick<Caption, 'id'>): boolean {
+  try { const parsed: unknown = JSON.parse(c.id); return Array.isArray(parsed) && parsed[0] === LOCAL_SOURCE; }
+  catch { return false; }
+}
+
+export const NEAR_BOTTOM_PX = 64;
+export const isNearBottom = (scrollHeight: number, scrollTop: number, clientHeight: number, slack = NEAR_BOTTOM_PX) =>
+  scrollHeight - scrollTop - clientHeight <= slack;
+
+const COUNTER_THRESHOLDS: [number, string][] = [[800, '200 characters left.'], [900, '100 characters left.'], [950, '50 characters left.'], [1000, 'Caption is full: 1000 characters.']];
+/** A screen-reader message only when typing crosses a threshold (never per keystroke); null when nothing new to say. */
+export function counterAnnouncement(previous: number, next: number): string | null {
+  let message: string | null = null;
+  for (const [limit, text] of COUNTER_THRESHOLDS) if (previous < limit && next >= limit) message = text;
+  return message;
+}

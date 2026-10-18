@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createCaptionHistory, isCaption, isCtrl, upsertCaption } from './captions';
+import { counterAnnouncement, createCaptionHistory, isCaption, isCtrl, isNearBottom, isOwnCaption, upsertCaption } from './captions';
 import type { Caption } from './types';
 
 const caption = (id: string, text = 'Hello'): Caption => ({ id, text, speaker: 'Kev', role: 'signer', kind: 'english', final: true, ts: 1 });
@@ -105,5 +105,30 @@ describe('room caption ownership and ordering', () => {
     expect(isCtrl({ type: 'tts', on: 'yes' })).toBe(false);
     expect(isCtrl({ type: 'tts', on: true })).toBe(true);
     expect(isCtrl({ type: 'unknown' })).toBe(false);
+  });
+});
+
+describe('own-caption detection', () => {
+  it('identifies local rows by history source, not name', () => {
+    const rows: Caption[] = [];
+    const history = createCaptionHistory(next => { rows.splice(0, rows.length, ...next); });
+    history.receive(caption('a'), 'local');
+    history.receive(caption('a'), 'peer-identity');
+    expect(rows.map(row => isOwnCaption(row))).toEqual([true, false]);
+    expect(rows[0].speaker).toBe(rows[1].speaker);
+  });
+  it('treats malformed ids as not own', () => expect(isOwnCaption({ id: 'local' })).toBe(false));
+});
+
+describe('scroll and counter helpers', () => {
+  it('near bottom is judged on the given geometry', () => {
+    expect(isNearBottom(1000, 500, 436)).toBe(true);
+    expect(isNearBottom(1000, 400, 436)).toBe(false);
+  });
+  it('announces only when a threshold is crossed', () => {
+    expect(counterAnnouncement(799, 800)).toBe('200 characters left.');
+    expect(counterAnnouncement(800, 801)).toBeNull();
+    expect(counterAnnouncement(949, 1000)).toBe('Caption is full: 1000 characters.');
+    expect(counterAnnouncement(900, 700)).toBeNull();
   });
 });

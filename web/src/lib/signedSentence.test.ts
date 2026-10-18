@@ -17,3 +17,13 @@ describe('signed sentence to English', () => {
     expect(await glossToEnglish(words, [], vi.fn().mockRejectedValue(new Error('/api/gloss 502')))).toBe('MY NAME LISA');
   });
 });
+
+describe('sentence fallback', () => {
+  it('uses the recognized words when the polished sentence is empty', async () => {
+    const { sentenceOrFallback } = await import('./signedSentence');
+    const words = [{ label: 'THANKYOU', score: 1 }, { label: 'HELLO', score: 1 }];
+    expect(sentenceOrFallback('  ', words, key => key.toLowerCase())).toBe('thankyou hello');
+    expect(sentenceOrFallback('Thanks, hello.', words, key => key)).toBe('Thanks, hello.');
+    expect(sentenceOrFallback(null, words, key => key)).toBe('THANKYOU HELLO');
+  });
+});

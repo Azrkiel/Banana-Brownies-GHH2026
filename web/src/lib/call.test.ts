@@ -178,3 +178,12 @@ describe('LiveKit call lifecycle', () => {
     expect(h.onRemoteVideo).toHaveBeenLastCalledWith(null);
   });
 });
+
+describe('join error messages', () => {
+  it('names the microphone when it was denied', async () => {
+    const { DeviceError, joinErrorMessage } = await import('./call');
+    expect(joinErrorMessage(new DeviceError('microphone', new DOMException('x', 'NotAllowedError')))).toMatch(/^Microphone access was denied/);
+    expect(joinErrorMessage(new DOMException('x', 'NotAllowedError'))).toMatch(/^Camera access was denied/);
+    expect(joinErrorMessage(new DeviceError('microphone', new DOMException('x', 'NotFoundError')))).toBe('No microphone was found. Connect one and try again.');
+  });
+});
