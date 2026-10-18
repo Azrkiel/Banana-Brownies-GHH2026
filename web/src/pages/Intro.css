@@ -6,10 +6,8 @@
 .intro-begin .ui-icon { width: 42px; height: 24px; transition: transform 160ms; }
 .intro-begin:hover .ui-icon { transform: translateX(4px); }
 .intro-begin[aria-disabled='true'] { cursor: default; }
-.intro-screen--departing { animation: notebook-depart 1600ms ease-in both; }
 .intro-screen--departing h1 { animation: title-depart 400ms 120ms ease-in both; }
 .intro-screen--departing .intro-begin { opacity: 0; transition: opacity 180ms; }
-@keyframes notebook-depart { 0%, 72% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes title-depart { from { opacity: 1; } to { opacity: 0; } }
 @media (max-width: 680px) {
   .intro-screen { padding: 40px 16px 48px; }

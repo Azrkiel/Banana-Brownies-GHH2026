@@ -1,4 +1,4 @@
-import { BirdIllustration } from '../components/BirdIllustration';
+import { Songbirds } from '../components/Songbirds';
 import { Button, Icon } from '../components/ui';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { RemoteTrack } from 'livekit-client';
@@ -64,7 +64,7 @@ export default function Call() {
     <main className="call-page home-page" id="main-content">
       <header className="home-heading"><h1>Call</h1></header>
       <div className="home-layout">
-        <BirdIllustration className="home-illustration" />
+        <Songbirds className="home-illustration" />
         <section className="home-join" aria-label="Join a call">
           <form className="join-bar" onSubmit={open}>
             <label>Name<input autoComplete="given-name" placeholder="Your name" value={name} maxLength={40} required onChange={event => setName(event.target.value)} /></label>
@@ -341,7 +341,7 @@ function RoomSession({ room, name, role }: { room: string; name: string; role: R
             <div className="stage-top"><span className="room-label">{room}</span><span className={`connection-status ${inRoom ? 'online' : ''}`} role="status"><span className="status-dot" />{statusText[status]}</span></div>
             <video ref={remote} autoPlay playsInline className={`remote-video ${remoteVisible ? 'visible' : ''}`} aria-label="Other participant’s video" />
             {!remoteVisible && <div className="stage-placeholder">
-              <BirdIllustration className="stage-illustration" />
+              <Songbirds className="stage-illustration" />
               <h2>{inRoom ? peer ? `${peer} is here` : 'Waiting for participant' : status === 'joining' ? 'Connecting…' : 'Not connected'}</h2>
               <p>{inRoom ? peer ? 'Their video will appear when their camera is on.' : 'Ask someone to join the same room to get started.' : status === 'joining' ? 'Allow camera access when your browser asks.' : status === 'disconnected' ? 'You left the room. Rejoin when you’re ready.' : 'Choose Rejoin to try connecting again.'}</p>
             </div>}

@@ -11,7 +11,8 @@ main:focus-visible { outline: none; }
 .home-heading { margin: 0 0 24px; }
 .home-heading h1 { margin: 0; font-family: var(--font-serif); font-weight: 400; font-size: var(--text-title); }
 .home-layout { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(280px, .7fr); align-items: center; gap: 48px; min-height: 540px; }
-.home-illustration { width: 125%; max-width: none; margin-left: -18%; }
+.songbirds { display: block; height: auto; mix-blend-mode: multiply; pointer-events: none; }
+.home-illustration { width: 100%; margin: 0; }
 .home-join { min-width: 0; padding: 16px 8px; }
 .join-bar { display: grid; gap: 28px; }
 .join-bar label { display: grid; gap: 8px; font-size: 1.0625rem; }
@@ -26,7 +27,7 @@ main:focus-visible { outline: none; }
 .stage-top { position: absolute; z-index: 2; top: 16px; left: 16px; right: 16px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; }
 .room-label, .connection-status { display: inline-flex; align-items: center; gap: 8px; padding: 4px 8px; font-size: 0.75rem; color: var(--color-ink); background: var(--color-surface); border-radius: var(--radius-sm); max-width: 100%; overflow-wrap: anywhere; }
 .stage-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 56px 24px 88px; text-align: center; }
-.stage-illustration { width: 280px; }
+.stage-illustration { width: 280px; max-width: 100%; }
 .stage-placeholder h2 { font-size: 1.375rem; margin: 0 0 8px; }
 .stage-placeholder p { color: var(--color-muted); font-size: 0.875rem; max-width: 35ch; margin: 0; }
 .local-tile { position: absolute; z-index: 2; bottom: 16px; right: 16px; width: 128px; height: 96px; border: 1px solid var(--color-field-border); border-radius: var(--radius-control); background: var(--color-surface); overflow: hidden; }
@@ -70,6 +71,7 @@ main:focus-visible { outline: none; }
 @media (max-width: 760px) { .site-header { gap: 12px; } .site-header nav { gap: 20px; } .home-layout { grid-template-columns: 1fr; gap: 0; min-height: 0; } .home-illustration { width: 100%; margin: -40px auto -20px; } .home-join { width: min(440px,100%); margin: 0 auto; padding: 0; } .home-heading { margin-bottom: 16px; } .call-workspace { grid-template-columns: 1fr; } .caption-panel { border-left: 0; border-top: 1px solid var(--color-border); padding: 24px 0 0; } .room-heading { align-items: flex-start; flex-direction: column; } .caption-scroll { min-height: 160px; } }
 @media (max-width: 540px) { .site-header { padding: 20px 20px 16px; justify-content: center; } .site-header::after { left: 20px; right: 20px; } .site-header nav { width: 100%; justify-content: space-between; gap: 8px; } .site-header nav a { font-size: 0.875rem; } main { padding: 32px 20px 48px; } .stage { min-height: 400px; aspect-ratio: auto; } .stage-top { left: 12px; right: 12px; } .local-tile { width: 104px; height: 86px; } .join-bar { gap: 24px; } }
 @media (forced-colors: active) { .site-header::after, .site-header nav a[aria-current]::after { display: none; } .site-header nav a[aria-current] { text-decoration: underline; } }
+@media (forced-colors: active) { .songbirds { display: none; } }
 
 /* The working screen settles onto the same sheet after the bird leaves. */
 .home-page, .site-header { animation: notebook-arrive 320ms ease-out both; }

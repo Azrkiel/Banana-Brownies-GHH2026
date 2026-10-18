@@ -12,8 +12,11 @@ remain archived in `docs/design/anthropic/` for provenance.
 - `web/public/notebook/perch-hand.webp`: a transparent, realistically drawn hand
   and forearm, about 193 kB. It is separate from the bird for the release bounce.
 - `web/public/notebook/bird-frames.webp`: six illustrated poses in an even 3 × 2
-  sprite sheet, about 313 kB. The perched pose is reused across working screens;
-  the opening uses the other poses for wingbeats. Both assets are 1536 × 1024.
+  sprite sheet, about 313 kB. The opening uses the poses for takeoff and a centered
+  flying bird replaces route loading screens. Both assets are 1536 × 1024.
+- `web/public/notebook/songbirds.webp`: two realistic songbirds facing each other
+  on a leafy branch, about 400 kB, 1536 × 1024 with transparency. The call form
+  and room standby use this separate illustration from the approved reference.
 - The images were created with OpenAI image generation using the user's naturalist
   butterfly and Claude Opus 5.5 screenshots as visual direction, then encoded as
   WebP. They contain no text. Text and controls are accessible HTML.
@@ -40,7 +43,8 @@ Record and Stats. The design-kit route remains available directly at `#/design-k
 for development and is not advertised in the user navigation.
 
 The call form contains Name, Room, Role and Join. It preserves browser validation,
-role behavior and the room popup. Camera, recorder, speech and stats use plain
+role behavior and the room popup, with two songbirds sharing a branch beside it.
+Camera, recorder, speech and stats use plain
 page names and functional controls. Marketing copy, redundant subtitles and
 instructional demo panels have been removed. Necessary consent, actual status,
 errors and data-loss notices remain. The local camera/video itself is displayed

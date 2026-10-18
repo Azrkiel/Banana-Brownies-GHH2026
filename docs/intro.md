@@ -17,14 +17,24 @@ The hand is a separate illustration, so its movement does not drag the bird.
 
 `BirdIllustration.css` uses stepped sprite positions with small registration
 corrections to keep the chest/head aligned while the wings change. The flight
-wrapper follows a rising leftward path and diminishes in size. The hand first
-dips, then recoils upward and settles over one second. Pencil wrist edges taper
+wrapper starts with a rising leftward path, then the view tracks its chest into
+the viewport center. Its final size matches the loading bird on every viewport.
+The hand first dips, then recoils upward and drops out of view over one second. Pencil wrist edges taper
 into the paper. There is no idle animation.
 
-Begin starts the 1.6-second sequence. The title and action clear, the bird leaves,
-and the paper fades into `#/conversation`; the working header/form ease in over
-320 ms. The call module is prefetched on Begin focus/hover and at activation.
-Other pages reuse the static perched illustration; space art is no longer used.
+Begin starts the 1.6-second sequence. The title and action clear while the bird
+takes off and stays centered. Navigation to `#/conversation` then hands the same
+registered pose and size to `BirdLoading.tsx` if the route is still pending.
+Its four flying poses loop until React's Suspense boundary resolves; there is no
+extra loading delay or visible filler copy. A screen-reader status announces
+loading. Failed art and forced colors show a plain loading status; reduced motion
+keeps a still illustration. The paper tile stays aligned between both scenes.
+The working header/form ease in over 320 ms. The call module is prefetched on
+Begin focus/hover and at activation. Direct routes use the same bird loading state.
+
+The call form and room standby use `Songbirds.tsx`: two birds facing each other
+on a leafy branch, matching the approved natural-history reference. Camera and
+recorder standby screens retain the static bird on a hand. Space art is unused.
 
 ## Ownership and fallbacks
 
@@ -40,5 +50,10 @@ The native Begin link preserves modified-click navigation. Keyboard activation a
 focus transfer to the working main landmark remain intact. The art is decorative;
 all text and controls are semantic HTML. None of the animation is used to enable
 camera or microphone access.
+
+Browser checks cover a deliberately delayed call module at desktop and phone
+sizes: the tracked chest and loader align within 2 px, wingbeats continue while
+pending, and the call form replaces them only when ready. Reduced motion, forced
+colors, missing loading art and navigation away during loading are also exercised.
 
 See [design system](design-system.md) for the shared paper style and font license.
