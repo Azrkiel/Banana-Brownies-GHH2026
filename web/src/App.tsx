@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import Intro from './pages/Intro'
 import { BirdLoading } from './components/BirdLoading'
 import NotFound from './pages/NotFound'
@@ -34,8 +34,17 @@ export default function App() {
   const [hash, setHash] = useState(new URLSearchParams(window.location.search).has('auth_callback') ? '#/training' : window.location.hash)
   const [welcomeFlight, setWelcomeFlight] = useState(false)
   const finishLanding = useCallback(() => setWelcomeFlight(false), [])
+  const shownHash = useRef(window.location.hash)
   useEffect(() => {
     const update = () => {
+      // Inside a call, Back or any hash change asks first: restore the call URL and let the call open its leave confirm.
+      if (document.body.dataset.inCall && window.location.hash !== shownHash.current) {
+        const next = window.location.href
+        history.pushState(null, '', `${window.location.pathname}${window.location.search}${shownHash.current}`)
+        window.dispatchEvent(new CustomEvent('signline:leave-request', { detail: { href: next } }))
+        return
+      }
+      shownHash.current = window.location.hash
       if (!/^#\/?(?:call|conversation)(?:\?|$)/.test(window.location.hash)) setWelcomeFlight(false)
       setHash(window.location.hash)
     }

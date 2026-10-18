@@ -1,10 +1,11 @@
-const COMPOUNDS: Record<string, string> = { THANKYOU: 'Thank you' };
+const COMPOUNDS: Record<string, string> = { THANKYOU: 'Thank you', GOODBYE: 'Goodbye', GOODMORNING: 'Good morning', GOODNIGHT: 'Good night' };
 
-/** Display label for a sign key: `_idle` -> "Resting (no sign)", `HELLO` -> "Hello", `THANKYOU` -> "Thank you". */
+/** The one display label for a sign key: `_idle` -> "Resting (no sign)", `HELLO` -> "Hello", `THANKYOU` -> "Thank you", `A` -> "A". */
 export function signLabel(key: string): string {
   if (key === '_idle') return 'Resting (no sign)';
+  if (key.length <= 1) return key;
   const compound = COMPOUNDS[key.toUpperCase()];
   if (compound) return compound;
-  const lower = key.toLowerCase();
-  return lower.charAt(0).toUpperCase() + lower.slice(1);
+  const spaced = key.replace(/_+/g, ' ').trim().toLowerCase();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
 }

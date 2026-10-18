@@ -182,3 +182,20 @@ body[data-in-call] .site-header nav { display: none; }
 .home-page .join-submit { display: flex; align-items: center; gap: 12px; }
 .home-page .join-submit > .join-help { flex: 1; }
 @media (max-width: 600px) { .home-page .join-submit { flex-direction: column; align-items: stretch; gap: 4px; } .home-page .join-submit > .ui-button { width: 100%; } .home-page .join-submit > .join-help { text-align: center; order: 2; } }
+
+/* incall2: pass 2 */
+.call-workspace { grid-template-columns: minmax(0, 1fr) minmax(340px, clamp(380px, 32vw, 560px)); }
+.caption-panel { max-height: calc(100svh - 48px); overflow-y: auto; }
+.caption-panel .caption-header, .caption-panel .caption-composer { flex-shrink: 0; }
+.caption-panel .caption-body { flex: 0 1 auto; min-height: 120px; }
+.caption-panel .caption-scroll { flex: 0 1 auto; min-height: 120px; }
+.cap-role { font-weight: 400; }
+.key-hint { margin-left: 6px; padding: 0 4px; border: 1px solid currentColor; border-radius: var(--radius-sm); font: inherit; font-size: .75rem; opacity: .8; }
+.shortcuts { margin: 16px 0 0; }
+.shortcuts kbd { margin: 0 2px; }
+.voice-settings { flex-basis: 100%; }
+.voice-settings summary { display: flex; align-items: center; min-height: 44px; font-size: var(--text-sm); color: var(--color-muted); cursor: pointer; }
+.voice-settings[open] { display: grid; gap: 8px; padding-bottom: 8px; }
+.voice-settings[open] summary { margin-bottom: 0; }
+@media (max-width: 900px) { .caption-panel { max-height: none; overflow-y: visible; } }
+@media (max-width: 600px) { .call-speech[data-consented] > label span { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; } }

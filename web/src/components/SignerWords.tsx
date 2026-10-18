@@ -5,26 +5,26 @@ import { loadPersonalSamples } from '../lib/personalSigns';
 import { trainPersonalModel } from '../lib/personalModel';
 import type { WordPrediction } from '../lib/wordModel';
 import { createDictation, type DictatedWord } from '../lib/dictation';
+import { signLabel } from '../lib/signLabels';
+import { sentenceOrFallback } from '../lib/signedSentence';
 import { Button } from './ui';
 import './SignerWords.css';
 
 type State = 'off' | 'loading' | 'ready' | 'live' | 'capturing' | 'review' | 'failed';
 type Preview = { words: DictatedWord[]; text: string | null };
 
-/** Seconds the signer sees the sentence before it is sent on its own. */
-const PREVIEW_SECONDS = 3;
+/** Seconds the signer sees the sentence before it is sent on its own (when automatic sending is on). */
+const PREVIEW_SECONDS = 6;
+/** If the sentence is not ready by then, the preview shows the recognized words instead. */
+const PREPARE_TIMEOUT_MS = 4000;
+const AUTO_SEND_KEY = 'signline.autoSendPreview';
+function readAutoSend(): boolean {
+  try { return localStorage.getItem(AUTO_SEND_KEY) !== '0'; } catch { return true; }
+}
+const typingField = (el: Element | null) => el instanceof HTMLTextAreaElement || (el instanceof HTMLInputElement && !['checkbox', 'radio', 'button', 'submit'].includes(el.type)) || (el instanceof HTMLElement && el.isContentEditable);
 
 const HAND_LINKS = [[0, 1], [1, 2], [2, 3], [3, 4], [0, 5], [5, 6], [6, 7], [7, 8], [5, 9], [9, 10], [10, 11], [11, 12],
   [9, 13], [13, 14], [14, 15], [15, 16], [13, 17], [0, 17], [17, 18], [18, 19], [19, 20]];
-
-const COMPOUNDS: Record<string, string> = { THANKYOU: 'Thank you', GOODBYE: 'Goodbye', GOODMORNING: 'Good morning', GOODNIGHT: 'Good night' };
-/** Sign keys like HELLO or _idle become labels a person would read. */
-function signLabel(key: string): string {
-  if (key === '_idle') return 'Resting (no sign)';
-  const known = COMPOUNDS[key.toUpperCase()];
-  if (known) return known;
-  return key.replace(/_/g, ' ').toLowerCase().replace(/(^|\s)\S/g, letter => letter.toUpperCase());
-}
 
 const reducedMotion = () => typeof window.matchMedia === 'function' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -46,21 +46,21 @@ function heldReason(prediction: WordPrediction): string {
   if ((prediction.framesWithHand ?? 0) < 24) return 'Keep your hands in view — the sign wasn’t clear enough.';
   return 'Not sure about this sign. Try again, or type the word yourself.';
 }
+
 type Props = {
-  camera: RefObject<HTMLVideoElement | null>; connected: boolean; onUse(word: string): boolean;
+  camera: RefObject<HTMLVideoElement | null>;
+  /** True only while the call can send. A reconnect keeps this panel mounted and just pauses sending. */
+  connected: boolean; reconnecting?: boolean;
+  /** Tells the call whether recognized signs or a preview are waiting, so it can warn before the tab closes. */
+  onPending?(pending: boolean): void;
   /** Turns dictated signs into the sentence shown in the preview. */
   onPrepare(words: DictatedWord[]): Promise<string>;
   /** Sends the previewed sentence; resolves to the text that was sent, or null if it was not. */
   onSentence(text: string): Promise<string | null>;
 };
 
-/** Signer-only. Live dictation previews confident signs before sending; capture mode always waits for confirmation. */
-export function SignerWords(props: Props) {
-  // A connection change invalidates the entire recognition session and its review.
-  return <SignerWordSession key={props.connected ? 'connected' : 'disconnected'} {...props} />;
-}
-
-function SignerWordSession({ camera, connected, onUse, onPrepare, onSentence }: Props) {
+/** Signer-only. Live dictation and single-sign capture both end in the same preview: Send now, Cancel, or send automatically. */
+export function SignerWords({ camera, connected, reconnecting = false, onPending, onPrepare, onSentence }: Props) {
   const { user } = useAuth();
   const [source, setSource] = useState<'shared' | 'personal'>('shared');
   const [state, setState] = useState<State>('off');
@@ -76,6 +76,7 @@ function SignerWordSession({ camera, connected, onUse, onPrepare, onSentence }: 
   const request = useRef<AbortController | null>(null);
   const generation = useRef(0);
   const [dictating, setDictating] = useState(true);
+  const [autoSend, setAutoSend] = useState(readAutoSend);
   const [signed, setSigned] = useState<DictatedWord[]>([]);
   const [sentStatus, setSentStatus] = useState('');
   const [preview, setPreview] = useState<Preview | null>(null);
@@ -83,11 +84,16 @@ function SignerWordSession({ camera, connected, onUse, onPrepare, onSentence }: 
   const previewRef = useRef<Preview | null>(null);
   const dictation = useRef(createDictation());
   const dictatingRef = useRef(true);
+  const connectedRef = useRef(connected);
   const sentenceRef = useRef(onSentence);
   const prepareRef = useRef(onPrepare);
-  useEffect(() => { sentenceRef.current = onSentence; prepareRef.current = onPrepare; dictatingRef.current = dictating; });
+  const pendingRef = useRef(onPending);
+  const focusBefore = useRef<HTMLElement | null>(null);
+  const focusMoved = useRef(false);
+  useEffect(() => { sentenceRef.current = onSentence; prepareRef.current = onPrepare; pendingRef.current = onPending; dictatingRef.current = dictating; connectedRef.current = connected; });
+  const previewReady = Boolean(preview?.text);
 
-  /** Every dictated sentence waits here: the signer sees it, and can send it now or cancel, before it goes out. */
+  /** Every dictated or captured sentence waits here: the signer sees it, and can send it now or cancel, before it goes out. */
   function startPreview(words: DictatedWord[]) {
     if (!words.length) return;
     if (previewRef.current) { dictation.current.load(words); setSigned(words); return; }
@@ -95,15 +101,18 @@ function SignerWordSession({ camera, connected, onUse, onPrepare, onSentence }: 
     const entry: Preview = { words, text: null };
     previewRef.current = entry;
     dictation.current.clear(); setSigned([]); setSentStatus(''); setPreview(entry); setRemaining(PREVIEW_SECONDS);
-    prepareRef.current(words).catch(() => words.map(word => word.label).join(' ')).then(text => {
+    let timer = 0;
+    const slow = new Promise<null>(resolve => { timer = window.setTimeout(() => resolve(null), PREPARE_TIMEOUT_MS); });
+    Promise.race([prepareRef.current(words).catch(() => null), slow]).then(text => {
+      window.clearTimeout(timer);
       if (attempt !== generation.current || previewRef.current !== entry) return;
-      const ready: Preview = { words, text };
+      const ready: Preview = { words, text: sentenceOrFallback(text, words, signLabel) };
       previewRef.current = ready; setPreview(ready); setRemaining(PREVIEW_SECONDS);
     });
   }
   async function confirmPreview() {
     const entry = previewRef.current;
-    if (!entry?.text) return;
+    if (!entry?.text || !connectedRef.current) return;
     previewRef.current = null; setPreview(null);
     const attempt = generation.current;
     setSentStatus('Sending…');
@@ -114,17 +123,42 @@ function SignerWordSession({ camera, connected, onUse, onPrepare, onSentence }: 
     const entry = previewRef.current;
     previewRef.current = null; setPreview(null);
     if (!entry) return;
-    const restored = [...entry.words, ...dictation.current.words];
-    dictation.current.load(restored); setSigned(dictation.current.words);
-    setSentStatus('Cancelled. Your words are kept as a draft.');
+    if (stopLive.current) {
+      dictation.current.load([...entry.words, ...dictation.current.words]); setSigned(dictation.current.words);
+      setSentStatus('Cancelled. Your words are kept as pending words.');
+    } else setSentStatus('Cancelled. Nothing was sent.');
   }
+  function chooseAutoSend(value: boolean) {
+    setAutoSend(value);
+    try { localStorage.setItem(AUTO_SEND_KEY, value ? '1' : '0'); } catch { /* storage may be blocked */ }
+  }
+  // The countdown only runs while the call can send; with automatic sending off the preview waits for the signer.
   useEffect(() => {
-    if (!preview?.text) return;
+    if (!preview?.text || !autoSend || !connected) return;
     if (remaining <= 0) { void confirmPreview(); return; }
     const timer = setTimeout(() => setRemaining(seconds => seconds - 1), 1000);
     return () => clearTimeout(timer);
   // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [preview, remaining]);
+  }, [preview, remaining, autoSend, connected]);
+  // After a reconnect the signer gets the full time again rather than an instant send.
+  useEffect(() => { if (connected) setRemaining(PREVIEW_SECONDS); }, [connected]);
+  // Focus moves to "Send now" when the preview appears (unless the signer is typing), and returns when it closes.
+  useEffect(() => {
+    if (previewReady) {
+      const active = document.activeElement;
+      if (typingField(active)) { focusMoved.current = false; return; }
+      focusBefore.current = active instanceof HTMLElement && active !== document.body ? active : null;
+      document.getElementById('signer-words-send')?.focus(); focusMoved.current = true;
+    } else if (focusMoved.current) {
+      focusMoved.current = false;
+      if (document.activeElement && document.activeElement !== document.body) return;
+      const back = focusBefore.current?.isConnected ? focusBefore.current : document.getElementById('signer-words-live-toggle');
+      back?.focus();
+    }
+  }, [previewReady]);
+  const pending = signed.length > 0 || preview !== null;
+  useEffect(() => { pendingRef.current?.(pending); }, [pending]);
+  useEffect(() => () => pendingRef.current?.(false), []);
 
   function release() {
     generation.current++;
@@ -193,7 +227,9 @@ function SignerWordSession({ camera, connected, onUse, onPrepare, onSentence }: 
     try {
       const result = await recognizer.capture(frames => { if (attempt === generation.current) setProgress(frames); });
       if (attempt !== generation.current) return;
-      setPrediction(result); setState('review');
+      // A confident capture goes through the same preview as live dictation; an unsure one waits for the signer.
+      if (result.accepted) { setState('ready'); startPreview([{ label: result.label, score: result.score }]); }
+      else { setPrediction(result); setState('review'); }
     } catch {
       if (attempt !== generation.current) return;
       release(); setState('failed');
@@ -204,24 +240,31 @@ function SignerWordSession({ camera, connected, onUse, onPrepare, onSentence }: 
   const enabled = !['off', 'failed'].includes(state);
   const busy = state === 'loading' || state === 'capturing';
   const modelWords = labels.map(signLabel);
+  const announcement = preview?.text ? `Ready to send: ${preview.text}. ${autoSend && connected ? `Sends in ${PREVIEW_SECONDS} seconds.` : 'Press Send now or Cancel.'}` : '';
+  const statusText = !connected ? (reconnecting ? 'Reconnecting… recognition keeps running and sending resumes in a moment.' : 'Join the call to use sign recognition.')
+    : state === 'loading' ? 'Loading hand tracking and words… the first time can take a few seconds.' : state === 'capturing' ? 'Sign now…'
+    : state === 'ready' ? 'Ready. Choose Capture a sign and sign one word over about one second, or Show live view to watch the model guess as you sign.'
+    : state === 'live' ? 'Live view on. Sign a word and watch the guess.' : state === 'off' ? 'Sign recognition is off.' : '';
   return <section className="signer-words" aria-labelledby="signer-words-title">
     <div className="signer-words__heading"><h2 id="signer-words-title">Sign recognition</h2><span>Signer only</span></div>
-    <p>Sign live and your confident signs become a sentence you can review before it is sent. Or capture one word at a time and add it to your caption.</p>
-    <label className="field">Recognition model<select value={source} disabled={enabled} onChange={event => { setSource(event.target.value as 'shared' | 'personal'); setLabels([]); setError(''); }}>
+    <p>Sign live and your confident signs become a sentence you can review before it is sent. Or capture one sign at a time; it gets the same review.</p>
+    <label className="field">Words to recognize<select value={source} disabled={enabled} onChange={event => { setSource(event.target.value as 'shared' | 'personal'); setLabels([]); setError(''); }}>
       <option value="shared">Shared words</option>
       {user && <option value="personal">Shared words + my signs</option>}
     </select></label>
-    <p><a href="#/training">{user ? 'Teach or manage your personal signs' : 'Sign in with GitHub to teach your own signs'}</a></p>
-    {modelWords.length > 0 && <p className="signer-words__vocabulary">Trained words ({modelWords.length}): {modelWords.join(', ')}.</p>}
-    <p className="note">{source === 'personal' ? 'Your signs are checked first, then the shared words. Your saved examples are downloaded privately from your account; new call captures stay on this device.' : 'Recognition stays on this device and does not upload recordings or hand data.'} It can make mistakes.</p>
+    <p><a href="#/training">{user ? 'Teach or manage my signs' : 'Sign in with GitHub to teach your own signs'}</a></p>
+    {modelWords.length > 0 && <p className="signer-words__vocabulary">Words recognized ({modelWords.length}): {modelWords.join(', ')}.</p>}
+    <p className="note">{source === 'personal' ? 'My signs are checked first, then the shared words. Your saved examples are downloaded privately from your account; new examples captured in a call stay on this device.' : 'Recognition stays on this device and does not upload recordings or hand data.'} It can make mistakes.</p>
+    <label className="signer-words__dictate"><input type="checkbox" checked={autoSend} onChange={event => chooseAutoSend(event.target.checked)} /><span>Send automatically after preview</span></label>
     <div className="button-row">
       {!enabled ? <Button variant="primary" disabled={!connected} aria-describedby={connected ? undefined : 'signer-words-status'} onClick={() => void enable()}>Enable sign recognition</Button> : <>
-        <Button variant="primary" disabled={busy} onClick={() => void capture()}>{state === 'capturing' ? 'Capturing…' : 'Capture a sign'}</Button>
-        <Button disabled={busy} onClick={() => state === 'live' ? unwatchLive() : watchLive()}>{state === 'live' ? 'Hide live view' : 'Show live view'}</Button>
+        <Button variant="primary" disabled={busy || !connected} aria-describedby={connected ? undefined : 'signer-words-status'} onClick={() => void capture()}>{state === 'capturing' ? 'Capturing…' : 'Capture a sign'}</Button>
+        <Button id="signer-words-live-toggle" disabled={busy} onClick={() => state === 'live' ? unwatchLive() : watchLive()}>{state === 'live' ? 'Hide live view' : 'Show live view'}</Button>
         <Button onClick={stop}>Stop sign recognition</Button>
       </>}
     </div>
-    <p id="signer-words-status" role="status">{!connected ? 'Join the call to use sign recognition.' : state === 'loading' ? 'Loading sign recognition…' : state === 'capturing' ? 'Sign now…' : state === 'ready' ? 'Ready. Choose Capture a sign and sign one word over about one second, or Show live view to watch the model guess as you sign.' : state === 'live' ? 'Live view on. Sign a word and watch the guess.' : state === 'off' ? 'Sign recognition is off.' : ''}</p>
+    <p id="signer-words-status" role="status">{statusText}</p>
+    <p className="cap-sr" role="status" aria-live="polite">{announcement}</p>
     {state === 'loading' && <progress aria-label="Loading sign recognition" />}
     {state === 'live' && <div className="signer-words__live">
       <canvas ref={liveCanvas} aria-label="What the hand model sees" />
@@ -235,45 +278,40 @@ function SignerWordSession({ camera, connected, onUse, onPrepare, onSentence }: 
         {live ? <>
           <p className="signer-words__word">{signLabel(live.label)} <span>{Math.round(live.score * 100)}% match</span></p>
           <p id="signer-words-live-hint">{live.accepted ? 'Confident match over the last second.' : heldReason(live)}</p>
-          {!dictating && <Button variant="primary" disabled={!live.accepted} aria-describedby="signer-words-live-hint" onClick={() => { if (live.accepted) onUse(signLabel(live.label)); }}>Add “{signLabel(live.label)}” to caption</Button>}
+          {!dictating && <Button variant="primary" disabled={!live.accepted || preview !== null} aria-describedby="signer-words-live-hint" onClick={() => { if (live.accepted) startPreview([{ label: live.label, score: live.score }]); }}>Review “{signLabel(live.label)}”</Button>}
         </> : <p>Collecting the first second of frames…</p>}
       </div>
-      {dictating && <div className="signer-words__dictation" aria-live="polite">
-        {preview ? <div className="signer-words__preview">
-          {preview.text ? <>
-            <p className="note">About to send</p>
-            <p className="signer-words__signed">{preview.text}</p>
-            <p className="note" aria-hidden="true">Sending in {Math.max(remaining, 0)}s…</p>
-            <progress aria-hidden="true" max={PREVIEW_SECONDS} value={PREVIEW_SECONDS - remaining} />
-            <div className="button-row">
-              <Button variant="primary" onClick={() => void confirmPreview()}>Send now</Button>
-              <Button onClick={cancelPreview}>Cancel</Button>
-            </div>
-          </> : <>
-            <p>Preparing your sentence…</p>
-            <div className="button-row"><Button onClick={cancelPreview}>Cancel</Button></div>
-          </>}
-        </div> : <>
-          <p className="signer-words__signed">{signed.map(word => signLabel(word.label)).join(' ')}</p>
-          {!signed.length && <p className="note">Sign a word to start a sentence.</p>}
-          {signed.length > 0 && <div className="button-row">
-            <Button variant="primary" onClick={() => startPreview(dictation.current.flush()?.words ?? [])}>Review sentence</Button>
-            <Button onClick={() => { dictation.current.clear(); setSigned([]); }}>Clear</Button>
-          </div>}
-        </>}
-        {sentStatus && <p className="note">{sentStatus}</p>}
+      {dictating && !preview && <div className="signer-words__dictation">
+        <p className="signer-words__signed">{signed.map(word => signLabel(word.label)).join(' ')}</p>
+        {!signed.length && <p className="note">Sign a word to start a sentence.</p>}
+        {signed.length > 0 && <div className="button-row">
+          <Button variant="primary" onClick={() => startPreview(dictation.current.flush()?.words ?? [])}>Review sentence</Button>
+          <Button onClick={() => { dictation.current.clear(); setSigned([]); }}>Clear</Button>
+        </div>}
       </div>}
     </div>}
+    {preview && <div className="signer-words__preview" role="group" aria-label="Sentence ready to send">
+      {preview.text ? <>
+        <p className="note">{autoSend && connected ? 'About to send' : 'Ready to send'}</p>
+        <p className="signer-words__signed">{preview.text}</p>
+        {autoSend && connected && <>
+          <p className="note" aria-hidden="true">Sending in {Math.max(remaining, 0)}s…</p>
+          <progress aria-hidden="true" max={PREVIEW_SECONDS} value={PREVIEW_SECONDS - remaining} />
+        </>}
+        {!connected && <p className="note" id="signer-words-preview-hint">Reconnecting… you can send again in a moment.</p>}
+        <div className="button-row">
+          <Button id="signer-words-send" variant="primary" disabled={!connected} aria-describedby={connected ? undefined : 'signer-words-preview-hint'} onClick={() => void confirmPreview()}>Send now</Button>
+          <Button onClick={cancelPreview}>Cancel</Button>
+        </div>
+      </> : <>
+        <p>Preparing your sentence…</p>
+        <div className="button-row"><Button onClick={cancelPreview}>Cancel</Button></div>
+      </>}
+    </div>}
+    {sentStatus && <p className="note" role="status">{sentStatus}</p>}
     {state === 'capturing' && <progress aria-label="Sign capture progress" max={30} value={progress} />}
     {prediction && <div className="signer-words__review" role="status">
-      {prediction.accepted ? <>
-        <p className="signer-words__word">{signLabel(prediction.label)}</p>
-        <p>Does this match your sign?</p>
-        <Button variant="primary" onClick={() => {
-          if (onUse(signLabel(prediction.label))) { setPrediction(null); setState('ready'); }
-        }}>Add “{signLabel(prediction.label)}” to caption</Button>
-        <p className="note">Review or edit the caption, then choose Send. Nothing is sent automatically.</p>
-      </> : <><p>No confident match. Try again with one hand in view, or type your caption.</p><p className="note">{heldReason(prediction)}</p></>}
+      <p>No confident match. Try again with one hand in view, or type your caption.</p><p className="note">{heldReason(prediction)}</p>
     </div>}
     {error && <p className="signer-words__error" role="alert">{error}</p>}
   </section>;

@@ -19,3 +19,8 @@ export async function glossToEnglish(words: DictatedWord[], context: string[], t
     return signed;
   }
 }
+
+/** The preview must never stay empty: an empty or failed polish falls back to the recognized words. */
+export function sentenceOrFallback(text: string | null | undefined, words: DictatedWord[], label: (key: string) => string): string {
+  return text?.trim() || words.map(word => label(word.label)).join(' ');
+}

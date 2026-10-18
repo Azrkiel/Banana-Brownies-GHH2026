@@ -3,11 +3,11 @@ import { CallBranch } from '../components/CallBranch';
 import { Badge, Button, Icon } from '../components/ui';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { RemoteTrack } from 'livekit-client';
-import { joinCall, type Call as CallT, type CallStatus } from '../lib/call';
+import { joinCall, joinErrorMessage, SECURE_CONTEXT_ERROR, type Call as CallT, type CallStatus } from '../lib/call';
 import { CaptionLane } from '../components/CaptionLane';
 import { PreCall } from '../components/PreCall';
 import { SignerWords } from '../components/SignerWords';
-import { createCaptionHistory } from '../lib/captions';
+import { counterAnnouncement, createCaptionHistory, LOCAL_SOURCE } from '../lib/captions';
 import { createSpeechCaptions } from '../lib/speechCaptions';
 import { createCallSpeech, type CallSpeechState } from '../lib/callSpeech';
 import { getVoices, translateGloss, type VoiceInfo } from '../lib/api';
@@ -30,23 +30,18 @@ const statusText: Record<Status, string> = {
 const statusTone = (status: Status): 'neutral' | 'positive' | 'warning' =>
   status === 'connected' ? 'positive' : status === 'reconnecting' || status === 'audio-blocked' || status === 'joining' ? 'warning' : 'neutral';
 
-const SECURE_CONTEXT_ERROR = 'Camera access requires a secure browser context.';
-function friendlyError(error: unknown): string {
-  if (error instanceof DOMException) {
-    if (error.name === 'NotAllowedError') return 'Camera access was denied. Allow the camera in your browser settings, then try again.';
-    if (error.name === 'NotFoundError') return 'No camera was found. Connect one and try again.';
-    if (error.name === 'NotReadableError') return 'Your camera may be in use by another app. Close it there and try again.';
-  }
-  if (error instanceof Error && error.message === SECURE_CONTEXT_ERROR) return 'Camera access needs a secure (HTTPS) page. Open SignLine from its https:// address.';
-  return 'Couldn’t reach SignLine. Check your connection and try again.';
-}
-
 const CAPTION_SIZES = ['small', 'medium', 'large'] as const;
 type CaptionSize = typeof CAPTION_SIZES[number];
 const SIZE_KEY = 'signline.captionSize';
 function readCaptionSize(): CaptionSize {
   try { const saved = localStorage.getItem(SIZE_KEY); return CAPTION_SIZES.find(size => size === saved) ?? 'medium'; }
   catch { return 'medium'; }
+}
+/** Where "Leave" should send the browser: a same-page hash when possible, otherwise the full address. */
+function navTarget(href: string): string {
+  try { const url = new URL(href, window.location.href); if (url.origin === window.location.origin && url.pathname === window.location.pathname) return url.hash || '#/'; }
+  catch { /* fall through to the raw address */ }
+  return href;
 }
 const typingTarget = (target: EventTarget | null) => target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
 
@@ -192,6 +187,9 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
   const [voiceError, setVoiceError] = useState('');
   const [failedSpeech, setFailedSpeech] = useState<string | null>(null);
   const [confirmLeave, setConfirmLeave] = useState(false);
+  const [endReason, setEndReason] = useState<'left' | 'dropped' | null>(null);
+  const [pendingWords, setPendingWords] = useState(false);
+  const [counterNote, setCounterNote] = useState('');
   const [textSize, setTextSize] = useState<CaptionSize>(readCaptionSize);
   const voice = useRef<SignerVoice | null>(null);
   const speechQueue = useRef<Promise<void>>(Promise.resolve());
@@ -211,6 +209,9 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
   const peerName = useRef<string | null>(null);
   const pendingNav = useRef<string | null>(null);
   const focusAfterLeave = useRef(false);
+  const focusOnJoin = useRef(false);
+  const leaveOpener = useRef<HTMLElement | null>(null);
+  const focusStay = useRef(false);
   const stageHeading = useRef<HTMLHeadingElement>(null);
   const shortcuts = useRef<{ mute(): void }>({ mute: () => {} });
   const inRoom = status === 'connected' || status === 'reconnecting' || status === 'audio-blocked';
@@ -219,6 +220,9 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
   const speechEnabled = !['disabled', 'failed', 'stopped'].includes(speechState);
   const voiceReady = voiceSupported && !!voiceId;
   const voiceUnavailable = role === 'signer' && inRoom && voicesLoaded && !voiceReady;
+  const reconnecting = status === 'reconnecting';
+  // One voice message at a time: a specific error wins over the general "unavailable" note.
+  const voiceNote = voiceError || (voiceUnavailable && speakAloud ? 'Voice unavailable — captions are text only.' : '');
   const spokenAloud = role === 'signer' && speakAloud && voiceReady;
   const startHint = speechEnabled ? '' : !consented ? 'Agree above to start captions.' : !canSend ? 'Join the call to start captions.' : muted ? 'Unmute your microphone to start captions.' : '';
 
@@ -257,7 +261,12 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
   // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // While in the call, the site nav is hidden (CSS), the brand link asks first, and closing the tab warns.
+  function openLeave() {
+    const active = document.activeElement;
+    leaveOpener.current = active instanceof HTMLElement && active !== document.body ? active : null;
+    setConfirmLeave(true);
+  }
+  // While in the call, the site nav is hidden (CSS), the brand link and browser Back/hash changes ask first.
   useEffect(() => {
     if (!inRoom) { setConfirmLeave(false); return; }
     document.body.dataset.inCall = '1';
@@ -266,29 +275,51 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
       if (!link) return;
       event.preventDefault(); event.stopPropagation();
       pendingNav.current = link.getAttribute('href');
-      setConfirmLeave(true);
+      openLeave();
     };
-    const guardUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    const requestLeave = (event: Event) => {
+      const href = event instanceof CustomEvent ? (event.detail as { href?: string } | null)?.href : undefined;
+      if (!href) return;
+      pendingNav.current = navTarget(href);
+      openLeave();
+    };
     document.addEventListener('click', guardLinks, true);
-    window.addEventListener('beforeunload', guardUnload);
+    window.addEventListener('signline:leave-request', requestLeave);
     return () => {
       delete document.body.dataset.inCall;
       document.removeEventListener('click', guardLinks, true);
-      window.removeEventListener('beforeunload', guardUnload);
+      window.removeEventListener('signline:leave-request', requestLeave);
     };
+  // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [inRoom]);
 
-  useEffect(() => { if (confirmLeave) document.getElementById('leave-stay')?.focus(); }, [confirmLeave]);
+  // Closing the tab only warns when something would be lost: someone else is here, or there is unsent text or pending words.
+  const warnUnload = inRoom && (!!peer || draft.trim().length > 0 || pendingWords);
+  useEffect(() => {
+    if (!warnUnload) return;
+    const guardUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ''; };
+    window.addEventListener('beforeunload', guardUnload);
+    return () => window.removeEventListener('beforeunload', guardUnload);
+  }, [warnUnload]);
+
+  useEffect(() => {
+    if (confirmLeave) { document.getElementById('leave-stay')?.focus(); return; }
+    if (!focusStay.current) return;
+    focusStay.current = false;
+    const opener = leaveOpener.current; leaveOpener.current = null;
+    (opener?.isConnected ? opener : document.getElementById('leave-call'))?.focus();
+  }, [confirmLeave]);
   useEffect(() => {
     if (status === 'disconnected' && focusAfterLeave.current) { focusAfterLeave.current = false; stageHeading.current?.focus(); }
+    if (status === 'joining' && focusOnJoin.current) { focusOnJoin.current = false; stageHeading.current?.focus(); }
   }, [status]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === '/' && !event.ctrlKey && !event.metaKey && !event.altKey && !typingTarget(event.target)) {
         const input = document.getElementById('caption-draft');
-        if (input) { event.preventDefault(); input.focus(); }
-      } else if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === 'm' && role === 'hearing') {
+        if (input instanceof HTMLInputElement && !input.disabled) { event.preventDefault(); input.focus(); }
+      } else if (event.altKey && !event.ctrlKey && !event.metaKey && event.code === 'KeyM' && role === 'hearing') {
         event.preventDefault(); shortcuts.current.mute();
       }
     };
@@ -325,7 +356,7 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
     joining.current = true;
     connectionAbort.current = new AbortController();
     setStatus('joining');
-    setError('');
+    setError(''); setEndReason(null);
     speech.current?.dispose();
     delivery.current?.dispose();
     history.reset();
@@ -333,8 +364,8 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
     setMuted(false); setMuting(false); mutingRef.current = false;
     const sender = createSpeechCaptions({
       speaker: name,
-      local: caption => { if (active()) history.receive(caption, 'local'); },
-      remove: (id, revision) => { if (active()) history.clear(id, revision, 'local'); },
+      local: caption => { if (active()) history.receive(caption, LOCAL_SOURCE); },
+      remove: (id, revision) => { if (active()) history.clear(id, revision, LOCAL_SOURCE); },
       send: async message => {
         const current = call.current;
         if (!active() || !current) throw new Error('Room session ended.');
@@ -396,6 +427,7 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
             recognizer.connection(online && !!call.current);
             if (next === 'reconnecting') history.clearDrafts();
             if (next === 'disconnected') {
+              setEndReason('dropped');
               recognizer.dispose(); sender.dispose(); history.clearDrafts();
               setSpeechState('disabled');
               generation.current++;
@@ -422,7 +454,7 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
       recognizer.dispose(); sender.dispose();
       resetMedia();
       setStatus('idle');
-      setError(friendlyError(cause));
+      setError(joinErrorMessage(cause));
     } finally {
       if (active()) joining.current = false;
     }
@@ -440,7 +472,7 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
     const previous = call.current;
     call.current = null;
     resetMedia();
-    setStatus('disconnected');
+    setStatus('disconnected'); setEndReason('left');
     setError(''); setFailedSpeech(null);
     setSpeechState('disabled'); setSpeechError(''); setDeliveryError(''); setConsented(false);
     setSending(false);
@@ -454,7 +486,7 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
     setConfirmLeave(false);
     focusAfterLeave.current = !next;
     await leave();
-    if (next) { if (next.startsWith('#')) window.location.hash = next; else window.location.assign(next); }
+    if (next) { delete document.body.dataset.inCall; if (next.startsWith('#')) window.location.hash = next; else window.location.assign(next); }
   }
 
   async function send(event: FormEvent) {
@@ -470,7 +502,7 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
     try {
       await current.sendCaption(caption);
       if (generation.current !== attempt) return;
-      history.receive(caption, 'local');
+      history.receive(caption, LOCAL_SOURCE);
       setDraft(value => value === draft ? '' : value);
       if (role === 'signer' && speakAloud) speak(text);
     } catch {
@@ -495,11 +527,11 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
     try {
       await current.sendCaption(caption);
       if (generation.current !== attempt) return null;
-      history.receive(caption, 'local');
+      history.receive(caption, LOCAL_SOURCE);
       if (speakAloud) speak(text);
       return text;
     } catch {
-      if (generation.current === attempt) setError('Your signed sentence wasn’t sent. Sign it again or type it.');
+      // The signer panel reports this failure next to the preview, so it is not repeated in the page banner.
       return null;
     }
   }
@@ -556,7 +588,7 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
   shortcuts.current.mute = () => { if (inRoom) void toggleMicrophone(); };
 
   const roleLabel = role === 'signer' ? 'Signer' : 'Hearing participant';
-  const sendHint = canSend ? spokenAloud ? 'Press Enter to send. It is also spoken aloud to the call.' : 'Press Enter to send to the call.' : 'Join the call to send captions.';
+  const sendHint = canSend ? spokenAloud ? 'Press Enter to send. It is also spoken aloud to the call.' : 'Press Enter to send to the call.' : reconnecting ? 'Reconnecting… you can send again in a moment.' : 'Join the call to send captions.';
 
   return (
     <main className="call-page room-page" id="main-content">
@@ -575,67 +607,61 @@ function RoomSession({ room, name, role, onRecheck }: { room: string; name: stri
         <div className="stage-column">
           <div className="stage" aria-label="Video call">
             <div className="stage-top"><span className="room-label">{room}</span><span className="connection-status" role="status"><Badge tone={statusTone(status)}>{statusText[status]}</Badge></span></div>
-            <video ref={remote} autoPlay playsInline className={`remote-video ${remoteVisible ? 'visible' : ''}`} aria-label="Other participant’s video" />
+            <video ref={remote} autoPlay playsInline className={`remote-video ${remoteVisible ? 'visible' : ''}`} aria-label="The other person’s video" />
             {!remoteVisible && <div className="stage-placeholder">
               <Songbirds className="stage-illustration" />
-              <h2 ref={stageHeading} tabIndex={-1}>{inRoom ? peer ? `${peer} is here` : peerLeft ? `${peerLeft} left the call` : 'Waiting for participant' : status === 'joining' ? 'Connecting…' : status === 'disconnected' ? 'Call ended' : 'Not connected'}</h2>
-              <p>{inRoom ? peer ? 'Their video will appear when their camera is on.' : peerLeft ? 'They can rejoin with the same link.' : 'Ask someone to join this call to get started.' : status === 'joining' ? 'Allow camera access when your browser asks.' : status === 'disconnected' ? 'You left the call. Check your devices and rejoin when you’re ready.' : 'Choose Check devices and rejoin to try connecting again.'}</p>
+              <h2 ref={stageHeading} tabIndex={-1}>{inRoom ? peer ? `${peer} is here` : peerLeft ? `${peerLeft} left the call` : 'Waiting for the other person to join' : status === 'joining' ? 'Connecting…' : status === 'disconnected' ? 'Call ended' : 'Not connected'}</h2>
+              <p>{inRoom ? peer ? 'Their video will appear when their camera is on.' : peerLeft ? 'They can rejoin with the same link.' : 'Ask someone to join this call to get started.' : status === 'joining' ? 'Allow camera access when your browser asks.' : status === 'disconnected' ? `${endReason === 'dropped' ? 'The call ended.' : 'You left the call.'} Rejoin when you’re ready, or check your devices first.` : 'Choose Rejoin to try connecting again.'}</p>
             </div>}
             <div className="local-tile"><video ref={local} autoPlay muted playsInline className="mirror local-video" aria-label="Your camera preview" />{!busy && <span className="camera-off" aria-hidden="true"><Badge>Camera off</Badge></span>}<span className="video-label">{inRoom ? name : 'You'} <span>· {role === 'signer' ? 'Signer' : 'Hearing participant'}</span></span></div>
-            {remoteVisible && <span className="peer-label">{peer ?? 'Other participant'}</span>}
+            {remoteVisible && <span className="peer-label">{peer ?? 'The other person'}</span>}
           </div>
-          <div className="call-toolbar"><p><span className="privacy-dot" />{status === 'joining' ? 'Waiting for camera access and call connection' : inRoom ? role === 'signer' ? spokenAloud ? 'Camera on · captions spoken aloud' : voiceUnavailable && speakAloud ? 'Camera on · Voice unavailable — captions are text only' : 'Camera on · captions are text only' : muted ? 'Call microphone muted · speech recognition paused' : 'Camera and call microphone enabled' : 'Camera and microphone stay off until you join.'}</p>
+          <div className="call-toolbar"><p><span className="privacy-dot" />{status === 'joining' ? 'Waiting for camera access and call connection' : inRoom ? role === 'signer' ? spokenAloud ? 'Camera on · captions spoken aloud' : 'Camera on · captions are text only' : muted ? 'Call microphone muted · speech recognition paused' : 'Camera and call microphone enabled' : 'Camera and microphone stay off until you join.'}</p>
             <div className="call-actions">
-              {role === 'hearing' && inRoom && <Button disabled={!canSend || muting} onClick={() => void toggleMicrophone()}>{muting ? 'Changing microphone…' : muted ? 'Unmute microphone' : 'Mute microphone'}</Button>}
-              {status === 'joining' && <Button variant="danger" onClick={leave}>Cancel</Button>}
+              {role === 'hearing' && inRoom && <Button disabled={!canSend || muting} aria-keyshortcuts="Alt+M" onClick={() => void toggleMicrophone()}>{muting ? 'Changing microphone…' : muted ? 'Unmute microphone' : 'Mute microphone'} <kbd className="key-hint" aria-hidden="true">Alt+M</kbd></Button>}
+              {status === 'joining' && <Button variant="danger" onClick={() => { focusAfterLeave.current = true; void leave(); }}>Cancel</Button>}
               {inRoom && (confirmLeave
-                ? <div className="leave-confirm" role="group" aria-label="Leave call?"><span>Leave call?</span><Button variant="danger" onClick={() => void confirmedLeave()}>Leave</Button><Button id="leave-stay" onClick={() => { pendingNav.current = null; setConfirmLeave(false); }}>Stay</Button></div>
-                : <Button variant="danger" onClick={() => setConfirmLeave(true)}>Leave call</Button>)}
-              {!busy && <Button variant="primary" onClick={onRecheck}>Check devices and rejoin <Icon name="arrow" /></Button>}
+                ? <div className="leave-confirm" role="group" aria-label="Leave call?"><span>Leave call?</span><Button variant="danger" onClick={() => void confirmedLeave()}>Leave</Button><Button id="leave-stay" onClick={() => { pendingNav.current = null; focusStay.current = true; setConfirmLeave(false); }}>Stay</Button></div>
+                : <Button id="leave-call" variant="danger" onClick={openLeave}>Leave call</Button>)}
+              {!busy && <><Button variant="primary" onClick={() => { focusOnJoin.current = true; void join(); }}>Rejoin <Icon name="arrow" /></Button><Button onClick={onRecheck}>Check devices</Button></>}
             </div></div>
         </div>
         <section className="caption-panel" aria-labelledby="caption-title" data-size={textSize}>
           <div className="caption-header"><div><h2 id="caption-title">Captions</h2></div>
             <div className="size-control" role="group" aria-label="Caption text size">{CAPTION_SIZES.map(size => <button key={size} type="button" className="size-btn" data-size={size} aria-pressed={size === textSize} aria-label={`${size[0].toUpperCase()}${size.slice(1)} caption text`} onClick={() => chooseSize(size)}>Aa</button>)}</div></div>
-          <CaptionLane captions={captions} me={name} />
-          <form className="caption-composer" onSubmit={send}><label htmlFor="caption-draft">Type a caption</label><div className="composer-input"><input id="caption-draft" value={draft} maxLength={1000} disabled={!canSend} placeholder={canSend ? 'Type a caption…' : 'Join the call to type'} onChange={event => setDraft(event.target.value)} /><Button type="submit" disabled={!canSend || !draft.trim() || sending} aria-describedby="composer-hint">{sending ? 'Sending…' : 'Send'}</Button></div>
-            <p id="composer-hint">{sendHint}</p><span className="composer-count" aria-live="polite">{draft.length > 800 ? `${draft.length} of 1000 characters` : ''}</span>
+          <CaptionLane captions={captions} />
+          <form className="caption-composer" onSubmit={send}><label htmlFor="caption-draft">Type a caption</label><div className="composer-input"><input id="caption-draft" value={draft} maxLength={1000} disabled={!canSend && !reconnecting} placeholder={canSend || reconnecting ? 'Type a caption…' : 'Join the call to type'} onChange={event => {
+                const value = event.target.value;
+                const note = counterAnnouncement(draft.length, value.length);
+                setCounterNote(note ?? (value.length < draft.length ? '' : counterNote));
+                setDraft(value);
+              }} /><Button type="submit" disabled={!canSend || !draft.trim() || sending} aria-describedby="composer-hint">{sending ? 'Sending…' : 'Send'}</Button></div>
+            <p id="composer-hint">{sendHint}</p><span className="composer-count">{draft.length > 800 ? `${draft.length} of 1000 characters` : ''}</span><span className="cap-sr" role="status" aria-live="polite">{draft.length >= 800 ? counterNote : ''}</span>
             {role === 'signer' && <div className="signer-voice">
               <label className="signer-voice__toggle"><input type="checkbox" checked={speakAloud} onChange={event => setSpeakAloud(event.target.checked)} /><span>Speak my captions aloud</span></label>
-              <label className="signer-voice__toggle"><input type="checkbox" checked={polish} onChange={event => setPolish(event.target.checked)} /><span>Turn signed words into English sentences</span></label>
-              <label className="signer-voice__select">Voice<select value={voiceId} disabled={!voices.length} onChange={event => setVoiceId(event.target.value)}>
-                {voices.map(option => <option key={option.id} value={option.id}>{option.name.split(' - ')[0]}</option>)}
-              </select></label>
-              {voiceUnavailable && speakAloud && <p>Voice unavailable — captions are text only.</p>}
+              <details className="voice-settings"><summary>Voice settings</summary>
+                <label className="signer-voice__toggle"><input type="checkbox" checked={polish} onChange={event => setPolish(event.target.checked)} /><span>Turn signed words into English sentences</span></label>
+                <label className="signer-voice__select">Voice<select value={voiceId} disabled={!voices.length} onChange={event => setVoiceId(event.target.value)}>
+                  {voices.map(option => <option key={option.id} value={option.id}>{option.name.split(' - ')[0]}</option>)}
+                </select></label>
+              </details>
+              {voiceNote && <p className={voiceError ? 'call-speech__error' : undefined} role={voiceError ? 'alert' : 'status'}>{voiceNote}</p>}
               <p role="status">{speaking ? 'Speaking to the call…' : ''}</p>
               {speaking > 0 && <Button size="small" onClick={stopSpeaking}>Stop speaking</Button>}
-              {voiceError && <p className="call-speech__error" role="alert">{voiceError}</p>}
               {failedSpeech && !speaking && <Button size="small" onClick={() => speak(failedSpeech)}>Try speaking again</Button>}
             </div>}</form>
         </section>
         <div className="call-details">
-          {role === 'hearing' && <section className="call-speech" aria-labelledby="call-speech-title">
+          {role === 'hearing' && <section className="call-speech" aria-labelledby="call-speech-title" data-consented={consented || undefined}>
             <div className="call-speech__heading"><h2 id="call-speech-title">Speech captions</h2><span role="status">{speechLabels[speechState]}</span></div>
             <label><input type="checkbox" checked={consented} onChange={event => { setConsented(event.target.checked); speech.current?.consent(event.target.checked); }} /><span>I agree to send my microphone audio to SignLine’s speech-to-text provider (ElevenLabs) for captions, and to share the recognized text with this call.</span></label>
             <div className="call-speech__actions"><Button variant="primary" disabled={!speechEnabled && (!consented || !canSend || muted)} aria-describedby={startHint ? 'start-hint' : undefined} onClick={() => { setSpeechError(''); speech.current?.enable(!speechEnabled); }}>{speechEnabled ? 'Stop captions' : 'Start captions'}</Button><p>Stopping captions leaves call audio on. Mute the microphone to pause both.</p>{startHint && <p id="start-hint">{startHint}</p>}</div>
             {speechError && <p className="call-speech__error" role="alert">{speechError}</p>}
             {deliveryError && <p className="call-speech__error" role="alert">{deliveryError}</p>}
           </section>}
-          {role === 'signer' && <SignerWords camera={local} connected={canSend} onPrepare={prepareSigned} onSentence={sendSigned} onUse={word => {
-            const next = `${draft.trim()}${draft.trim() ? ' ' : ''}${word}`;
-            if (next.length > 1000) {
-              setError('Your caption is full. Send or shorten it before adding a sign.');
-              return false;
-            }
-            setDraft(next);
-            if (!window.matchMedia('(pointer: coarse)').matches) document.getElementById('caption-draft')?.focus();
-            return true;
-          }} />}
-          <div className="scope-note"><span className="note-icon" aria-hidden="true">i</span><p>Speech and sign recognition can make mistakes. Trained signs cover a small vocabulary; only confident signs are dictated automatically.</p></div>
-          <details className="shortcuts"><summary>Keyboard shortcuts</summary><ul>
-            <li><kbd>/</kbd> Focus the caption box</li>
-            {role === 'hearing' && <li><kbd>Ctrl</kbd>/<kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>M</kbd> Mute or unmute your microphone</li>}
-          </ul></details>
+          {role === 'signer' && <SignerWords key={busy ? 'call' : 'ended'} camera={local} connected={canSend} reconnecting={reconnecting} onPending={setPendingWords} onPrepare={prepareSigned} onSentence={sendSigned} />}
+          <div className="scope-note"><span className="note-icon" aria-hidden="true">i</span><p>Speech and sign recognition can make mistakes. The shared words are a small vocabulary; only confident signs are dictated automatically.</p></div>
+          <p className="shortcuts">Shortcuts: <kbd>/</kbd> focus the caption box{role === 'hearing' && <> · <kbd>Alt</kbd>+<kbd>M</kbd> mute or unmute your microphone</>}</p>
         </div>
       </div>
 
