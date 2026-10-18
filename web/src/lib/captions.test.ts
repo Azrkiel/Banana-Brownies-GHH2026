@@ -16,12 +16,12 @@ describe('caption history', () => {
     expect(updated).toHaveLength(1);
     expect(updated[0].retracted).toBe(true);
   });
-  it('bounds the retained history at 50 captions', () => {
-    const original = Array.from({ length: 50 }, (_, index) => caption(String(index)));
-    const updated = upsertCaption(original, caption('50'));
-    expect(updated).toHaveLength(50);
+  it('bounds the retained history at 200 captions', () => {
+    const original = Array.from({ length: 200 }, (_, index) => caption(String(index)));
+    const updated = upsertCaption(original, caption('200'));
+    expect(updated).toHaveLength(200);
     expect(updated[0].id).toBe('1');
-    expect(updated.at(-1)?.id).toBe('50');
+    expect(updated.at(-1)?.id).toBe('200');
   });
 });
 
@@ -77,7 +77,7 @@ describe('room caption ownership and ordering', () => {
   it('bounds display rows and forgets old session IDs on reset', () => {
     const { history, rows } = setup();
     for (let i = 0; i < 600; i++) history.receive(speech(String(i), 1, true), 'peer');
-    expect(rows()).toHaveLength(50);
+    expect(rows()).toHaveLength(200);
     history.receive(speech('599', 2), 'peer');
     expect(rows().at(-1)?.final).toBe(true);
     history.reset(); history.receive(speech('599'), 'peer');

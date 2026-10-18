@@ -16,6 +16,8 @@ export type SignerVoice = {
   /** Published to the call as the signer's microphone; silent until a caption is spoken. */
   track: MediaStreamTrack;
   speak(text: string, voiceId: string): Promise<void>;
+  /** Cuts off the caption being spoken, including one still being fetched. */
+  stop(): void;
   close(): void;
 };
 
@@ -26,14 +28,16 @@ export function createSignerVoice(): SignerVoice {
   const track = destination.stream.getAudioTracks()[0];
   let current: AudioBufferSourceNode | null = null;
   let closed = false;
+  let stops = 0;
   return {
     track,
     async speak(text, voiceId) {
+      const mine = stops;
       const audio = await fetchTts(text, voiceId);
-      if (closed) return;
+      if (closed || stops !== mine) return;
       await context.resume();
       const buffer = await context.decodeAudioData(await audio.arrayBuffer());
-      if (closed) return;
+      if (closed || stops !== mine) return;
       current?.stop();
       const source = context.createBufferSource();
       source.buffer = buffer;
@@ -42,6 +46,7 @@ export function createSignerVoice(): SignerVoice {
       await new Promise<void>(resolve => { source.onended = () => resolve(); source.start(); });
       if (current === source) current = null;
     },
+    stop() { stops++; current?.stop(); },
     close() {
       if (closed) return;
       closed = true;

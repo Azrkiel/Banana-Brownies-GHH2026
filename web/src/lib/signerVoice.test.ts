@@ -3,7 +3,7 @@ import { speakToRoom, spokenText, type SignerVoice } from './signerVoice';
 import type { Ctrl } from './types';
 
 function fakeVoice(speak: SignerVoice['speak']): SignerVoice {
-  return { track: {} as MediaStreamTrack, speak, close: vi.fn() };
+  return { track: {} as MediaStreamTrack, speak, stop: vi.fn(), close: vi.fn() };
 }
 
 describe('signer voice', () => {

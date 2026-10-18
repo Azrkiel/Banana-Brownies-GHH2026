@@ -53,5 +53,7 @@ export function createDictation(o: { holdMs?: number; releaseMs?: number; endMs?
     /** Sends what has been signed so far, e.g. when dictation is switched off mid-sentence. */
     flush: finish,
     clear() { words = []; candidate = null; locked = null; },
+    /** Puts a cancelled sentence back as the draft so the signer can send it or keep signing. */
+    load(restored: DictatedWord[]) { words = restored.slice(0, MAX_DICTATED_WORDS); candidate = null; locked = null; },
   };
 }
