@@ -47,8 +47,17 @@ def has_kaggle_credentials():
 
 
 def instructions(dest='data/raw'):
-    commands = '\n'.join(' '.join(command(d, dest)) for d in CHOICES[:3])
-    optional = '\n'.join(' '.join(command(d, dest)) for d in CHOICES[3:])
+    def manual_command(dataset):
+        cmd = command(dataset, dest)
+        if cmd[0] in {'kaggle', 'hf'}:
+            cmd[0] = 'ml/.venv/Scripts/' + cmd[0]
+        return ' '.join(cmd)
+    commands = manual_command('gislr') + '\n# Compact ASLFR NPY source:\n' + manual_command('aslfr-npy')
+    commands += f'\nml/.venv/Scripts/kaggle competitions download -c asl-fingerspelling -f train.csv -p {dest}/aslfr'
+    commands += f'\nExpand-Archive -LiteralPath {dest}/aslfr/asl-fingerspelling-preprocessing-train-dataset.zip -DestinationPath {dest}/aslfr'
+    commands += '\n# Full competition alternative (use instead of the compact source above):\n# ' + manual_command('aslfr')
+    commands += f'\n# Expand-Archive -LiteralPath {dest}/aslfr/asl-fingerspelling.zip -DestinationPath {dest}/aslfr'
+    optional = '\n'.join(manual_command(d) for d in CHOICES[3:])
     return f'''## Phase 2 / Tasks 2.1–2.3 — Dataset acquisition and full-data verification
 
 **Missing prerequisites:** Large datasets, accepted Kaggle competition rules, credentials, disk space and optional video model assets are absent from the synthetic verification environment. No large dataset was downloaded. Full-data throughput and real video quality remain human checks.
@@ -172,6 +181,9 @@ def download(dataset, dest, license_tier='commercial', offline=False, dead_links
     if cmd[0] == 'curl':
         ok = fetch_url(info['download_url'], target_dir / filename, dead_links)
         return 0 if ok else 2
+    local_cli = Path(sys.executable).parent / (cmd[0] + ('.exe' if os.name == 'nt' else ''))
+    if local_cli.exists():
+        cmd[0] = str(local_cli)
     try:
         subprocess.run(cmd, check=True)
     except (OSError, subprocess.CalledProcessError) as e:

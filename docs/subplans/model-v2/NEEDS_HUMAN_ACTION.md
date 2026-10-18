@@ -43,9 +43,14 @@ Copy-Item "$HOME/Downloads/kaggle.json" "$HOME/.kaggle/kaggle.json"
 Create your private API token at https://www.kaggle.com/settings and accept rules at https://www.kaggle.com/competitions/asl-signs/rules and https://www.kaggle.com/competitions/asl-fingerspelling/rules. Keep the token out of Git. Choose **either** compact ASLFR NPY or the full competition archive; both include overlapping clips.
 
 ```powershell
-kaggle competitions download -c asl-signs -p data\raw\gislr
-kaggle competitions download -c asl-fingerspelling -p data\raw\aslfr
-kaggle datasets download -d darraghdog/asl-fingerspelling-preprocessing-train-dataset -p data\raw\aslfr
+ml/.venv/Scripts/kaggle competitions download -c asl-signs -p data\raw\gislr
+# Compact ASLFR NPY source:
+ml/.venv/Scripts/kaggle datasets download -d darraghdog/asl-fingerspelling-preprocessing-train-dataset -p data\raw\aslfr
+ml/.venv/Scripts/kaggle competitions download -c asl-fingerspelling -f train.csv -p data\raw/aslfr
+Expand-Archive -LiteralPath data\raw/aslfr/asl-fingerspelling-preprocessing-train-dataset.zip -DestinationPath data\raw/aslfr
+# Full competition alternative (use instead of the compact source above):
+# ml/.venv/Scripts/kaggle competitions download -c asl-fingerspelling -p data\raw\aslfr
+# Expand-Archive -LiteralPath data\raw/aslfr/asl-fingerspelling.zip -DestinationPath data\raw/aslfr
 ```
 
 **Exact targets:** `data\raw/gislr/asl-signs.zip`; either `data\raw/aslfr/asl-fingerspelling-preprocessing-train-dataset.zip` (extract locally before NPY conversion) or `data\raw/aslfr/asl-fingerspelling.zip` (extract before ASLFR conversion). GISLR can be read directly from ZIP. Reserve at least archive size × 1.25 for downloads and additional space for extraction/features. The manager enforces preflight: `ml/.venv/Scripts/python ml/datasets/download.py --dataset gislr --dest data\raw`.
@@ -66,9 +71,9 @@ For compact NPY, keep its matching `train.csv` beside `train_landmarks/<file_id>
 ```powershell
 New-Item -ItemType Directory -Force data\raw/asl_citizen, data\raw/how2sign, data\raw/chicagofswild, data\raw/wlasl | Out-Null
 curl -L --fail --continue-at - https://download.microsoft.com/download/b/8/8/b88c0bae-e6c1-43e1-8726-98cf5af36ca4/ASL_Citizen.zip --output data\raw\asl_citizen\ASL_Citizen.zip
-hf download PSewmuthu/How2Sign_Holistic --repo-type dataset --local-dir data\raw\how2sign --include metadata/* */frontal/*
+ml/.venv/Scripts/hf download PSewmuthu/How2Sign_Holistic --repo-type dataset --local-dir data\raw\how2sign --include metadata/* */frontal/*
 curl -L --fail --continue-at - https://dl.ttic.edu/ChicagoFSWild.tgz --output data\raw\chicagofswild\ChicagoFSWild.tgz
-hf download Voxel51/WLASL --repo-type dataset --local-dir data\raw\wlasl
+ml/.venv/Scripts/hf download Voxel51/WLASL --repo-type dataset --local-dir data\raw\wlasl
 ml/.venv/Scripts/python ml/datasets/verify.py --raw-dir data\raw --out data/manifests/research_manifest.parquet --license-tier research
 ```
 

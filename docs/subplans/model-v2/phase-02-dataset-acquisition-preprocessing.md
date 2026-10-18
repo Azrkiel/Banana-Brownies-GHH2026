@@ -70,18 +70,18 @@ FrameDict = {
 - [x] **2.2.3:** Write unit tests in `ml/tests/test_manifest_verify.py` using temporary synthetic archives to verify that `verify.py` catches corrupted files, assigns signer-disjoint splits (`set(train_signers).isdisjoint(val_signers)` and `set(train_signers).isdisjoint(test_signers)`), and never mixes `research`-only clips into a `commercial` query.
 
 ### Task 2.3: Implement Offline Landmark Converters (`ml/gislr_to_features.py`, `ml/datasets/aslfr_to_features.py`, `ml/datasets/video_to_features.py`, `web/scripts/build-dataset.ts`)
-- [ ] **2.3.1:** Create `ml/gislr_to_features.py` (following the reference design in `plan/tasks/1.B6.md` enhanced with split metadata):
+- [x] **2.3.1:** Create `ml/gislr_to_features.py` (following the reference design in `plan/tasks/1.B6.md` enhanced with split metadata):
   - Streams directly from `data/raw/gislr/asl-signs.zip` or a mounted folder (`/kaggle/input/asl-signs`) using `multiprocessing.Pool`.
   - Supports `--signs demo|all|<comma-list>`, `--aspect 0.75`, `--estimate-aspect-from data/raw/own`, and writes `X.f32` (`float32` shape `(N, 32, 174)`) + `meta.json` (`n, T, F, labels, y, signers, source, license_tier, aspect`).
-- [ ] **2.3.2:** Create `ml/datasets/aslfr_to_features.py` for Stage B fingerspelling:
+- [x] **2.3.2:** Create `ml/datasets/aslfr_to_features.py` for Stage B fingerspelling:
   - Reads Kaggle ASLFR Parquet files (`train_landmarks/*.parquet`) or `darraghdog` `.npy` files.
   - Extracts the 90-dimensional per-frame fingerspelling feature vector (`48` static rotation-invariant handshape features matching `web/src/lib/letters.ts` + `42` wrist-normalized velocity features `(dx, dy)`).
   - Writes variable-length contiguous binary shards (`X.f32`, `offsets.i64`, `meta.json` with character vocabulary `character_to_prediction_index.json` and signer-independent splits).
-- [ ] **2.3.3:** Create `ml/datasets/video_to_features.py` for raw MP4 datasets (`ASL Citizen` and `ChicagoFSWild`) and `.npy` datasets (`How2Sign_Holistic`):
+- [x] **2.3.3:** Create `ml/datasets/video_to_features.py` for raw MP4 datasets (`ASL Citizen` and `ChicagoFSWild`) and `.npy` datasets (`How2Sign_Holistic`):
   - Uses MediaPipe (`HandLandmarker` `numHands=2` + `PoseLandmarker`) in multiprocessing workers to extract `T=32, F=174` tensors from ASL Citizen MP4s (`data/asl_citizen_features/X.f32` + `meta.json`), with checkpoint resume support (`--resume`) so interrupted multi-hour runs pick up where they left off.
   - Includes a `--how2sign-npy` mode that converts `PSewmuthu/How2Sign_Holistic` `.npy` files directly into variable-length `T_var × 180` continuous tensors in <20 minutes without video decoding.
-- [ ] **2.3.4:** Create `web/scripts/build-dataset.ts` and `web/scripts/fake-sessions.ts` (from `plan/tasks/2.B2.md` and `plan/tasks/2.B3.md`) so first-party `#/record` sessions compile into `data/processed/X.f32`, `data/processed/meta.json`, `web/public/models/knn.*`, and `web/public/models/letters.*`.
-- [ ] **2.3.5:** Create `ml/tests/test_gislr_convert.py` and `ml/tests/test_aslfr_convert.py` that build synthetic Parquet/zip fixtures in `tmp_path` and verify byte-identical zip-vs-folder conversion, finite `float32` outputs, and proper `NaN` handling.
+- [x] **2.3.4:** Create `web/scripts/build-dataset.ts` and `web/scripts/fake-sessions.ts` (from `plan/tasks/2.B2.md` and `plan/tasks/2.B3.md`) so first-party `#/record` sessions compile into `data/processed/X.f32`, `data/processed/meta.json`, `web/public/models/knn.*`, and `web/public/models/letters.*`.
+- [x] **2.3.5:** Create `ml/tests/test_gislr_convert.py` and `ml/tests/test_aslfr_convert.py` that build synthetic Parquet/zip fixtures in `tmp_path` and verify byte-identical zip-vs-folder conversion, finite `float32` outputs, and proper `NaN` handling.
 
 ---
 
@@ -193,3 +193,34 @@ npm --prefix web run build
 
 > **To the agent starting Phase 2:**  
 > Ensure Phase 1 is marked complete in `docs/subplans/model-v2/README.md` and `pytest ml/tests/test_parity.py` passes. Implement Tasks 2.1, 2.2, and 2.3 in order. Remember: do **not** attempt to download 40 GB archives inside the agent sandbox; verify all converters and manifest builders using the deterministic synthetic pytest suites (`test_vocab_merge.py`, `test_manifest_verify.py`, `test_gislr_convert.py`, `test_aslfr_convert.py`) and `fake-sessions.ts`. If real datasets are not present in `data/raw/`, run `python ml/datasets/download.py --write-human-guide` to populate `docs/subplans/model-v2/NEEDS_HUMAN_ACTION.md`, then proceed to [phase-03-fingerspelling-and-expanded-isolated-model.md](https://www.google.com/search?q=phase-03-fingerspelling-and-expanded-isolated-model.md).
+
+
+## Handoff Summary - October 18, 2026 - Phase 2 only
+
+Tasks **2.1 through 2.3** are complete and all automated acceptance checks pass. No Phase 3-6 task, model training, migration, or deployment was performed. Large dataset acquisition remains a human action; no large dataset was downloaded in this session.
+
+- **Task 2.1:** All 250 GISLR labels and first-party labels have deterministic canonical mappings. Commercial vocabulary excludes research sources. ASL-LEX EntryID references are explicitly marked lookup hints, not verified sign equivalence; missing IDs remain null. Research classes retain source namespaces and sense numbers.
+- **Task 2.2:** Registry-driven credential/disk/existing-file preflight, offline exit code 2, atomic URL downloads with dead-link logging, and idempotent human guide generation. ZIP/TGZ/folder verification records SHA256 provenance, decodes sample files, preserves official splits or assigns stable signer-hash splits, and rejects leakage or spoofed license tiers. Extracted NPY mirrors can use external competition metadata while archive hashes are recorded in a sidecar.
+- **Task 2.3:** GISLR ZIP/folder multiprocessing conversion writes identical `(N,32,174)` float32 bytes. ASLFR long/wide Parquet and explicitly identified NPY layouts write variable `(sum_frames,90)` shards, int64 offsets, character indices and signer splits. Browser/Python 48-feature handshape twins agree within 1e-4; missing hands reset velocity. Raw-video workers use MediaPipe Tasks with two hands, pose and optional face at <=30 Hz; actual detector and codec boundaries are mocked in synthetic tests. How2Sign's 1662-value layout becomes variable 180-feature tensors. Resume checkpoints validate input/model/config fingerprints and recover corrupt partial caches. First-party browser and Python adapters share canonical feature/signer-split contracts.
+- **Efficiency:** Tensor output streams to disk; GISLR workers keep archives open, ASLFR workers cache one shard and sequence index, and registry/label/path lookups avoid repeated corpus-wide scans. Full-corpus throughput has not been measured.
+- **Human actions:** [NEEDS_HUMAN_ACTION.md](NEEDS_HUMAN_ACTION.md) preserves Phase 1 QA and adds exact Windows download/extraction/verification commands, optional research-only commands, expected paths/output sizes, trusted-checksum handling and commands to resume verification. Publisher SHA256 values are unavailable; observed hashes are not represented as publisher authenticity checks. Reduced ASLFR NPY data requires publisher `inference_args.json`/`selected_columns` or an explicit `columns.json`; missing signer metadata requires reviewed `clips.csv` rather than guessed identities.
+
+Verification evidence (Windows, Node 24.20.0; Python 3.12.14, NumPy 2.3.5, pandas 2.2.3, PyArrow 19.0.1, pytest 9.1.1):
+
+| Check | Result |
+| :--- | :--- |
+| `ml/.venv/Scripts/python -m pytest -q ml/tests` | **45 passed** in 22.86 s; includes all four Section 7 suites (33 cases), 7 existing feature-parity cases, 3 video/How2Sign/resume cases and 2 Recorder integration cases. No tests skipped or loosened. |
+| GISLR synthetic ZIP/folder/2-worker conversion | Byte-identical output for 12 clips, 2 labels, 3 signers; finite float32 `(12,32,174)`. |
+| ASLFR synthetic conversion | Variable 4/7-frame sequences; offsets `[0,4,11]`; Parquet/NPY byte parity, missing-hand gaps and character validation pass. |
+| `npm --prefix web test` | **259 tests passed across 21 files**, including letter decoder and asset-loader checks. |
+| `npm --prefix web run lint` | Passed. |
+| `npm --prefix web run build` | TypeScript and production bundling passed; existing LiveKit chunk-size advisory remains. |
+| Section 7 `fake-sessions.ts` -> `build-dataset.ts` | **60 sign clips, 5 labels, 3 signers; 18 letter holds -> 252 templates**, maxDist 0.500. `X.f32`: 1,336,320 bytes; `knn.f32`: 1,336,320 bytes; `letters.f32`: 48,384 bytes. Generated files are under ignored `data/phase2-synthetic/`. |
+| Converter `--help` commands | GISLR, ASLFR and video CLIs passed, exposing license-tier/manifest options. |
+| `git diff --check` | Passed. |
+
+The server was untouched and `server/.venv` is absent, so the guide's conditional backend check does not apply. No raw recordings, datasets, environment files, dependency installations, checkpoint caches, or synthetic model assets are committed.
+
+Commits already created: `a36e45c` (Task 2.1 vocabulary) and `c36c539` (Task 2.2 acquisition/provenance). The Task 2.3 implementation/completion commit is titled `phase-02: complete offline preprocessing and synthetic verification`; its exact hash is recorded in the documentation follow-up below.
+
+**Scope boundary:** Stop after pushing Phase 2 to `main`. A future agent must obtain explicit authorization before starting Phase 3. Full dataset conversion timing, real MediaPipe/codec quality, publisher checksums and Phase 1 physical webcam/call QA remain human verification; synthetic success makes no real-data accuracy or timing claim.

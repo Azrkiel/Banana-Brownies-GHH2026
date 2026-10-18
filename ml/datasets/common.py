@@ -5,6 +5,7 @@ import io
 import json
 import tarfile
 import zipfile
+from functools import lru_cache
 from pathlib import Path, PurePosixPath
 
 import numpy as np
@@ -19,6 +20,7 @@ CONFIG_IDS = {'gislr': 'kaggle-gislr', 'aslfr': 'kaggle-aslfr', 'asl_citizen': '
               'wlasl': 'wlasl', 'ms_asl': 'ms-asl', 'openasl': 'openasl', 'popsign': 'popsign-full'}
 
 
+@lru_cache(maxsize=None)
 def dataset_info(dataset):
     dataset = source_id(dataset)
     if dataset == 'own':
@@ -54,6 +56,10 @@ class Source:
                             [p.relative_to(path).as_posix() for p in self.path.rglob('*') if p.is_file()])
         for name in self.names:
             self.safe_name(name)
+        self._names = set(self.names)
+        self._basenames = {}
+        for name in self.names:
+            self._basenames.setdefault(PurePosixPath(name).name, []).append(name)
 
     @staticmethod
     def safe_name(name):
@@ -64,11 +70,12 @@ class Source:
 
     def resolve(self, name):
         name = self.safe_name(name)
-        if name in self.names:
+        if name in self._names:
             return name
-        matches = [n for n in self.names if n.endswith('/' + name)]
+        candidates = self._basenames.get(PurePosixPath(name).name, [])
+        matches = [n for n in candidates if n.endswith('/' + name)]
         if not matches:
-            matches = [n for n in self.names if PurePosixPath(n).name == PurePosixPath(name).name]
+            matches = candidates
         if len(matches) != 1:
             raise ValueError(f'Missing or ambiguous file: {name}')
         return matches[0]
@@ -108,7 +115,7 @@ def read_table(source, path):
         if path.endswith('.parquet'):
             return pd.read_parquet(io.BytesIO(f.read()))
         if path.endswith('.csv'):
-            return pd.read_csv(f)
+            return pd.read_csv(f, float_precision='round_trip')
         if path.endswith('.npz'):
             with np.load(io.BytesIO(f.read()), allow_pickle=False) as a:
                 return pd.DataFrame({k: a[k] for k in a.files})
@@ -140,6 +147,10 @@ def metadata(source, dataset, csv_path=None):
         (PurePosixPath(n).name.lower() in {'train.csv', 'val.csv', 'test.csv', 'clips.csv',
                                          'supplemental_metadata.csv', 'how2sign_realigned_train.csv',
                                          'how2sign_realigned_val.csv', 'how2sign_realigned_test.csv'})]
+    if not csv_path:
+        overrides = [n for n in candidates if PurePosixPath(n).name == 'clips.csv']
+        if overrides:
+            candidates = overrides
     result = []
     for name in sorted(candidates):
         text = source.read(name).decode('utf-8-sig')
@@ -188,14 +199,29 @@ def filter_manifest(frame, license_tier='commercial'):
     return pd.DataFrame(result, columns=frame.columns if isinstance(frame, pd.DataFrame) else None)
 
 
-def select_rows(rows, dataset, license_tier, manifest=None):
+def select_rows(rows, dataset, license_tier, manifest=None, source=None):
     if not allowed(dataset, license_tier):
         raise ValueError(f'{dataset} requires --license-tier research')
     if manifest:
         permitted = filter_manifest(pd.read_parquet(manifest), license_tier)
         permitted = permitted[permitted.dataset_id == source_id(dataset)]
         index = {r['clip_id']: r for r in permitted.to_dict('records')}
-        rows = [{**r, 'split': index[r['clip_id']]['split']} for r in rows if r['clip_id'] in index]
+        selected, verified = [], {}
+        for row in rows:
+            record = index.get(row['clip_id'])
+            if record is None:
+                continue
+            if any(record[k] != row[k] for k in ['raw_label', 'canonical_gloss', 'signer_id', 'rel_path']):
+                raise ValueError(f'Manifest provenance mismatch: {row["clip_id"]}')
+            if source is not None:
+                name = row['rel_path']
+                if name not in verified:
+                    with source.open(name) as f:
+                        verified[name] = digest(f)
+                if record['sha256'] != verified[name]:
+                    raise ValueError(f'Manifest checksum mismatch: {row["clip_id"]}')
+            selected.append({**row, 'split': record['split']})
+        rows = selected
     validate_splits(rows)
     if not rows:
         raise ValueError('No eligible clips')

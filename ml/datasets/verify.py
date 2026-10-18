@@ -75,7 +75,7 @@ def verify_source(path, dataset, expected_sha256=None, samples=5):
 
 
 def build_manifest(raw_dir, out, license_tier='commercial', expected_checksums=None):
-    rows, sums = [], expected_checksums or {}
+    rows, sums, observed_archives = [], expected_checksums or {}, {}
     for directory in sorted(Path(raw_dir).iterdir()):
         if not directory.is_dir():
             continue
@@ -88,7 +88,21 @@ def build_manifest(raw_dir, out, license_tier='commercial', expected_checksums=N
         if not allowed(dataset, license_tier):
             continue
         archives = sorted(p for p in directory.iterdir() if p.suffix in {'.zip', '.tgz', '.gz', '.tar'})
-        if archives:
+        loose_metadata = any(directory.rglob('clips.csv')) or any(directory.rglob('train.csv'))
+        if archives and loose_metadata:
+            # Compact NPY mirrors may require competition metadata supplied beside the extracted files.
+            for archive in archives:
+                with archive.open('rb') as f:
+                    sha = digest(f)
+                if archive.name in sums and sums[archive.name].lower() != sha:
+                    raise ValueError(f'Archive SHA256 mismatch: {archive}')
+                observed_archives[str(archive)] = sha
+                with Source(archive) as src:
+                    for suffix in {'.parquet', '.mp4', '.npy'}:
+                        for name in [n for n in src.names if n.endswith(suffix)][:5]:
+                            check_readable(src, name)
+            rows.extend(verify_source(directory, dataset))
+        elif archives:
             for archive in archives:
                 rows.extend(verify_source(archive, dataset, sums.get(archive.name)))
         else:
@@ -101,6 +115,8 @@ def build_manifest(raw_dir, out, license_tier='commercial', expected_checksums=N
     frame = filter_manifest(pd.DataFrame(rows), license_tier)
     Path(out).parent.mkdir(parents=True, exist_ok=True)
     frame.to_parquet(out, index=False)
+    if observed_archives:
+        Path(out).with_suffix('.archive_checksums.json').write_text(json.dumps(observed_archives, indent=2) + '\n')
     return frame
 
 

@@ -2,6 +2,7 @@
 import argparse
 import json
 import re
+from functools import lru_cache
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -10,6 +11,11 @@ COMMERCIAL = {'gislr', 'popsign', 'own', 'aslfr'}
 RESEARCH = {'asl_citizen', 'how2sign', 'chicagofswild', 'wlasl', 'ms_asl', 'openasl', 'asl_lex'}
 ALIASES = {'asl-citizen': 'asl_citizen', 'kaggle-gislr': 'gislr', 'kaggle-aslfr': 'aslfr',
            'aslfr-npy': 'aslfr', 'how2sign-holistic': 'how2sign', 'wlasl-hf': 'wlasl', 'ms-asl': 'ms_asl'}
+
+
+@lru_cache(maxsize=1)
+def label_map():
+    return json.loads(MAP_PATH.read_text(encoding='utf8'))['sources']
 
 
 def source_id(source):
@@ -30,7 +36,7 @@ def normalize_gloss(raw_label: str, source: str) -> str:
     raw = str(raw_label).strip()
     if not raw:
         raise ValueError('Empty gloss')
-    mapping = json.loads(MAP_PATH.read_text(encoding='utf8'))['sources']
+    mapping = label_map()
     entry = mapping.get(source, {}).get(raw.lower())
     if entry:
         return entry['gloss']
@@ -45,7 +51,7 @@ def build_vocabulary(sources: list[str], license_tier='commercial', max_classes:
                      source_labels=None) -> dict:
     if max_classes < 1:
         raise ValueError('max_classes must be positive')
-    mapping = json.loads(MAP_PATH.read_text(encoding='utf8'))['sources']
+    mapping = label_map()
     labels, origins = set(), {}
     for source in sorted({source_id(s) for s in sources}):
         if not allowed(source, license_tier):

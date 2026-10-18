@@ -1,6 +1,7 @@
 import hashlib
 import json
 import sys
+import tarfile
 import urllib.error
 import zipfile
 from pathlib import Path
@@ -141,3 +142,42 @@ def test_credentials_are_checked_without_exposing_tokens(tmp_path, monkeypatch):
     assert not download.has_kaggle_credentials()
     (tmp_path / 'kaggle.json').write_text(json.dumps({'username': 'fixture', 'key': 'fixture'}))
     assert download.has_kaggle_credentials()
+
+
+def test_tgz_and_own_session_provenance(tmp_path):
+    directory, _ = make_archive(tmp_path, 'asl_citizen', 1)
+    archive = tmp_path / 'dataset.tgz'
+    with tarfile.open(archive, 'w:gz') as tar:
+        for p in directory.iterdir():
+            tar.add(p, arcname='nested/' + p.name)
+    assert len(verify_source(archive, 'asl_citizen')) == 1
+
+
+def test_extracted_mirror_with_external_metadata_and_archive(tmp_path):
+    directory, archive = make_archive(tmp_path / 'raw')
+    archive.replace(directory / archive.name)
+    frame = build_manifest(tmp_path / 'raw', tmp_path / 'manifest.parquet')
+    assert len(frame) == 30
+    assert (tmp_path / 'manifest.archive_checksums.json').exists()
+    # Explicit reviewed metadata takes precedence over an incompatible publisher CSV.
+    (directory / 'train.csv').write_text('unknown,columns\na,b\n')
+    assert len(verify_source(directory, 'gislr')) == 30
+
+
+def test_downloader_cli_success_failure_and_http_stream(tmp_path, monkeypatch):
+    import io
+    monkeypatch.setattr(download, 'has_kaggle_credentials', lambda: True)
+    monkeypatch.setattr(download.shutil, 'disk_usage', lambda _: SimpleNamespace(free=10**15))
+    calls = []
+    monkeypatch.setattr(download.subprocess, 'run', lambda cmd, **kw: calls.append(cmd))
+    assert download.download('gislr', tmp_path) == 0
+    assert calls[0][0:3] == ['kaggle', 'competitions', 'download']
+    assert download.download('how2sign-holistic', tmp_path, 'research') == 0
+    assert (tmp_path / 'how2sign/.download-complete').exists()
+    def failed(*a, **kw):
+        raise OSError('CLI missing')
+    monkeypatch.setattr(download.subprocess, 'run', failed)
+    assert download.download('aslfr', tmp_path) == 2
+    monkeypatch.setattr(download.urllib.request, 'urlopen', lambda *a, **kw: io.BytesIO(b'synthetic archive'))
+    assert download.download('asl-citizen', tmp_path, 'research') == 0
+    assert (tmp_path / 'asl_citizen/ASL_Citizen.zip').read_bytes() == b'synthetic archive'
