@@ -1,6 +1,6 @@
 # Phase 04: Continuous Signing Segmentation, Non-Manual Markers & Gloss-to-English Translation
 
-**Status:** `[ ]` Pending  
+**Status:** `[x]` Tasks 4.1-4.4 implemented; live AC-4.3 and real-data AC-4.4 pending.
 **Target Stage:** Stage D (Continuous Signing Stream Segmentation, Non-Manual Facial Grammar Markers & Lattice-Aware Gloss-to-English Captioning)  
 **Estimated Effort:** 6–9 hours (2–3 coding agent sessions + optional 3-hour GPU run for continuous CTC fine-tuning)  
 **Compute Requirements:**
@@ -52,7 +52,7 @@ Execution checklist (code verification is separate from real-data acceptance bel
 - [x] Task 4.1: Kinematic segmenter, spelling router and top-three decoder.
 - [x] Task 4.2: NMM extraction with a Python counterpart.
 - [x] Task 4.3: Lattice/NMM API and shared offline grammar.
-- [ ] Task 4.4: Continuous CTC stitching, training and evaluation.
+- [x] Task 4.4: Continuous CTC stitching, training and evaluation.
 
 ### Task 4.1: Kinematic Sign Boundary Segmenter & Fingerspelling Router (`web/src/lib/segmenter.ts`)
 Create `web/src/lib/segmenter.ts` and upgrade `web/src/lib/decoder.ts`:
@@ -178,3 +178,54 @@ python -m ml.continuous_ctc \
 
 > **Handoff Context (Phase 04):**  
 > Inspect `server/app/gloss.py` and `server/app/main.py` first: notice how `/api/gloss` currently takes `{"glosses": list[str]}` and returns `{"english": str}` using `gemini-3.5-flash-lite`. Keep that exact JSON contract working so existing callers (`web/src/lib/wordModel.ts:116-130` and `web/src/routes/Bench.tsx`) never break, while adding optional `lattice` and `nmm_tags` fields. Implement `server/app/asl_grammar_fallback.py` and `web/src/lib/grammarFallback.ts` so the app produces clean English sentences even when `GEMINI_API_KEY` is absent. Once tests pass, record the segmenter thresholds and WER metrics in `docs/subplans/model-v2/DECISIONS.md` and check off Phase 04 in `docs/subplans/model-v2/README.md`.
+
+
+## Handoff Summary - October 18, 2026 - Phase 4 only
+
+Tasks **4.1 through 4.4** are implemented and automated verification passes. AC-4.1/4.2 pass synthetic checks; AC-4.3 remains open for live Gemini semantics/latency, and AC-4.4 remains open for real-data accuracy. No Phase 5/6 model export, call integration, deployment or production model promotion was performed. The existing recorder API, forest, personal signs, tracker and feature twins are preserved.
+
+### Implemented behavior and contract corrections
+
+- `segmenter.ts` retains the existing recorder `Segmenter` and adds `KinematicSegmenter` for continuous XY174 motion/hold/transition gating on either hand. `decoder.ts` supplies asynchronous inference adapters, ordered top-three candidate slots, NMM tags, explicit ASLFR90 spelling buffers, reset protection and one revisable FS name slot with score0 pending signer review. Actual model loading/resampling and call wiring remain later scope.
+- `nmm.ts` / `ml/nmm.py` accept actual tracker brow/headYaw or explicit eight XYZ face points. The proposed `[150:174]` face slice does not exist in XY174. Rest-only neutral calibration, stability/visibility gating, ten-frame question tails and 24-frame headshake histories are implemented. See ADR-010/011 for thresholds and coordinate assumptions.
+- `/api/gloss` preserves existing signs/tags/context requests and all four response fields. Flat glosses and scored candidate lattices are additive; lattice > signs > glosses precedence is explicit. Offline rules choose top-scoring candidates; the prompt exposes every alternative and local/global markers. No key, upstream failure, invalid output or 1.5s timeout uses the shared deterministic grammar. Unknown syntax and uncertain recognition stay below auto-speak confidence. Existing route emergency error behavior and tests remain unchanged.
+- `continuous_ctc.py` supplies complete same-signer Hermite stitching, a full Conformer gloss CTC model, CPU/CUDA training, validation-selected EMA checkpoints and word-level greedy/beam evaluation. `evaluate_v2.py` has a small dispatch for the required `--mode continuous`. How2Sign consumes Phase 2 XY180 caches as XY174 plus an explicit reviewed gloss annotation manifest; English sentence labels are never treated as ASL gloss targets. Research artifacts carry non-commercial metadata and remain under `research_only`.
+
+### Verification evidence
+
+| Check | Result |
+| --- | --- |
+| `ml/.venv/Scripts/python -m pytest server/tests/ -q` with `PYTHONPATH=server` | 51 passed; original tests unchanged. |
+| `ml/.venv/Scripts/python -m pytest ml/tests/ -q` | 99 passed, including original feature parity and ONNX runtime checks; no skipped or weakened tests. |
+| Combined `pytest server/tests/ ml/tests/ -q` | 150 passed, 31 existing dependency/export warnings. |
+| `npm --prefix web test` | 295 tests in24 files passed, including original recorder tests. |
+| `npm --prefix web run build` / `npm --prefix web run lint` | Both passed; existing LiveKit chunk-size advisory remains. |
+| `ml/.venv/Scripts/python plan/verify.py preflight` | PREFLIGHT OK; pinned backend dependencies installed only into ignored ml/.venv; frontend npm ci uses the lockfile. No dependency manifests changed. |
+| Four-sign transition benchmark | Old stride3/stability2/cooldown900: 2 wrong transition emissions; continuous gate:0 (100% reduction), all4 holds emitted, 561ms between emissions with ~363ms settling holds. |
+| Segmenter microbenchmark | 0.03758ms mean per frame over10,000 local CPU updates; not a live camera/call measurement. |
+| NMM twin comparison | 1,566 identical synthetic input frames; tags identical; maximum ratio absolute difference1.1102230246251565e-16. |
+| Offline `POST /api/gloss` | 100 local TestClient requests after10 warmups: median1.31535ms/p951.75940ms. Both required question examples pass; live LLM not called. |
+
+CPU smoke and independent checkpoint evaluation (from repository root):
+
+```powershell
+ml/.venv/Scripts/python -m ml.continuous_ctc --smoke-test --device cpu --out-dir ml/checkpoints/phase4-smoke
+ml/.venv/Scripts/python -m ml.evaluate_v2 --mode continuous --checkpoint ml/checkpoints/phase4-smoke/best_ema.pt --manifest ml/checkpoints/phase4-smoke/synthetic_clips --split test
+```
+
+Synthetic smoke metrics (two epochs, full four-block192-wide encoder; NOT accuracy acceptance):
+
+| Split | Streams / reference glosses | Greedy errors / WER | Beam10 errors / WER | CTC loss |
+| --- | --- | --- | --- | --- |
+| Validation | 12 /43 | 229 /532.55814% | 424 /986.04651% | 25.40484047 |
+| Test | 12 /49 | 273 /557.14286% | 462 /942.85714% | 20.66353035 |
+
+WER can exceed100% due to insertions. These smoke weights must not be used for inference. The separate evaluation command reloads the saved checkpoint and reproduces test WER exactly. Runtime remains Windows/Python3.12.14/PyTorch2.14.1+cpu; no real datasets, recordings or model assets were committed.
+
+### Human follow-through and next scope boundary
+
+See the appended **Phase 4** section in `NEEDS_HUMAN_ACTION.md` for runnable real-data training/evaluation commands, expected artifact paths, annotation format and resume checks. Real training requires the acquired/provenance-checked Phase 2 datasets and an appropriate CUDA environment. AC-4.4 is unmet; no <=28%/35% WER claim is made. AC-4.3's offline and mocked paths pass, but the model's actual alternative selection and <250ms service latency require live evaluation. NMM occlusion and natural signing cadence require a real signer/camera check.
+
+Implementation commits so far: `2c9125e` (4.1), `f487d34` (4.2), `6d0cb82` (4.3). The continuous-training commit hash will be recorded in a documentation follow-up after commit creation. No history rewriting or AI co-author trailers are used.
+
+The legacy project ledger is unchanged: `DONE3 / DROPPED14 / HUMAN9 / NEEDS-HUMAN1 / SUPERSEDED10 / VERIFIED4`; `plan/verify.py next` prints `NO AGENT TASKS LEFT (all lanes)`. That ledger is separate from the open model-v2 real-data acceptance checks. Its remaining NEEDS-HUMAN row1.C2 is the live Gemini prompt/eval check. Do not start Phase 5 or ship synthetic checkpoints without a new instruction.

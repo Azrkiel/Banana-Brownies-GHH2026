@@ -139,6 +139,8 @@ def evaluate(model, dataset, out_dir=None, batch_size=128, device='cpu'):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--mode',choices=['auto','continuous'],default='auto')
+    p.add_argument('--gloss-manifest',type=Path)
     p.add_argument('--checkpoint',type=Path,required=True)
     p.add_argument('--manifest',type=Path,required=True)
     p.add_argument('--shards',type=Path)
@@ -148,6 +150,10 @@ def main():
     a=p.parse_args()
     ckpt=torch.load(a.checkpoint,map_location='cpu',weights_only=True)
     cfg=ckpt['config']
+    if a.mode=='continuous' or cfg['stage']=='d2_continuous_ctc':
+        from .continuous_ctc import evaluate_checkpoint
+        print(json.dumps(evaluate_checkpoint(a.checkpoint,a.manifest,a.license_tier,a.split,a.shards,a.gloss_manifest,a.out_dir or a.checkpoint.parent),indent=2))
+        return
     if cfg['license_tier']=='research' and a.license_tier!='research':
         p.error('Research weights require explicit --license-tier research')
     rows,tier,_=load_records(a.manifest,cfg['stage'],a.license_tier,'all' if a.license_tier=='research' else 'commercial_safe',a.shards)

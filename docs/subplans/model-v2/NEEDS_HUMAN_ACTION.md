@@ -101,3 +101,33 @@ Pop-Location
 ```
 
 Expected: manifest columns include clip/dataset/path/label/signer/split/license/SHA256; no signer overlap between splits; commercial manifests exclude research sources; synthetic recorder output contains 60 sign clips across three signers and nonempty `knn.f32`/`letters.f32`. No training, deployment, or Phase 3 work is authorized by these commands.
+
+
+## Phase 4 / Tasks 4.1-4.4 - Real-data and live acceptance follow-through
+
+**Missing prerequisites:** Real provenance-checked commercial isolated data, a trained Phase 3 C1 encoder and CUDA training environment; for research, How2Sign XY180 caches plus reviewed ASL gloss annotations. No live Gemini generation or real signer/camera QA was run. The implemented code and synthetic checks pass; AC-4.4 is unmet and AC-4.3's live quality/latency remains open.
+
+From the repository root on the training machine (use its CUDA Python, not the local CPU smoke weights):
+
+```powershell
+python -m ml.continuous_ctc --manifest data/gislr-all --stage c1_commercial_250 --license-tier commercial --seq-len 128 --min-signs 2 --max-signs 5 --epochs 30 --device cuda --init-from ml/checkpoints/stage_c1/best_ema.pt --out-dir ml/checkpoints/stage_d2_continuous_ctc
+python -m ml.evaluate_v2 --mode continuous --checkpoint ml/checkpoints/stage_d2_continuous_ctc/best_ema.pt --manifest data/gislr-all --split val
+python -m ml.continuous_ctc --dataset how2sign_holistic --manifest data/how2sign_features --gloss-manifest data/manifests/how2sign_glosses.parquet --stage c2_research_2731 --license-tier research --epochs 30 --device cuda --init-from ml/checkpoints/stage_d2_continuous_ctc/best_ema.pt --out-dir ml/checkpoints/stage_d2_how2sign
+python -m ml.evaluate_v2 --mode continuous --checkpoint ml/checkpoints/stage_d2_how2sign/research_only/best_ema.pt --manifest data/how2sign_features --gloss-manifest data/manifests/how2sign_glosses.parquet --license-tier research --split val
+```
+
+`how2sign_glosses.parquet` (or JSON array) requires one row per cached clip with `clip_id`, exact `signer_id`, exact `split`, and `glosses` as a nonempty list of reviewed ASL sign labels. Do not infer glosses by splitting English sentences. Reject signer overlap and keep research weights separate. Expected targets: commercial `ml/checkpoints/stage_d2_continuous_ctc/best_ema.pt` with blank0, XY174, commercial metadata and validation `wer<=0.28`; research `ml/checkpoints/stage_d2_how2sign/research_only/best_ema.pt` with `non_commercial=true` and validation `wer<=0.35`. SHA256 values cannot be known before real training; record the actual artifact hashes and reports in the Phase 4 Handoff Note after generating them. All checkpoint paths remain gitignored.
+
+For AC-4.3, use the existing server-only Gemini key to run the reviewed lattice/ambiguity examples and record actual semantics and service latency; never put the key in a browser or committed file. For AC-4.1/4.2, record a consented signer sequence with natural transitions, eyebrow expressions/headshakes and glasses/bangs variations; the library tests alone cannot establish webcam quality.
+
+Resume automated verification after staging/training:
+
+```powershell
+$env:PYTHONPATH='server'
+ml/.venv/Scripts/python -m pytest server/tests/ ml/tests/ -q
+npm --prefix web test
+npm --prefix web run build
+npm --prefix web run lint
+```
+
+The Phase 4 handoff records synthetic metrics and current limitations. This section authorizes no Phase 5/6 integration, model promotion or deployment.
