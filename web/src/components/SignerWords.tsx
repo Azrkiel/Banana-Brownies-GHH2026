@@ -66,6 +66,10 @@ function SignerWordSession({ camera, connected, onUse }: Props) {
     window.addEventListener('pagehide', hide);
     return () => { window.removeEventListener('pagehide', hide); release(); };
   }, []);
+  useEffect(() => {
+    // The panel sits below the call video; bring the live view on screen when it opens.
+    if (state === 'live') liveCanvas.current?.parentElement?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [state]);
 
   async function enable() {
     if (!connected || !camera.current || request.current) return;
@@ -80,7 +84,8 @@ function SignerWordSession({ camera, connected, onUse }: Props) {
         : await createWordRecognizer(camera.current, controller.signal);
       if (generation.current !== attempt) { recognizer.close(); return; }
       engine.current = recognizer;
-      setLabels(recognizer.labels); setState('ready');
+      // Start in live view so the signer immediately sees whether their hand is tracked.
+      setLabels(recognizer.labels); watchLive();
     } catch (cause) {
       if (generation.current !== attempt) return;
       release();

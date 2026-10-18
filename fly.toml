@@ -4,6 +4,11 @@ app = "signline-api"
 primary_region = "iad"
 
 [build]
+  # Public browser config baked into the web build (URL + publishable key, both shipped in the JS).
+  # Without these, GitHub sign-in and My signs silently break. Never put service-role keys here.
+  [build.args]
+    VITE_SUPABASE_URL = "https://ifsleufpzjhwkbrclmff.supabase.co"
+    VITE_SUPABASE_PUBLISHABLE_KEY = "sb_publishable_zigRd9_wSHzmHyae2lJtrw_BX_hJ1Ih"
 
 [http_service]
   internal_port = 8080
