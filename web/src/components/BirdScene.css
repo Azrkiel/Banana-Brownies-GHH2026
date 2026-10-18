@@ -1,0 +1,6 @@
+.bird-scene { display: block; width: 100%; min-width: 0; aspect-ratio: 3 / 2; flex: none; background-size: 200% 200%; background-repeat: no-repeat; pointer-events: none; mix-blend-mode: multiply; }
+.bird-scene--flight { background-position: 0 0; }
+.bird-scene--singing { background-position: 100% 0; }
+.bird-scene--nest { background-position: 0 100%; }
+.bird-scene--preening { background-position: 100% 100%; clip-path: inset(0 0 0 3%); }
+@media (forced-colors: active) { .bird-scene { display: none; } }

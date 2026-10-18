@@ -26,6 +26,11 @@ remain archived in `docs/design/anthropic/` for provenance.
   extending the birds' existing perch sideways to both edges of the Call page.
   The join form sits over it in an opaque cream card, using the buttons' pencil
   border and irregular corners. There is no separate branch at the page bottom.
+- `web/public/notebook/page-birds.webp`: a transparent 1536 × 1024 sheet of four
+  distinct pencil vignettes, about 562 kB. `BirdScene.tsx` selects a registered
+  quarter: flying bird for Camera, singing pair for Speech, bird and nest for
+  My signs, and preening bird for Recorder. The golden/olive and blue-gray birds
+  share the welcome and Call artwork's natural-history style.
 - The images were created with OpenAI image generation using the user's naturalist
   butterfly and Claude Opus 5.5 screenshots as visual direction, then encoded as
   WebP. They contain no text. Text and controls are accessible HTML.
@@ -48,8 +53,8 @@ link and plays the drawn takeoff before entering. There are no repeated entry
 actions, figure captions or numbered notes. See [welcome motion](intro.md)
 for timing, ownership and immediate-entry fallbacks.
 
-The app header contains SignLine and five short links: Call, Camera, Speech,
-Record and Stats. The design-kit route remains available directly at `#/design-kit`
+The app header contains SignLine and six short links: Call, Camera, Speech,
+Record, My signs and Stats. The design-kit route remains available directly at `#/design-kit`
 for development and is not advertised in the user navigation.
 
 The call form contains Name, Room, Role and Join. It preserves browser validation,
@@ -59,6 +64,21 @@ page names and functional controls. Marketing copy, redundant subtitles and
 instructional demo panels have been removed. Necessary consent, actual status,
 errors and data-loss notices remain. The local camera/video itself is displayed
 without an illustration filter; drawings appear only in standby states.
+
+Each working page has its own static vignette instead of repeating the hand
+illustration. Camera and Recorder artwork clears when the local preview is ready.
+My signs uses the nest on its account welcome and while its training camera is
+off. Speech shows the singing pair only while its live draft is empty and the
+microphone session is inactive; live text takes its place. `BirdScene` is
+decorative, ignores pointer input and hides in forced colors. The welcome takeoff
+and Call landing retain their existing artwork and motion.
+
+Vignette validation covers all four pages at 1440, 768, 390 and 320px, local image
+decoding, no media requests on entry, doubled text and forced colors. Synthetic
+camera/speech checks verify that artwork clears for active content and returns
+after stopping. The mocked account capture/save/reload/isolation suite, all 207
+frontend tests, lint and production build pass. Live providers and real camera
+inference were not repeated for this artwork change.
 
 Primary actions use solid graphite fills, cream text and irregular pencil frames.
 Begin, Join, Join conversation and Rejoin share the same size and interaction

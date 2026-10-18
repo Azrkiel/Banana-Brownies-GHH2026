@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../lib/auth';
 import { Badge, Button, PageHeader, Surface } from '../components/ui';
-import { BirdIllustration } from '../components/BirdIllustration';
+import { BirdScene } from '../components/BirdScene';
 import { loadPersonalSamples, savePersonalSample, deletePersonalSamples } from '../lib/personalSigns';
 import { MAX_PERSONAL_SAMPLES, MIN_SIGN_EXAMPLES, predictPersonalSign, signLabel, trainPersonalModel, validateWordSample, type PersonalSample, type WordSample } from '../lib/personalModel';
 import { useSignCapture } from '../lib/useSignCapture';
@@ -17,7 +17,7 @@ export default function PersonalSigns() {
     }}>Sign out</Button> : <Badge>Personal vocabulary</Badge>} />
     {auth.error && <p className="error-banner" role="alert">{auth.error}</p>}
     {auth.loading ? <p role="status">Checking your account…</p> : !auth.user ? <Surface className="account-welcome">
-      <BirdIllustration className="account-bird" />
+      <BirdScene scene="nest" className="account-bird" />
       <div><h2>Signs that feel like you.</h2>
         <p>Make an account with GitHub and teach SignLine your own small vocabulary. Your examples belong to your account.</p>
         <p>Save a few examples of each sign, try a fresh capture, then use your personal model in calls.</p>
@@ -144,7 +144,7 @@ function TrainingWorkspace({ userId, name }: { userId: string; name: string }) {
           <label className="check-field"><input type="checkbox" checked={consent} disabled={saving} onChange={event => { stopCamera(); setConsent(event.target.checked); }} /><span>I agree to save my hand landmarks to my private account for personal recognition. No video or audio is uploaded.</span></label>
           <div className="personal-camera">
             <video ref={video} muted playsInline className="mirror" aria-label="Training camera preview" />
-            {!camera && <span>Camera off</span>}
+            {!camera && <div className="personal-camera-placeholder"><BirdScene scene="nest" /><span>Camera off</span></div>}
           </div>
           <div className="button-row">
             <Button disabled={!consent || saving} onClick={() => { if (camera) stopCamera(); else setCamera(true); }}>{camera ? 'Stop camera' : 'Start camera'}</Button>

@@ -45,8 +45,10 @@ longer branches and olive twigs extending to both sides. It contains just the
 left blue bird and an empty right perch. The right bird remains a separate layer
 from `bird-frames.webp`, so there is no baked-in duplicate at its landing spot.
 The call form and room standby share this composition. The previous two-bird
-`songbirds.webp` remains as the original artwork reference. Camera and
-recorder standby screens retain the static bird on a hand. Space art is unused.
+`songbirds.webp` remains as the original artwork reference. Other working pages
+use distinct static `BirdScene` vignettes: flying on Camera, singing on Speech,
+a nest on My signs and preening on Recorder. The hand remains part of the welcome
+and the design-kit reference. Space art is unused.
 
 The Call page extends the same perch sideways across the page, keeping the birds
 in place. `CallBranch.tsx` joins transparent `branch-extension.webp` crops to both

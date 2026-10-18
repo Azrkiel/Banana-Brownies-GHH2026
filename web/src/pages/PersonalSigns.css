@@ -1,3 +1,4 @@
+.personal-page .page-heading .ui-badge { white-space: normal; }
 .personal-intro { max-width: 76ch; margin: 0 0 32px; }
 .personal-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); gap: 24px; align-items: start; }
 .personal-layout > div { display: grid; gap: 24px; }
@@ -7,7 +8,8 @@
 .personal-layout .check-field input { flex-shrink: 0; margin-top: 5px; }
 .personal-camera { position: relative; aspect-ratio: 4 / 3; border: 1px solid var(--color-field-border); border-radius: var(--radius-control); overflow: hidden; background: var(--color-surface); }
 .personal-camera video { width: 100%; height: 100%; object-fit: cover; }
-.personal-camera > span { position: absolute; inset: 0; display: grid; place-content: center; color: var(--color-muted); }
+.personal-camera-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 16px; color: var(--color-muted); }
+.personal-camera-placeholder .bird-scene { width: min(80%, 300px); }
 .personal-layout .button-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 20px 0; }
 .personal-layout progress { width: 100%; accent-color: var(--color-ink); }
 .sample-review { padding: 20px; margin: 24px 0; border: 1px solid var(--color-field-border); border-radius: var(--radius-control); }

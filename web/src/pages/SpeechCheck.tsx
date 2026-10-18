@@ -1,4 +1,5 @@
 import { Button } from '../components/ui';
+import { BirdScene } from '../components/BirdScene';
 import { useEffect, useRef, useState } from 'react';
 import { type Stt, type SttState } from '../lib/stt';
 import { startScribe } from '../lib/scribe';
@@ -119,7 +120,7 @@ export default function SpeechCheck() {
               <span className="speech-check__badge"><span />{state === 'listening' ? 'LIVE' : state === 'stopping' ? 'STOPPING' : state === 'retrying' ? 'RETRYING' : state === 'failed' ? 'ATTENTION' : busy ? 'CONNECTING' : 'STANDBY'}</span>
             </div>
             <div className="speech-check__draft" aria-live="off">
-              {draft || <p className="speech-check__placeholder">…</p>}
+              {draft || (!busy ? <BirdScene scene="singing" className="speech-check__illustration" /> : <p className="speech-check__placeholder">…</p>)}
             </div>
           </section>
 
